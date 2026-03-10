@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCG Alpha</title>
+  <title>SCG Alpha — Vault</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -19,7 +19,7 @@
       color: #fff;
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
       min-height: 100vh;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     canvas#starfield {
@@ -43,59 +43,15 @@
       left: 32px;
     }
 
+    .logo a {
+      display: block;
+    }
+
     .logo img {
       width: 100px;
       height: auto;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
-    }
-
-    .body-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 40px 24px;
-    }
-
-    .body-text-wrapper {
-      max-width: 700px;
-      text-align: center;
-    }
-
-    .body-text {
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 2;
-      letter-spacing: 0.3px;
-      margin-bottom: 28px;
-    }
-
-    .body-text:last-of-type {
-      margin-bottom: 24px;
-    }
-
-    .strategy-strip {
-      font-size: 12px;
-      letter-spacing: 1.5px;
-      color: rgba(255, 255, 255, 0.35);
-      margin-bottom: 36px;
-    }
-
-    .vault-link {
-      display: inline-block;
-      padding: 14px 36px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      color: #fff;
-      text-decoration: none;
-      font-size: 13px;
-      letter-spacing: 1.5px;
-      transition: border-color 0.3s, background 0.3s;
-    }
-
-    .vault-link:hover {
-      border-color: #fff;
-      background: rgba(255, 255, 255, 0.08);
     }
 
     .social-links {
@@ -126,6 +82,87 @@
       height: 20px;
     }
 
+    .vault-wrapper {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 120px 24px 100px;
+    }
+
+    .vault-title {
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      margin-bottom: 56px;
+      text-align: center;
+    }
+
+    .section-label {
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    .vault-list {
+      list-style: none;
+      margin-bottom: 48px;
+    }
+
+    .vault-list li {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.8;
+      letter-spacing: 0.3px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .vault-list li:last-child {
+      border-bottom: none;
+    }
+
+    .status {
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .vault-footer {
+      text-align: center;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .vault-footer a {
+      font-size: 13px;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.5);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .vault-footer a:hover {
+      color: #fff;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 48px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.3);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .back-link:hover {
+      color: #fff;
+    }
+
     @media (max-width: 600px) {
       .logo {
         top: 16px;
@@ -136,13 +173,19 @@
         width: 72px;
       }
 
-      .body-text {
-        font-size: 14px;
-        line-height: 2;
+      .vault-wrapper {
+        padding: 100px 16px 80px;
       }
 
-      .body-wrapper {
-        padding: 80px 16px 32px;
+      .vault-title {
+        font-size: 16px;
+      }
+
+      .vault-list li {
+        font-size: 13px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
       }
     }
   </style>
@@ -151,7 +194,7 @@
   <canvas id="starfield"></canvas>
   <div class="content">
     <div class="logo">
-      <img src="scg-logo.png" alt="SCG Alpha">
+      <a href="index.html"><img src="scg-logo.png" alt="SCG Alpha"></a>
     </div>
     <div class="social-links">
       <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
@@ -165,22 +208,31 @@
         </svg>
       </a>
     </div>
-    <div class="body-wrapper">
-      <div class="body-text-wrapper">
-        <p class="body-text">
-          SCG Alpha is a quantitative trading firm focused on digital assets and emerging Internet Capital Markets.
-        </p>
-        <p class="body-text">
-          We build systematic algorithms that exploit inefficiencies in crypto markets, on-chain liquidity flows, and market microstructure.
-        </p>
-        <p class="strategy-strip">On-Chain Liquidity Events &bull; Crypto Perpetuals &bull; Prediction Markets</p>
-        <a href="vault.html" class="vault-link">Enter The Vault &rarr;</a>
+    <div class="vault-wrapper">
+      <a href="index.html" class="back-link">&larr; Back</a>
+      <h1 class="vault-title">SCG Alpha Vault</h1>
+
+      <p class="section-label">Strategy Validation</p>
+      <ul class="vault-list">
+        <li><span>Pump.fun Sniper</span><span class="status">Testing</span></li>
+        <li><span>Hyperliquid Perps</span><span class="status">Research</span></li>
+        <li><span>Dev Wallet Strategy</span><span class="status">Development</span></li>
+      </ul>
+
+      <p class="section-label">Research Notes</p>
+      <ul class="vault-list">
+        <li><span>Pump.fun Launch Mechanics</span></li>
+        <li><span>On-chain Liquidity Migration</span></li>
+        <li><span>Crypto Market Structure</span></li>
+      </ul>
+
+      <div class="vault-footer">
+        <a href="https://x.com/scg_alpha" target="_blank" rel="noopener">Follow live strategy updates on X &rarr;</a>
       </div>
     </div>
   </div>
 
   <script>
-    // ── Starfield + Shooting Stars ──────────────────────────────────
     const canvas = document.getElementById('starfield');
     const ctx = canvas.getContext('2d');
     let W, H;
@@ -192,7 +244,6 @@
     resize();
     window.addEventListener('resize', resize);
 
-    // Sparse, subtle stars
     const NUM_STARS = 120;
     const stars = [];
     for (let i = 0; i < NUM_STARS; i++) {
@@ -206,18 +257,14 @@
       });
     }
 
-    // Shooting stars
     const shootingStars = [];
 
     function spawnShootingStar() {
-      // Start from bottom-left region, travel toward top-right
       const startX = Math.random() * W * 0.5;
       const startY = H * 0.5 + Math.random() * H * 0.5;
-      const angle = -(Math.PI / 6 + Math.random() * Math.PI / 6); // -30 to -60 degrees (upward-right)
+      const angle = -(Math.PI / 6 + Math.random() * Math.PI / 6);
       shootingStars.push({
-        x: startX,
-        y: startY,
-        angle: angle,
+        x: startX, y: startY, angle: angle,
         speed: 8 + Math.random() * 10,
         length: 60 + Math.random() * 100,
         life: 1.0,
@@ -230,7 +277,6 @@
     function animate(time) {
       ctx.clearRect(0, 0, W, H);
 
-      // Draw stars with twinkle
       for (const s of stars) {
         const alpha = s.baseAlpha + Math.sin(time * s.twinkleSpeed + s.twinkleOffset) * 0.2;
         ctx.beginPath();
@@ -239,17 +285,13 @@
         ctx.fill();
       }
 
-      // Spawn shooting stars sporadically (every 2-5 seconds)
       if (time - lastShootingStarTime > 2000 + Math.random() * 3000) {
         spawnShootingStar();
         lastShootingStarTime = time;
       }
 
-      // Draw shooting stars
       for (let i = shootingStars.length - 1; i >= 0; i--) {
         const ss = shootingStars[i];
-
-        // Move
         ss.x += Math.cos(ss.angle) * ss.speed;
         ss.y += Math.sin(ss.angle) * ss.speed;
         ss.life -= ss.decay;
@@ -259,14 +301,11 @@
           continue;
         }
 
-        // Draw trail
         const tailX = ss.x - Math.cos(ss.angle) * ss.length;
         const tailY = ss.y - Math.sin(ss.angle) * ss.length;
-
         const grad = ctx.createLinearGradient(tailX, tailY, ss.x, ss.y);
         grad.addColorStop(0, `rgba(255, 255, 255, 0)`);
         grad.addColorStop(1, `rgba(255, 255, 255, ${ss.life * 0.9})`);
-
         ctx.beginPath();
         ctx.moveTo(tailX, tailY);
         ctx.lineTo(ss.x, ss.y);
@@ -274,7 +313,6 @@
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Bright head
         ctx.beginPath();
         ctx.arc(ss.x, ss.y, 1.5, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255, 255, 255, ${ss.life})`;
@@ -286,7 +324,6 @@
 
     requestAnimationFrame(animate);
 
-    // Re-scatter stars on resize
     window.addEventListener('resize', () => {
       for (const s of stars) {
         s.x = Math.random() * W;
