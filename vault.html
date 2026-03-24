@@ -83,7 +83,7 @@
     }
 
     .vault-wrapper {
-      max-width: 640px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 120px 24px 100px;
     }
@@ -96,60 +96,63 @@
       text-align: center;
     }
 
-    .section-label {
-      font-size: 12px;
-      letter-spacing: 1.5px;
-      color: rgba(255, 255, 255, 0.35);
-      margin-bottom: 20px;
-      text-transform: uppercase;
+    .path-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
     }
 
-    .vault-list {
-      list-style: none;
-      margin-bottom: 48px;
-    }
-
-    .vault-list li {
-      font-size: 14px;
-      font-weight: 400;
-      line-height: 1.8;
-      letter-spacing: 0.3px;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    .path-card {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 40px 32px;
+      text-decoration: none;
+      color: #fff;
+      transition: border-color 0.3s, background 0.3s;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
     }
 
-    .vault-list li:last-child {
+    .path-card:hover {
+      border-color: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .path-card h2 {
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+
+    .path-card p {
+      font-size: 13px;
+      line-height: 1.9;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 24px;
+      letter-spacing: 0.2px;
+      flex: 1;
+    }
+
+    .path-card ul {
+      list-style: none;
+    }
+
+    .path-card ul li {
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: rgba(255, 255, 255, 0.35);
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .path-card ul li:last-child {
       border-bottom: none;
     }
 
-    .status {
-      font-size: 11px;
-      letter-spacing: 1px;
-      color: rgba(255, 255, 255, 0.3);
+    .path-card ul li::before {
+      content: "- ";
+      color: rgba(255, 255, 255, 0.2);
     }
-
-    .vault-footer {
-      text-align: center;
-      padding-top: 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .vault-footer a {
-      font-size: 13px;
-      letter-spacing: 1px;
-      color: rgba(255, 255, 255, 0.5);
-      text-decoration: none;
-      transition: color 0.3s;
-    }
-
-    .vault-footer a:hover {
-      color: #fff;
-    }
-
-
 
     @media (max-width: 600px) {
       .logo {
@@ -162,18 +165,51 @@
       }
 
       .vault-wrapper {
-        padding: 100px 16px 80px;
+        padding: 90px 20px 80px;
       }
 
       .vault-title {
-        font-size: 16px;
+        font-size: 15px;
+        margin-bottom: 36px;
       }
 
-      .vault-list li {
-        font-size: 13px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
+      .path-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .path-card {
+        padding: 28px 24px;
+      }
+
+      .path-card h2 {
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+
+      .path-card p {
+        font-size: 12px;
+        line-height: 1.8;
+        margin-bottom: 20px;
+      }
+
+      .path-card ul li {
+        font-size: 11px;
+      }
+
+      .social-links {
+        bottom: 20px;
+        right: 20px;
+      }
+
+      .social-links svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .social-links svg.x-icon {
+        width: 17px;
+        height: 17px;
       }
     }
   </style>
@@ -197,24 +233,29 @@
       </a>
     </div>
     <div class="vault-wrapper">
-      <h1 class="vault-title">SCG Alpha Vault</h1>
+      <h1 class="vault-title">Choose Your Path</h1>
 
-      <p class="section-label">Strategy Validation</p>
-      <ul class="vault-list">
-        <li><span>Pump.fun Sniper</span><span class="status">Testing</span></li>
-        <li><span>Hyperliquid Perps</span><span class="status">Research</span></li>
-        <li><span>Dev Wallet Strategy</span><span class="status">Development</span></li>
-      </ul>
-
-      <p class="section-label">Research Notes</p>
-      <ul class="vault-list">
-        <li><span>Pump.fun Launch Mechanics</span></li>
-        <li><span>On-chain Liquidity Migration</span></li>
-        <li><span>Crypto Market Structure</span></li>
-      </ul>
-
-      <div class="vault-footer">
-        <a href="https://x.com/scg_alpha" target="_blank" rel="noopener">Follow live strategy updates on X &rarr;</a>
+      <div class="path-grid">
+        <a href="#" class="path-card">
+          <h2>Internet Capital Markets</h2>
+          <p>Learn how to raise non-dilutive capital for your startup using tokenization and internet-native capital markets.</p>
+          <ul>
+            <li>capital formation</li>
+            <li>token structure</li>
+            <li>distribution strategy</li>
+            <li>incentive alignment</li>
+          </ul>
+        </a>
+        <a href="#" class="path-card">
+          <h2>Algorithmic Trading</h2>
+          <p>Learn how to design and deploy algorithmic systems that execute across onchain markets.</p>
+          <ul>
+            <li>strategy design</li>
+            <li>execution logic</li>
+            <li>risk frameworks</li>
+            <li>automation architecture</li>
+          </ul>
+        </a>
       </div>
     </div>
   </div>
