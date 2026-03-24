@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCG Alpha — Vault</title>
+  <title>SCG Alpha — Algorithmic Trading</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -82,76 +82,67 @@
       height: 20px;
     }
 
-    .vault-wrapper {
-      max-width: 900px;
+    .page-wrapper {
+      max-width: 680px;
       margin: 0 auto;
-      padding: 120px 24px 100px;
+      padding: 120px 24px 120px;
     }
 
-    .vault-title {
+    .page-title {
       font-size: 18px;
       font-weight: 400;
       letter-spacing: 2px;
-      margin-bottom: 56px;
+      margin-bottom: 64px;
       text-align: center;
+      text-transform: uppercase;
     }
 
-    .path-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 32px;
+    .module {
+      margin-bottom: 48px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .path-card {
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 40px 32px;
-      text-decoration: none;
-      color: #fff;
-      transition: border-color 0.3s, background 0.3s;
-      display: flex;
-      flex-direction: column;
+    .module:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
     }
 
-    .path-card:hover {
-      border-color: rgba(255, 255, 255, 0.5);
-      background: rgba(255, 255, 255, 0.04);
+    .module-number {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      color: rgba(255, 255, 255, 0.25);
+      margin-bottom: 12px;
     }
 
-    .path-card h2 {
+    .module-title {
       font-size: 15px;
       font-weight: 400;
-      letter-spacing: 1px;
-      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+      line-height: 1.6;
     }
 
-    .path-card p {
+    .module-desc {
       font-size: 13px;
       line-height: 1.9;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 24px;
+      color: rgba(255, 255, 255, 0.55);
       letter-spacing: 0.2px;
-      flex: 1;
     }
 
-    .path-card ul {
-      list-style: none;
+    .back-link {
+      display: inline-block;
+      margin-top: 56px;
+      font-size: 13px;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.4);
+      text-decoration: none;
+      transition: color 0.3s;
     }
 
-    .path-card ul li {
-      font-size: 12px;
-      letter-spacing: 0.5px;
-      color: rgba(255, 255, 255, 0.35);
-      padding: 5px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    }
-
-    .path-card ul li:last-child {
-      border-bottom: none;
-    }
-
-    .path-card ul li::before {
-      content: "- ";
-      color: rgba(255, 255, 255, 0.2);
+    .back-link:hover {
+      color: #fff;
     }
 
     @media (max-width: 600px) {
@@ -164,37 +155,27 @@
         width: 72px;
       }
 
-      .vault-wrapper {
-        padding: 90px 20px 80px;
+      .page-wrapper {
+        padding: 90px 20px 100px;
       }
 
-      .vault-title {
+      .page-title {
         font-size: 15px;
+        margin-bottom: 48px;
+      }
+
+      .module {
         margin-bottom: 36px;
+        padding-bottom: 36px;
       }
 
-      .path-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-      }
-
-      .path-card {
-        padding: 28px 24px;
-      }
-
-      .path-card h2 {
+      .module-title {
         font-size: 14px;
-        margin-bottom: 16px;
       }
 
-      .path-card p {
+      .module-desc {
         font-size: 12px;
         line-height: 1.8;
-        margin-bottom: 20px;
-      }
-
-      .path-card ul li {
-        font-size: 11px;
       }
 
       .social-links {
@@ -232,31 +213,52 @@
         </svg>
       </a>
     </div>
-    <div class="vault-wrapper">
-      <h1 class="vault-title">Choose Your Path</h1>
+    <div class="page-wrapper">
+      <h1 class="page-title">Algorithmic Trading</h1>
 
-      <div class="path-grid">
-        <a href="icm.html" class="path-card">
-          <h2>Internet Capital Markets</h2>
-          <p>Learn how to raise non-dilutive capital for your startup using tokenization and internet-native capital markets.</p>
-          <ul>
-            <li>capital formation</li>
-            <li>token structure</li>
-            <li>distribution strategy</li>
-            <li>incentive alignment</li>
-          </ul>
-        </a>
-        <a href="algo.html" class="path-card">
-          <h2>Algorithmic Trading</h2>
-          <p>Learn how to design and deploy algorithmic systems that execute across onchain markets.</p>
-          <ul>
-            <li>strategy design</li>
-            <li>execution logic</li>
-            <li>risk frameworks</li>
-            <li>automation architecture</li>
-          </ul>
-        </a>
+      <div class="module">
+        <div class="module-number">01</div>
+        <h2 class="module-title">What Is an Algorithmic System</h2>
+        <p class="module-desc">An algorithmic system transforms inputs into decisions through defined logic. Consistency allows systems to operate without emotional bias.</p>
       </div>
+
+      <div class="module">
+        <div class="module-number">02</div>
+        <h2 class="module-title">Strategy Archetypes</h2>
+        <p class="module-desc">Most strategies fall into a small number of categories. Understanding these patterns simplifies the design process.</p>
+      </div>
+
+      <div class="module">
+        <div class="module-number">03</div>
+        <h2 class="module-title">Expectancy Frameworks</h2>
+        <p class="module-desc">Profitability is determined by the relationship between win rate and payoff structure. Small edges compound when executed consistently.</p>
+      </div>
+
+      <div class="module">
+        <div class="module-number">04</div>
+        <h2 class="module-title">Risk Frameworks</h2>
+        <p class="module-desc">Survival enables iteration. Effective systems manage downside before optimizing upside.</p>
+      </div>
+
+      <div class="module">
+        <div class="module-number">05</div>
+        <h2 class="module-title">Execution Reality</h2>
+        <p class="module-desc">Markets are competitive environments. Latency, liquidity, and slippage influence real-world performance.</p>
+      </div>
+
+      <div class="module">
+        <div class="module-number">06</div>
+        <h2 class="module-title">System Design</h2>
+        <p class="module-desc">Clear structure reduces complexity. State machines allow strategies to respond predictably to changing conditions.</p>
+      </div>
+
+      <div class="module">
+        <div class="module-number">07</div>
+        <h2 class="module-title">Iteration Process</h2>
+        <p class="module-desc">Systems improve through measured adjustments. Small refinements often produce meaningful performance differences.</p>
+      </div>
+
+      <a href="vault.html" class="back-link">&larr; Back to paths</a>
     </div>
   </div>
 
