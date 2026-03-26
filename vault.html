@@ -96,62 +96,46 @@
       text-align: center;
     }
 
-    .path-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 32px;
+    .intro-text {
+      font-size: 14px;
+      line-height: 2;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 56px;
+      letter-spacing: 0.2px;
     }
 
-    .path-card {
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 40px 32px;
-      text-decoration: none;
-      color: #fff;
-      transition: border-color 0.3s, background 0.3s;
-      display: flex;
-      flex-direction: column;
+    .module {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 28px 0;
     }
 
-    .path-card:hover {
-      border-color: rgba(255, 255, 255, 0.5);
-      background: rgba(255, 255, 255, 0.04);
+    .module:first-child {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .path-card h2 {
-      font-size: 15px;
+    .module h2 {
+      font-size: 14px;
       font-weight: 400;
-      letter-spacing: 1px;
-      margin-bottom: 20px;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
     }
 
-    .path-card p {
+    .module p {
       font-size: 13px;
       line-height: 1.9;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 24px;
+      color: rgba(255, 255, 255, 0.5);
       letter-spacing: 0.2px;
-      flex: 1;
     }
 
-    .path-card ul {
-      list-style: none;
-    }
-
-    .path-card ul li {
-      font-size: 12px;
-      letter-spacing: 0.5px;
+    .teaser {
+      font-size: 13px;
       color: rgba(255, 255, 255, 0.35);
-      padding: 5px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    }
-
-    .path-card ul li:last-child {
-      border-bottom: none;
-    }
-
-    .path-card ul li::before {
-      content: "- ";
-      color: rgba(255, 255, 255, 0.2);
+      text-align: center;
+      margin-top: 56px;
+      letter-spacing: 0.3px;
+      font-style: italic;
     }
 
     @media (max-width: 600px) {
@@ -173,28 +157,17 @@
         margin-bottom: 36px;
       }
 
-      .path-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
+      .intro-text {
+        font-size: 13px;
+        margin-bottom: 36px;
       }
 
-      .path-card {
-        padding: 28px 24px;
+      .module h2 {
+        font-size: 13px;
       }
 
-      .path-card h2 {
-        font-size: 14px;
-        margin-bottom: 16px;
-      }
-
-      .path-card p {
+      .module p {
         font-size: 12px;
-        line-height: 1.8;
-        margin-bottom: 20px;
-      }
-
-      .path-card ul li {
-        font-size: 11px;
       }
 
       .social-links {
@@ -233,30 +206,32 @@
       </a>
     </div>
     <div class="vault-wrapper">
-      <h1 class="vault-title">Choose Your Path</h1>
+      <h1 class="vault-title">Algorithmic Trading</h1>
 
-      <div class="path-grid">
-        <a href="icm.html" class="path-card">
-          <h2>Internet Capital Markets</h2>
-          <p>Learn how to raise non-dilutive capital for your startup using tokenization and internet-native capital markets.</p>
-          <ul>
-            <li>capital formation</li>
-            <li>token structure</li>
-            <li>distribution strategy</li>
-            <li>incentive alignment</li>
-          </ul>
-        </a>
-        <a href="algo.html" class="path-card">
-          <h2>Algorithmic Trading</h2>
-          <p>Learn how to design and deploy algorithmic systems that execute across onchain markets.</p>
-          <ul>
-            <li>strategy design</li>
-            <li>execution logic</li>
-            <li>risk frameworks</li>
-            <li>automation architecture</li>
-          </ul>
-        </a>
+      <p class="intro-text">A step-by-step program for building your first algorithmic trading strategy on Solana.</p>
+
+      <div class="module">
+        <h2>Module 1 — Preparation</h2>
+        <p>Read the market. Understand chart structure, token patterns, and what separates signal from noise.</p>
       </div>
+      <div class="module">
+        <h2>Module 2 — Data Collection</h2>
+        <p>Connect to real-time onchain data. Pull the metrics that matter — token launches, holder behavior, liquidity shifts.</p>
+      </div>
+      <div class="module">
+        <h2>Module 3 — Backtesting</h2>
+        <p>Test your strategy against historical data before risking a dollar.</p>
+      </div>
+      <div class="module">
+        <h2>Module 4 — Live Testing</h2>
+        <p>Deploy in dry-run mode or with minimal capital. See how your logic performs in real conditions.</p>
+      </div>
+      <div class="module">
+        <h2>Module 5 — Iteration</h2>
+        <p>Refine, optimize, repeat. The algorithm is never done.</p>
+      </div>
+
+      <p class="teaser">New tools are in development to make this process faster. More soon.</p>
     </div>
   </div>
 
