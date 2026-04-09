@@ -253,8 +253,9 @@
     /* Recap Section */
     .recap {
       margin-bottom: 48px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 32px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.02);
     }
 
     .recap-title {
@@ -267,7 +268,7 @@
 
     .recap-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 16px;
       text-align: center;
     }
@@ -366,6 +367,10 @@
       <div id="recap" class="recap" style="display:none;">
         <div class="recap-title">PERFORMANCE (1HR TRACKED)</div>
         <div class="recap-grid">
+          <div>
+            <div class="recap-stat-label">Total Calls</div>
+            <div class="recap-stat-value" id="recap-total">—</div>
+          </div>
           <div>
             <div class="recap-stat-label">Win Rate</div>
             <div class="recap-stat-value" id="recap-winrate">—</div>
@@ -596,6 +601,7 @@
         return;
       }
       recapEl.style.display = '';
+      document.getElementById('recap-total').textContent = recap.total;
       document.getElementById('recap-winrate').textContent = recap.win_rate + '%';
 
       const roiEl = document.getElementById('recap-roi');
