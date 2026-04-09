@@ -551,6 +551,10 @@
               <span class="metric-value ${retClass}">${fmtPct(a.return_pct)}</span>
             </div>
             <div class="metric">
+              <span class="metric-label">Max Return</span>
+              <span class="metric-value positive">${fmtPct(a.max_return_pct || 0)}</span>
+            </div>
+            <div class="metric">
               <span class="metric-label">Age</span>
               <span class="metric-value">${a.age_mins}m</span>
             </div>
