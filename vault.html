@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCG Alpha — Vault</title>
+  <title>SCG Alpha — The Vault</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -41,6 +41,7 @@
       position: fixed;
       top: 28px;
       left: 32px;
+      z-index: 10;
     }
 
     .logo a {
@@ -61,6 +62,7 @@
       display: flex;
       gap: 20px;
       align-items: center;
+      z-index: 10;
     }
 
     .social-links a {
@@ -83,61 +85,207 @@
     }
 
     .vault-wrapper {
-      max-width: 900px;
+      max-width: 960px;
       margin: 0 auto;
-      padding: 120px 24px 100px;
+      padding: 120px 24px 120px;
     }
 
     .vault-title {
       font-size: 18px;
       font-weight: 400;
       letter-spacing: 2px;
-      margin-bottom: 56px;
+      margin-bottom: 12px;
       text-align: center;
     }
 
-    .intro-text {
-      font-size: 14px;
-      line-height: 2;
-      color: rgba(255, 255, 255, 0.6);
-      text-align: center;
-      max-width: 600px;
-      margin: 0 auto 56px;
-      letter-spacing: 0.2px;
-    }
-
-    .module {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 28px 0;
-    }
-
-    .module:first-child {
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .module h2 {
-      font-size: 14px;
-      font-weight: 400;
-      letter-spacing: 0.8px;
-      margin-bottom: 10px;
-    }
-
-    .module p {
-      font-size: 13px;
-      line-height: 1.9;
-      color: rgba(255, 255, 255, 0.5);
-      letter-spacing: 0.2px;
-    }
-
-    .teaser {
-      font-size: 13px;
+    .vault-subtitle {
+      font-size: 12px;
       color: rgba(255, 255, 255, 0.35);
       text-align: center;
-      margin-top: 56px;
-      letter-spacing: 0.3px;
-      font-style: italic;
+      margin-bottom: 48px;
+      letter-spacing: 0.5px;
     }
 
+    /* Loading / Empty states */
+    .status-msg {
+      text-align: center;
+      padding: 80px 0;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    .status-msg.pulse {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    /* Token Cards */
+    .cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 20px 24px;
+      background: rgba(255, 255, 255, 0.02);
+      transition: border-color 0.3s;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .card-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      flex-shrink: 0;
+      object-fit: cover;
+    }
+
+    .card-name {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .card-mint {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.3);
+      margin-left: 8px;
+      letter-spacing: 0;
+    }
+
+    .card-score {
+      margin-left: auto;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 3px;
+      letter-spacing: 0.5px;
+    }
+
+    .score-green  { background: rgba(0, 200, 83, 0.15); color: #00c853; }
+    .score-yellow { background: rgba(255, 214, 0, 0.15); color: #ffd600; }
+    .score-orange { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
+    .score-red    { background: rgba(244, 67, 54, 0.15); color: #f44336; }
+
+    .card-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px 20px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .metric-value.positive { color: #00c853; }
+    .metric-value.negative { color: #f44336; }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .card-twitter {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    .card-twitter a {
+      color: rgba(255, 255, 255, 0.5);
+      text-decoration: none;
+    }
+
+    .card-twitter a:hover {
+      color: #fff;
+    }
+
+    .card-buy-link {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      text-decoration: none;
+      letter-spacing: 0.8px;
+      padding: 5px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.3s;
+    }
+
+    .card-buy-link:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      color: #fff;
+    }
+
+    /* Recap Section */
+    .recap {
+      margin-top: 48px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 32px;
+    }
+
+    .recap-title {
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .recap-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      text-align: center;
+    }
+
+    .recap-stat-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .recap-stat-value {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    /* Responsive */
     @media (max-width: 600px) {
       .logo {
         top: 16px;
@@ -149,25 +297,31 @@
       }
 
       .vault-wrapper {
-        padding: 90px 20px 80px;
+        padding: 90px 16px 100px;
       }
 
       .vault-title {
         font-size: 15px;
-        margin-bottom: 36px;
+        margin-bottom: 8px;
       }
 
-      .intro-text {
-        font-size: 13px;
-        margin-bottom: 36px;
+      .vault-subtitle {
+        font-size: 11px;
+        margin-bottom: 32px;
       }
 
-      .module h2 {
-        font-size: 13px;
+      .card {
+        padding: 16px;
       }
 
-      .module p {
-        font-size: 12px;
+      .card-metrics {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px 16px;
+      }
+
+      .recap-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
       }
 
       .social-links {
@@ -206,36 +360,39 @@
       </a>
     </div>
     <div class="vault-wrapper">
-      <h1 class="vault-title">Algorithmic Trading</h1>
+      <h1 class="vault-title">The Vault</h1>
+      <p class="vault-subtitle">Live signal dashboard — scored, tracked, transparent</p>
 
-      <p class="intro-text">A step-by-step program for building your first algorithmic trading strategy on Solana.</p>
-
-      <div class="module">
-        <h2>Module 1 — Preparation</h2>
-        <p>Read the market. Understand chart structure, token patterns, and what separates signal from noise.</p>
-      </div>
-      <div class="module">
-        <h2>Module 2 — Data Collection</h2>
-        <p>Connect to real-time onchain data. Pull the metrics that matter — token launches, holder behavior, liquidity shifts.</p>
-      </div>
-      <div class="module">
-        <h2>Module 3 — Backtesting</h2>
-        <p>Test your strategy against historical data before risking a dollar.</p>
-      </div>
-      <div class="module">
-        <h2>Module 4 — Live Testing</h2>
-        <p>Deploy in dry-run mode or with minimal capital. See how your logic performs in real conditions.</p>
-      </div>
-      <div class="module">
-        <h2>Module 5 — Iteration</h2>
-        <p>Refine, optimize, repeat. The algorithm is never done.</p>
+      <div id="cards" class="cards">
+        <div class="status-msg pulse">Scanning...</div>
       </div>
 
-      <p class="teaser">New tools are in development to make this process faster. More soon.</p>
+      <div id="recap" class="recap" style="display:none;">
+        <div class="recap-title">PERFORMANCE (1HR TRACKED)</div>
+        <div class="recap-grid">
+          <div>
+            <div class="recap-stat-label">Win Rate</div>
+            <div class="recap-stat-value" id="recap-winrate">—</div>
+          </div>
+          <div>
+            <div class="recap-stat-label">Avg ROI</div>
+            <div class="recap-stat-value" id="recap-roi">—</div>
+          </div>
+          <div>
+            <div class="recap-stat-label">Best</div>
+            <div class="recap-stat-value" id="recap-best">—</div>
+          </div>
+          <div>
+            <div class="recap-stat-label">Worst</div>
+            <div class="recap-stat-value" id="recap-worst">—</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
+    // ── Starfield ──────────────────────────────────────────────────
     const canvas = document.getElementById('starfield');
     const ctx = canvas.getContext('2d');
     let W, H;
@@ -333,6 +490,154 @@
         s.y = Math.random() * H;
       }
     });
+
+    // ── Dashboard Data ─────────────────────────────────────────────
+    const API_URL = 'https://api.scgalpha.com/api/alerts';
+    const cardsEl = document.getElementById('cards');
+    const recapEl = document.getElementById('recap');
+
+    function scoreClass(score) {
+      if (score >= 80) return 'score-green';
+      if (score >= 60) return 'score-yellow';
+      if (score >= 40) return 'score-orange';
+      return 'score-red';
+    }
+
+    function fmtMcap(n) {
+      if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+      return '$' + n.toFixed(0);
+    }
+
+    function fmtPct(n) {
+      const sign = n >= 0 ? '+' : '';
+      return sign + n.toFixed(1) + '%';
+    }
+
+    function renderCard(a) {
+      const retClass = a.return_pct >= 0 ? 'positive' : 'negative';
+      const logoSrc = a.logo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" fill="%23222"/></svg>';
+      const mintShort = a.mint.slice(0, 6) + '...' + a.mint.slice(-4);
+      const gmgnLink = 'https://gmgn.ai/sol/token/' + a.mint;
+
+      let twitterHtml = '';
+      if (a.twitter_handle) {
+        twitterHtml = `<a href="https://x.com/${a.twitter_handle}" target="_blank">@${a.twitter_handle}</a> (${a.twitter_followers.toLocaleString()})`;
+      }
+
+      return `
+        <div class="card">
+          <div class="card-header">
+            <img class="card-logo" src="${logoSrc}" alt="" onerror="this.style.display='none'">
+            <span class="card-name">${a.name}<span class="card-mint">${mintShort}</span></span>
+            <span class="card-score ${scoreClass(a.score)}">${a.score}</span>
+          </div>
+          <div class="card-metrics">
+            <div class="metric">
+              <span class="metric-label">MC @ Signal</span>
+              <span class="metric-value">${fmtMcap(a.alert_mcap)}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">MC Current</span>
+              <span class="metric-value">${fmtMcap(a.current_mcap)}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Return</span>
+              <span class="metric-value ${retClass}">${fmtPct(a.return_pct)}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Age</span>
+              <span class="metric-value">${a.age_mins}m</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Holders</span>
+              <span class="metric-value">${a.holders.toLocaleString()}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">B/S Ratio</span>
+              <span class="metric-value">${a.bs_ratio}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Bot Degen</span>
+              <span class="metric-value">${a.bot_degen_pct}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Holder Growth</span>
+              <span class="metric-value positive">+${a.holder_growth_pct}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Liquidity</span>
+              <span class="metric-value">${fmtMcap(a.liquidity)}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Bundler</span>
+              <span class="metric-value">${a.bundler_pct}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">KOL Count</span>
+              <span class="metric-value">${a.kol_count}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Rug Ratio</span>
+              <span class="metric-value">${a.rug_ratio}</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <span class="card-twitter">${twitterHtml}</span>
+            <a href="${gmgnLink}" target="_blank" class="card-buy-link">BUY ON GMGN</a>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRecap(recap) {
+      if (!recap || recap.total === 0) {
+        recapEl.style.display = 'none';
+        return;
+      }
+      recapEl.style.display = '';
+      document.getElementById('recap-winrate').textContent = recap.win_rate + '%';
+
+      const roiEl = document.getElementById('recap-roi');
+      roiEl.textContent = fmtPct(recap.avg_roi);
+      roiEl.style.color = recap.avg_roi >= 0 ? '#00c853' : '#f44336';
+
+      const bestEl = document.getElementById('recap-best');
+      if (recap.best_trade) {
+        bestEl.textContent = recap.best_trade.name + ' ' + fmtPct(recap.best_trade.pct);
+        bestEl.style.color = '#00c853';
+      }
+
+      const worstEl = document.getElementById('recap-worst');
+      if (recap.worst_trade) {
+        worstEl.textContent = recap.worst_trade.name + ' ' + fmtPct(recap.worst_trade.pct);
+        worstEl.style.color = '#f44336';
+      }
+    }
+
+    async function fetchAlerts() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+
+        if (data.alerts && data.alerts.length > 0) {
+          cardsEl.innerHTML = data.alerts.map(renderCard).join('');
+        } else {
+          cardsEl.innerHTML = '<div class="status-msg">No active signals</div>';
+        }
+
+        renderRecap(data.recap);
+      } catch (e) {
+        // Keep current display on fetch error, only show scanning on first load
+        if (cardsEl.querySelector('.pulse')) {
+          cardsEl.innerHTML = '<div class="status-msg pulse">Scanning...</div>';
+        }
+      }
+    }
+
+    // Initial fetch + poll every 30s
+    fetchAlerts();
+    setInterval(fetchAlerts, 30000);
   </script>
 </body>
 </html>
