@@ -257,6 +257,13 @@
       color: #fff;
     }
 
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-bottom: 16px;
+    }
+
     /* Recap Section */
     .recap {
       margin-bottom: 48px;
@@ -371,34 +378,38 @@
       <h1 class="vault-title">The Vault</h1>
       <p class="vault-subtitle">Live signal dashboard — scored, tracked, transparent</p>
 
-      <div id="recap" class="recap" style="display:none;">
-        <div class="recap-title">PERFORMANCE (1HR TRACKED)</div>
-        <div class="recap-grid">
-          <div>
-            <div class="recap-stat-label">Total Calls</div>
-            <div class="recap-stat-value" id="recap-total">—</div>
-          </div>
-          <div>
-            <div class="recap-stat-label">Win Rate</div>
-            <div class="recap-stat-value" id="recap-winrate">—</div>
-          </div>
-          <div>
-            <div class="recap-stat-label">Avg ROI</div>
-            <div class="recap-stat-value" id="recap-roi">—</div>
-          </div>
-          <div>
-            <div class="recap-stat-label">Best</div>
-            <div class="recap-stat-value" id="recap-best">—</div>
-          </div>
-          <div>
-            <div class="recap-stat-label">Worst</div>
-            <div class="recap-stat-value" id="recap-worst">—</div>
-          </div>
-        </div>
+      <div class="section-label">ACTIVE SIGNALS</div>
+      <div id="active-cards" class="cards">
+        <div class="status-msg pulse">Scanning...</div>
       </div>
 
-      <div id="cards" class="cards">
-        <div class="status-msg pulse">Scanning...</div>
+      <div id="completed-section" style="display:none;">
+        <div class="section-label" style="margin-top: 48px;">COMPLETED</div>
+        <div id="recap" class="recap">
+          <div class="recap-grid">
+            <div>
+              <div class="recap-stat-label">Total Calls</div>
+              <div class="recap-stat-value" id="recap-total">—</div>
+            </div>
+            <div>
+              <div class="recap-stat-label">Win Rate</div>
+              <div class="recap-stat-value" id="recap-winrate">—</div>
+            </div>
+            <div>
+              <div class="recap-stat-label">Avg ROI</div>
+              <div class="recap-stat-value" id="recap-roi">—</div>
+            </div>
+            <div>
+              <div class="recap-stat-label">Best</div>
+              <div class="recap-stat-value" id="recap-best">—</div>
+            </div>
+            <div>
+              <div class="recap-stat-label">Worst</div>
+              <div class="recap-stat-value" id="recap-worst">—</div>
+            </div>
+          </div>
+        </div>
+        <div id="completed-cards" class="cards"></div>
       </div>
     </div>
   </div>
@@ -505,7 +516,9 @@
 
     // ── Dashboard Data ─────────────────────────────────────────────
     const API_URL = 'https://api.scgalpha.com/api/alerts';
-    const cardsEl = document.getElementById('cards');
+    const activeCardsEl = document.getElementById('active-cards');
+    const completedCardsEl = document.getElementById('completed-cards');
+    const completedSection = document.getElementById('completed-section');
     const recapEl = document.getElementById('recap');
 
     function scoreClass(score) {
@@ -641,17 +654,25 @@
         const res = await fetch(API_URL);
         const data = await res.json();
 
-        if (data.alerts && data.alerts.length > 0) {
-          cardsEl.innerHTML = data.alerts.map(renderCard).join('');
+        const active = (data.alerts || []).filter(a => !a.completed);
+        const completed = (data.alerts || []).filter(a => a.completed);
+
+        if (active.length > 0) {
+          activeCardsEl.innerHTML = active.map(renderCard).join('');
         } else {
-          cardsEl.innerHTML = '<div class="status-msg">No active signals</div>';
+          activeCardsEl.innerHTML = '<div class="status-msg">No active signals</div>';
         }
 
-        renderRecap(data.recap);
+        if (completed.length > 0 || (data.recap && data.recap.total > 0)) {
+          completedSection.style.display = '';
+          completedCardsEl.innerHTML = completed.map(renderCard).join('');
+          renderRecap(data.recap);
+        } else {
+          completedSection.style.display = 'none';
+        }
       } catch (e) {
-        // Keep current display on fetch error, only show scanning on first load
-        if (cardsEl.querySelector('.pulse')) {
-          cardsEl.innerHTML = '<div class="status-msg pulse">Scanning...</div>';
+        if (activeCardsEl.querySelector('.pulse')) {
+          activeCardsEl.innerHTML = '<div class="status-msg pulse">Scanning...</div>';
         }
       }
     }
