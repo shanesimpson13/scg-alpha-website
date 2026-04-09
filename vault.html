@@ -252,9 +252,9 @@
 
     /* Recap Section */
     .recap {
-      margin-top: 48px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding-top: 32px;
+      margin-bottom: 48px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 32px;
     }
 
     .recap-title {
@@ -363,10 +363,6 @@
       <h1 class="vault-title">The Vault</h1>
       <p class="vault-subtitle">Live signal dashboard — scored, tracked, transparent</p>
 
-      <div id="cards" class="cards">
-        <div class="status-msg pulse">Scanning...</div>
-      </div>
-
       <div id="recap" class="recap" style="display:none;">
         <div class="recap-title">PERFORMANCE (1HR TRACKED)</div>
         <div class="recap-grid">
@@ -387,6 +383,10 @@
             <div class="recap-stat-value" id="recap-worst">—</div>
           </div>
         </div>
+      </div>
+
+      <div id="cards" class="cards">
+        <div class="status-msg pulse">Scanning...</div>
       </div>
     </div>
   </div>
