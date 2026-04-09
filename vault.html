@@ -212,6 +212,19 @@
       text-transform: uppercase;
     }
 
+    .metric-icon {
+      margin-right: 3px;
+      font-size: 10px;
+    }
+
+    .metric-icon.accent {
+      color: rgba(0, 200, 83, 0.6);
+    }
+
+    .metric-icon.warn {
+      color: rgba(255, 152, 0, 0.6);
+    }
+
     .metric-value {
       font-size: 13px;
       color: rgba(255, 255, 255, 0.8);
@@ -388,23 +401,23 @@
         <div id="recap" class="recap">
           <div class="recap-grid">
             <div>
-              <div class="recap-stat-label">Total Calls</div>
+              <div class="recap-stat-label">&#x25A3; Total Calls</div>
               <div class="recap-stat-value" id="recap-total">—</div>
             </div>
             <div>
-              <div class="recap-stat-label">Win Rate</div>
+              <div class="recap-stat-label">&#x25CE; Win Rate</div>
               <div class="recap-stat-value" id="recap-winrate">—</div>
             </div>
             <div>
-              <div class="recap-stat-label">Avg ROI</div>
+              <div class="recap-stat-label">&#x2234; Avg ROI</div>
               <div class="recap-stat-value" id="recap-roi">—</div>
             </div>
             <div>
-              <div class="recap-stat-label">Best</div>
+              <div class="recap-stat-label">&#x2B06; Best</div>
               <div class="recap-stat-value" id="recap-best">—</div>
             </div>
             <div>
-              <div class="recap-stat-label">Worst</div>
+              <div class="recap-stat-label">&#x2B07; Worst</div>
               <div class="recap-stat-value" id="recap-worst">—</div>
             </div>
           </div>
@@ -559,51 +572,51 @@
           </div>
           <div class="card-metrics">
             <div class="metric">
-              <span class="metric-label">MC @ Signal</span>
+              <span class="metric-label"><span class="metric-icon">&#x25C9;</span> MC @ Signal</span>
               <span class="metric-value">${fmtMcap(a.alert_mcap)}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">MC Current</span>
+              <span class="metric-label"><span class="metric-icon">&#x25CE;</span> MC Current</span>
               <span class="metric-value">${fmtMcap(a.current_mcap)}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">ATH MC</span>
+              <span class="metric-label"><span class="metric-icon accent">&#x2B06;</span> ATH MC</span>
               <span class="metric-value">${fmtMcap(a.max_mcap || a.alert_mcap)}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Age</span>
+              <span class="metric-label"><span class="metric-icon">&#x23F1;</span> Age</span>
               <span class="metric-value">${a.age_mins}m</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Holders</span>
+              <span class="metric-label"><span class="metric-icon">&#x2687;</span> Holders</span>
               <span class="metric-value">${a.holders.toLocaleString()}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">B/S Ratio</span>
+              <span class="metric-label"><span class="metric-icon">&#x21C5;</span> B/S Ratio</span>
               <span class="metric-value">${a.bs_ratio}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Bot Degen</span>
+              <span class="metric-label"><span class="metric-icon warn">&#x2620;</span> Bot Degen</span>
               <span class="metric-value">${a.bot_degen_pct}%</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Holder Growth</span>
+              <span class="metric-label"><span class="metric-icon accent">&#x2197;</span> Holder Growth</span>
               <span class="metric-value positive">+${a.holder_growth_pct}%</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Liquidity</span>
+              <span class="metric-label"><span class="metric-icon">&#x2B21;</span> Liquidity</span>
               <span class="metric-value">${fmtMcap(a.liquidity)}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Bundler</span>
+              <span class="metric-label"><span class="metric-icon warn">&#x26A0;</span> Bundler</span>
               <span class="metric-value">${a.bundler_pct}%</span>
             </div>
             <div class="metric">
-              <span class="metric-label">KOL</span>
+              <span class="metric-label"><span class="metric-icon accent">&#x2605;</span> KOL</span>
               <span class="metric-value">${a.kol_count}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Rug Ratio</span>
+              <span class="metric-label"><span class="metric-icon warn">&#x2716;</span> Rug Ratio</span>
               <span class="metric-value">${a.rug_ratio}</span>
             </div>
           </div>
