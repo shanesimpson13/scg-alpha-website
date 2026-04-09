@@ -567,8 +567,8 @@
               <span class="metric-value">${fmtMcap(a.current_mcap)}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Return</span>
-              <span class="metric-value ${retClass}">${fmtPct(a.return_pct)}</span>
+              <span class="metric-label">ATH MC</span>
+              <span class="metric-value">${fmtMcap(a.max_mcap || a.alert_mcap)}</span>
             </div>
             <div class="metric">
               <span class="metric-label">Age</span>
