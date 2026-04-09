@@ -171,6 +171,13 @@
       letter-spacing: 0;
     }
 
+    .card-max-return {
+      font-size: 11px;
+      color: #00c853;
+      margin-left: 10px;
+      letter-spacing: 0;
+    }
+
     .card-score {
       margin-left: auto;
       font-size: 14px;
@@ -534,7 +541,7 @@
         <div class="card">
           <div class="card-header">
             <img class="card-logo" src="${logoSrc}" alt="" onerror="this.style.display='none'">
-            <span class="card-name">${a.name}<span class="card-mint">${mintShort}</span></span>
+            <span class="card-name">${a.name}<span class="card-mint">${mintShort}</span>${a.max_return_pct > 0 ? `<span class="card-max-return">ATH +${a.max_return_pct.toFixed(1)}%</span>` : ''}</span>
             <span class="card-score ${scoreClass(a.score)}">${a.score}</span>
           </div>
           <div class="card-metrics">
@@ -549,10 +556,6 @@
             <div class="metric">
               <span class="metric-label">Return</span>
               <span class="metric-value ${retClass}">${fmtPct(a.return_pct)}</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Max Return</span>
-              <span class="metric-value positive">${fmtPct(a.max_return_pct || 0)}</span>
             </div>
             <div class="metric">
               <span class="metric-label">Age</span>
