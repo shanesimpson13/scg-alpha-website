@@ -132,14 +132,14 @@
     }
 
     .card {
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 20px 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 24px 28px;
       background: rgba(255, 255, 255, 0.02);
       transition: border-color 0.3s;
     }
 
     .card:hover {
-      border-color: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
     }
 
     .card-header {
@@ -150,8 +150,8 @@
     }
 
     .card-logo {
-      width: 36px;
-      height: 36px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.06);
       flex-shrink: 0;
@@ -159,30 +159,31 @@
     }
 
     .card-name {
-      font-size: 15px;
-      font-weight: 500;
+      font-size: 18px;
+      font-weight: 600;
       letter-spacing: 0.3px;
     }
 
     .card-mint {
-      font-size: 11px;
+      font-size: 12px;
       color: rgba(255, 255, 255, 0.3);
-      margin-left: 8px;
+      margin-left: 10px;
       letter-spacing: 0;
     }
 
     .card-max-return {
-      font-size: 11px;
+      font-size: 13px;
+      font-weight: 600;
       color: #00c853;
-      margin-left: 10px;
+      margin-left: 12px;
       letter-spacing: 0;
     }
 
     .card-score {
       margin-left: auto;
-      font-size: 14px;
-      font-weight: 600;
-      padding: 4px 12px;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 6px 16px;
       border-radius: 3px;
       letter-spacing: 0.5px;
     }
@@ -195,39 +196,41 @@
     .card-metrics {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px 20px;
-      margin-bottom: 14px;
+      gap: 14px 24px;
+      margin-bottom: 18px;
     }
 
     .metric {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
     }
 
     .metric-label {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.3);
-      letter-spacing: 0.8px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 1px;
       text-transform: uppercase;
+      font-weight: 500;
     }
 
     .metric-icon {
-      margin-right: 3px;
-      font-size: 10px;
+      margin-right: 4px;
+      font-size: 11px;
     }
 
     .metric-icon.accent {
-      color: rgba(0, 200, 83, 0.6);
+      color: rgba(0, 200, 83, 0.7);
     }
 
     .metric-icon.warn {
-      color: rgba(255, 152, 0, 0.6);
+      color: rgba(255, 152, 0, 0.7);
     }
 
     .metric-value {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.8);
+      font-size: 16px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
     }
 
     .metric-value.positive { color: #00c853; }
@@ -237,17 +240,17 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .card-twitter {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.35);
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.4);
     }
 
     .card-twitter a {
-      color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.6);
       text-decoration: none;
     }
 
@@ -256,12 +259,13 @@
     }
 
     .card-buy-link {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.5);
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.6);
       text-decoration: none;
-      letter-spacing: 0.8px;
-      padding: 5px 14px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      letter-spacing: 1px;
+      padding: 8px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
       transition: all 0.3s;
     }
 
@@ -271,18 +275,19 @@
     }
 
     .section-label {
-      font-size: 11px;
-      letter-spacing: 2px;
-      color: rgba(255, 255, 255, 0.35);
-      margin-bottom: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      color: rgba(255, 255, 255, 0.45);
+      margin-bottom: 20px;
     }
 
     /* Recap Section */
     .recap {
-      margin-bottom: 48px;
-      padding: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.02);
+      margin-bottom: 32px;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
     }
 
     .recap-title {
@@ -301,16 +306,17 @@
     }
 
     .recap-stat-label {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.3);
-      letter-spacing: 0.8px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 1px;
       text-transform: uppercase;
-      margin-bottom: 4px;
+      font-weight: 500;
+      margin-bottom: 6px;
     }
 
     .recap-stat-value {
-      font-size: 16px;
-      font-weight: 500;
+      font-size: 22px;
+      font-weight: 700;
     }
 
     /* Responsive */
