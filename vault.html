@@ -678,8 +678,8 @@
               <span class="metric-value">${fmtMcap(a.max_mcap || a.alert_mcap)}</span>
             </div>
             <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x2234;</span> Return</span>
-              <span class="metric-value ${pnlClass}">${xMult.toFixed(2)}x</span>
+              <span class="metric-label"><span class="metric-icon">&#x2234;</span> PNL</span>
+              <span class="metric-value ${pnlClass}">${fmtPct((xMult - 1) * 100)}</span>
             </div>
           </div>
           <div class="card-divider">AT SIGNAL</div>
