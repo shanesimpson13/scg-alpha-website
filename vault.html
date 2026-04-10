@@ -332,7 +332,7 @@
       }
 
       .vault-wrapper {
-        padding: 90px 16px 100px;
+        padding: 80px 12px 80px;
       }
 
       .vault-title {
@@ -346,32 +346,124 @@
       }
 
       .card {
-        padding: 16px;
+        padding: 14px;
       }
 
+      .card-header {
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .card-logo {
+        width: 36px;
+        height: 36px;
+      }
+
+      .card-name {
+        font-size: 15px;
+      }
+
+      .card-mint {
+        font-size: 10px;
+        margin-left: 6px;
+      }
+
+      .card-return {
+        font-size: 14px;
+        padding: 4px 10px;
+      }
+
+      /* Live metrics row — always 3 columns */
+      .card-metrics-live {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px 12px;
+      }
+
+      .card-metrics-live .metric-label {
+        font-size: 9px;
+      }
+
+      .card-metrics-live .metric-value {
+        font-size: 14px;
+      }
+
+      /* AT SIGNAL metrics — 3 columns, tighter */
       .card-metrics {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px 16px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px 12px;
+      }
+
+      .metric-label {
+        font-size: 9px;
+        letter-spacing: 0.5px;
+      }
+
+      .metric-icon {
+        font-size: 11px;
+        margin-right: 3px;
+      }
+
+      .metric-value {
+        font-size: 13px;
+      }
+
+      .card-divider {
+        font-size: 10px;
+        padding: 8px 0 6px;
+      }
+
+      .card-footer {
+        padding-top: 10px;
+      }
+
+      .card-twitter {
+        font-size: 11px;
+      }
+
+      .card-buy-link {
+        font-size: 11px;
+        padding: 6px 14px;
+      }
+
+      /* Recap — 2 cols top row, 3 cols bottom, or just flow */
+      .recap {
+        padding: 16px;
       }
 
       .recap-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
+        gap: 14px 12px;
       }
 
+      .recap-stat-label {
+        font-size: 9px;
+      }
+
+      .recap-stat-value {
+        font-size: 14px;
+      }
+
+      .section-label {
+        font-size: 12px;
+        letter-spacing: 2px;
+      }
+
+      /* Social links — don't overlap content */
       .social-links {
-        bottom: 20px;
-        right: 20px;
+        position: fixed;
+        bottom: 12px;
+        right: 12px;
+        gap: 14px;
       }
 
       .social-links svg {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
       }
 
       .social-links svg.x-icon {
-        width: 17px;
-        height: 17px;
+        width: 15px;
+        height: 15px;
       }
     }
   </style>
@@ -576,7 +668,7 @@
             <span class="card-name">${a.name}<span class="card-mint">${mintShort}</span></span>
             <span class="card-return ${returnMultiple(a) >= 1 ? 'return-positive' : 'return-negative'}">${returnMultiple(a).toFixed(2)}x</span>
           </div>
-          <div class="card-metrics">
+          <div class="card-metrics card-metrics-live">
             <div class="metric">
               <span class="metric-label"><span class="metric-icon">&#x25CE;</span> MC Current</span>
               <span class="metric-value">${fmtMcap(a.current_mcap)}</span>
