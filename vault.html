@@ -171,14 +171,6 @@
       letter-spacing: 0;
     }
 
-    .card-max-return {
-      font-size: 13px;
-      font-weight: 600;
-      color: #00c853;
-      margin-left: 12px;
-      letter-spacing: 0;
-    }
-
     .card-score {
       margin-left: auto;
       font-size: 18px;
@@ -235,6 +227,17 @@
 
     .metric-value.positive { color: #00c853; }
     .metric-value.negative { color: #f44336; }
+
+    .card-divider {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.3);
+      text-transform: uppercase;
+      padding: 12px 0 8px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
 
     .card-footer {
       display: flex;
@@ -559,10 +562,11 @@
     }
 
     function renderCard(a) {
-      const retClass = a.return_pct >= 0 ? 'positive' : 'negative';
       const logoSrc = a.logo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" fill="%23222"/></svg>';
       const mintShort = a.mint.slice(0, 6) + '...' + a.mint.slice(-4);
       const gmgnLink = 'https://gmgn.ai/sol/token/' + a.mint;
+      const pnl = a.alert_mcap > 0 ? ((a.max_mcap || a.alert_mcap) - a.alert_mcap) / a.alert_mcap * 100 : 0;
+      const pnlClass = pnl >= 0 ? 'positive' : 'negative';
 
       let twitterHtml = '';
       if (a.twitter_handle) {
@@ -573,14 +577,10 @@
         <div class="card">
           <div class="card-header">
             <img class="card-logo" src="${logoSrc}" alt="" onerror="this.style.display='none'">
-            <span class="card-name">${a.name}<span class="card-mint">${mintShort}</span>${a.max_return_pct > 0 ? `<span class="card-max-return">ATH +${a.max_return_pct.toFixed(1)}%</span>` : ''}</span>
+            <span class="card-name">${a.name}<span class="card-mint">${mintShort}</span></span>
             <span class="card-score ${scoreClass(a.score)}">${a.score}</span>
           </div>
           <div class="card-metrics">
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x25C9;</span> MC @ Signal</span>
-              <span class="metric-value">${fmtMcap(a.alert_mcap)}</span>
-            </div>
             <div class="metric">
               <span class="metric-label"><span class="metric-icon">&#x25CE;</span> MC Current</span>
               <span class="metric-value">${fmtMcap(a.current_mcap)}</span>
@@ -590,24 +590,35 @@
               <span class="metric-value">${fmtMcap(a.max_mcap || a.alert_mcap)}</span>
             </div>
             <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x23F1;</span> Age</span>
-              <span class="metric-value">${a.age_mins}m</span>
+              <span class="metric-label"><span class="metric-icon">&#x2234;</span> PNL</span>
+              <span class="metric-value ${pnlClass}">${fmtPct(pnl)}</span>
+            </div>
+          </div>
+          <div class="card-divider">AT SIGNAL</div>
+          <div class="card-metrics">
+            <div class="metric">
+              <span class="metric-label"><span class="metric-icon">&#x25C9;</span> MC</span>
+              <span class="metric-value">${fmtMcap(a.alert_mcap)}</span>
             </div>
             <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x2687;</span> Holders</span>
-              <span class="metric-value">${a.holders.toLocaleString()}</span>
+              <span class="metric-label"><span class="metric-icon">&#x23F1;</span> Age</span>
+              <span class="metric-value">${a.age_mins}m</span>
             </div>
             <div class="metric">
               <span class="metric-label"><span class="metric-icon">&#x21C5;</span> B/S Ratio</span>
               <span class="metric-value">${a.bs_ratio}</span>
             </div>
             <div class="metric">
-              <span class="metric-label"><span class="metric-icon warn">&#x2620;</span> Bot Degen</span>
-              <span class="metric-value">${a.bot_degen_pct}%</span>
+              <span class="metric-label"><span class="metric-icon">&#x2687;</span> Holders</span>
+              <span class="metric-value">${a.holders.toLocaleString()}</span>
             </div>
             <div class="metric">
               <span class="metric-label"><span class="metric-icon accent">&#x2197;</span> Holder Growth</span>
               <span class="metric-value positive">+${a.holder_growth_pct}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label"><span class="metric-icon warn">&#x2620;</span> Bot Degen</span>
+              <span class="metric-value">${a.bot_degen_pct}%</span>
             </div>
             <div class="metric">
               <span class="metric-label"><span class="metric-icon">&#x2B21;</span> Liquidity</span>
@@ -620,10 +631,6 @@
             <div class="metric">
               <span class="metric-label"><span class="metric-icon accent">&#x2605;</span> KOL</span>
               <span class="metric-value">${a.kol_count}</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon warn">&#x2716;</span> Rug Ratio</span>
-              <span class="metric-value">${a.rug_ratio}</span>
             </div>
           </div>
           <div class="card-footer">
