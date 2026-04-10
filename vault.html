@@ -320,6 +320,73 @@
       font-weight: 600;
     }
 
+    /* Completed controls */
+    .completed-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.4);
+      font-family: inherit;
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 6px 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .filter-btn:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .filter-btn.active {
+      border-color: rgba(255, 255, 255, 0.5);
+      color: #fff;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .page-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.4);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .page-btn:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .page-btn.active {
+      border-color: rgba(255, 255, 255, 0.5);
+      color: #fff;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.2;
+      cursor: default;
+    }
+
     /* Responsive */
     @media (max-width: 600px) {
       .logo {
@@ -516,6 +583,13 @@
               <div class="recap-stat-value" id="recap-best">—</div>
             </div>
           </div>
+        </div>
+        <div class="completed-controls">
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-sort="performance">Performance</button>
+            <button class="filter-btn" data-sort="age">Age</button>
+          </div>
+          <div class="pagination" id="pagination"></div>
         </div>
         <div id="completed-cards" class="cards"></div>
       </div>
@@ -748,13 +822,70 @@
 
     }
 
+    // Completed list state
+    let completedAlerts = [];
+    let completedSort = 'performance';  // 'performance' or 'age'
+    let completedPage = 0;
+    const PAGE_SIZE = 10;
+    const paginationEl = document.getElementById('pagination');
+
+    function sortCompleted(alerts, sortBy) {
+      const sorted = [...alerts];
+      if (sortBy === 'performance') {
+        sorted.sort((a, b) => returnMultiple(b) - returnMultiple(a));
+      } else {
+        sorted.sort((a, b) => b.alert_time - a.alert_time);
+      }
+      return sorted;
+    }
+
+    function renderCompletedPage() {
+      const sorted = sortCompleted(completedAlerts, completedSort);
+      const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+      const start = completedPage * PAGE_SIZE;
+      const page = sorted.slice(start, start + PAGE_SIZE);
+
+      completedCardsEl.innerHTML = page.map(renderCard).join('');
+
+      // Pagination
+      if (totalPages <= 1) {
+        paginationEl.innerHTML = '';
+        return;
+      }
+      let html = '';
+      html += `<button class="page-btn" onclick="goPage(${completedPage - 1})" ${completedPage === 0 ? 'disabled' : ''}>&larr;</button>`;
+      for (let i = 0; i < totalPages; i++) {
+        html += `<button class="page-btn ${i === completedPage ? 'active' : ''}" onclick="goPage(${i})">${i + 1}</button>`;
+      }
+      html += `<button class="page-btn" onclick="goPage(${completedPage + 1})" ${completedPage >= totalPages - 1 ? 'disabled' : ''}>&rarr;</button>`;
+      paginationEl.innerHTML = html;
+    }
+
+    function goPage(p) {
+      const totalPages = Math.ceil(completedAlerts.length / PAGE_SIZE);
+      if (p < 0 || p >= totalPages) return;
+      completedPage = p;
+      renderCompletedPage();
+    }
+
+    // Filter button clicks
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        completedSort = btn.dataset.sort;
+        completedPage = 0;
+        renderCompletedPage();
+      });
+    });
+
     async function fetchAlerts() {
       try {
         const res = await fetch(API_URL);
         const data = await res.json();
 
         const active = (data.alerts || []).filter(a => !a.completed);
-        const completed = (data.alerts || []).filter(a => a.completed);
+        completedAlerts = (data.alerts || []).filter(a => a.completed);
 
         if (active.length > 0) {
           activeCardsEl.innerHTML = active.map(renderCard).join('');
@@ -762,9 +893,9 @@
           activeCardsEl.innerHTML = '<div class="status-msg">No active signals</div>';
         }
 
-        if (completed.length > 0 || (data.recap && data.recap.total > 0)) {
+        if (completedAlerts.length > 0 || (data.recap && data.recap.total > 0)) {
           completedSection.style.display = '';
-          completedCardsEl.innerHTML = completed.map(renderCard).join('');
+          renderCompletedPage();
           renderRecap(data.recap);
         } else {
           completedSection.style.display = 'none';
