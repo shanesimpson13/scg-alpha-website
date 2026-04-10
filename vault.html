@@ -416,7 +416,7 @@
               <div class="recap-stat-value" id="recap-winrate">—</div>
             </div>
             <div>
-              <div class="recap-stat-label">&#x2234; Avg PNL</div>
+              <div class="recap-stat-label">&#x2234; Avg Return</div>
               <div class="recap-stat-value" id="recap-pnl">—</div>
             </div>
             <div>
@@ -561,8 +561,8 @@
       const logoSrc = a.logo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" fill="%23222"/></svg>';
       const mintShort = a.mint.slice(0, 6) + '...' + a.mint.slice(-4);
       const gmgnLink = 'https://gmgn.ai/sol/token/' + a.mint;
-      const pnl = a.alert_mcap > 0 ? ((a.max_mcap || a.alert_mcap) - a.alert_mcap) / a.alert_mcap * 100 : 0;
-      const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+      const xMult = returnMultiple(a);
+      const pnlClass = xMult >= 1 ? 'positive' : 'negative';
 
       let twitterHtml = '';
       if (a.twitter_handle) {
@@ -586,8 +586,8 @@
               <span class="metric-value">${fmtMcap(a.max_mcap || a.alert_mcap)}</span>
             </div>
             <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x2234;</span> PNL</span>
-              <span class="metric-value ${pnlClass}">${fmtPct(pnl)}</span>
+              <span class="metric-label"><span class="metric-icon">&#x2234;</span> Return</span>
+              <span class="metric-value ${pnlClass}">${xMult.toFixed(2)}x</span>
             </div>
           </div>
           <div class="card-divider">AT SIGNAL</div>
@@ -647,18 +647,21 @@
       document.getElementById('recap-winrate').textContent = recap.win_rate + '%';
 
       const pnlEl = document.getElementById('recap-pnl');
-      pnlEl.textContent = fmtPct(recap.avg_pnl);
+      const avgX = (recap.avg_pnl / 100 + 1).toFixed(2);
+      pnlEl.textContent = avgX + 'x';
       pnlEl.style.color = recap.avg_pnl >= 0 ? '#00c853' : '#f44336';
 
       const bestEl = document.getElementById('recap-best');
       if (recap.best_trade) {
-        bestEl.textContent = recap.best_trade.name + ' ' + fmtPct(recap.best_trade.pct);
+        const bestX = (recap.best_trade.pct / 100 + 1).toFixed(2);
+        bestEl.textContent = recap.best_trade.name + ' ' + bestX + 'x';
         bestEl.style.color = '#00c853';
       }
 
       const worstEl = document.getElementById('recap-worst');
       if (recap.worst_trade) {
-        worstEl.textContent = recap.worst_trade.name + ' ' + fmtPct(recap.worst_trade.pct);
+        const worstX = (recap.worst_trade.pct / 100 + 1).toFixed(2);
+        worstEl.textContent = recap.worst_trade.name + ' ' + worstX + 'x';
         worstEl.style.color = '#f44336';
       }
     }
