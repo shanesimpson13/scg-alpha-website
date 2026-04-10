@@ -415,8 +415,8 @@
               <div class="recap-stat-value" id="recap-winrate">—</div>
             </div>
             <div>
-              <div class="recap-stat-label">&#x2234; Avg ROI</div>
-              <div class="recap-stat-value" id="recap-roi">—</div>
+              <div class="recap-stat-label">&#x2234; Avg PNL</div>
+              <div class="recap-stat-value" id="recap-pnl">—</div>
             </div>
             <div>
               <div class="recap-stat-label">&#x2B06; Best</div>
@@ -643,9 +643,9 @@
       document.getElementById('recap-total').textContent = recap.total;
       document.getElementById('recap-winrate').textContent = recap.win_rate + '%';
 
-      const roiEl = document.getElementById('recap-roi');
-      roiEl.textContent = fmtPct(recap.avg_roi);
-      roiEl.style.color = recap.avg_roi >= 0 ? '#00c853' : '#f44336';
+      const pnlEl = document.getElementById('recap-pnl');
+      pnlEl.textContent = fmtPct(recap.avg_pnl);
+      pnlEl.style.color = recap.avg_pnl >= 0 ? '#00c853' : '#f44336';
 
       const bestEl = document.getElementById('recap-best');
       if (recap.best_trade) {
