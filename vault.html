@@ -328,30 +328,69 @@
       margin-bottom: 16px;
     }
 
-    .filter-buttons {
-      display: flex;
-      gap: 8px;
+    .sort-wrapper {
+      position: relative;
     }
 
-    .filter-btn {
+    .sort-trigger {
       background: none;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: none;
+      color: rgba(255, 255, 255, 0.35);
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      transition: color 0.3s;
+    }
+
+    .sort-trigger:hover {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .sort-icon {
+      font-size: 14px;
+    }
+
+    .sort-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 6px;
+      background: rgba(15, 15, 15, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      z-index: 20;
+      min-width: 140px;
+    }
+
+    .sort-dropdown.open {
+      display: block;
+    }
+
+    .sort-option {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
       color: rgba(255, 255, 255, 0.4);
       font-family: inherit;
       font-size: 12px;
-      letter-spacing: 1px;
-      padding: 6px 16px;
+      letter-spacing: 0.5px;
+      padding: 10px 16px;
       cursor: pointer;
-      transition: all 0.3s;
+      text-align: left;
+      transition: all 0.2s;
     }
 
-    .filter-btn:hover {
-      border-color: rgba(255, 255, 255, 0.3);
+    .sort-option:hover {
+      background: rgba(255, 255, 255, 0.05);
       color: rgba(255, 255, 255, 0.7);
     }
 
-    .filter-btn.active {
-      border-color: rgba(255, 255, 255, 0.5);
+    .sort-option.active {
       color: #fff;
     }
 
@@ -585,9 +624,15 @@
           </div>
         </div>
         <div class="completed-controls">
-          <div class="filter-buttons">
-            <button class="filter-btn active" data-sort="performance">Performance</button>
-            <button class="filter-btn" data-sort="age">Age</button>
+          <div class="sort-wrapper">
+            <button class="sort-trigger" id="sort-trigger">
+              <span class="sort-icon">&#x2195;</span>
+              <span id="sort-label">Performance</span>
+            </button>
+            <div class="sort-dropdown" id="sort-dropdown">
+              <button class="sort-option active" data-sort="performance">Performance</button>
+              <button class="sort-option" data-sort="age">Recent</button>
+            </div>
           </div>
           <div class="pagination" id="pagination"></div>
         </div>
@@ -868,13 +913,29 @@
       renderCompletedPage();
     }
 
-    // Filter button clicks
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    // Sort dropdown
+    const sortTrigger = document.getElementById('sort-trigger');
+    const sortDropdown = document.getElementById('sort-dropdown');
+    const sortLabel = document.getElementById('sort-label');
+
+    sortTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sortDropdown.classList.toggle('open');
+    });
+
+    document.addEventListener('click', () => {
+      sortDropdown.classList.remove('open');
+    });
+
+    document.querySelectorAll('.sort-option').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.sort-option').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         completedSort = btn.dataset.sort;
+        sortLabel.textContent = btn.textContent;
         completedPage = 0;
+        sortDropdown.classList.remove('open');
         renderCompletedPage();
       });
     });
