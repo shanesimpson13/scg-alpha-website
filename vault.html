@@ -171,7 +171,7 @@
       letter-spacing: 0;
     }
 
-    .card-score {
+    .card-return {
       margin-left: auto;
       font-size: 18px;
       font-weight: 700;
@@ -180,10 +180,8 @@
       letter-spacing: 0.5px;
     }
 
-    .score-green  { background: rgba(0, 200, 83, 0.15); color: #00c853; }
-    .score-yellow { background: rgba(255, 214, 0, 0.15); color: #ffd600; }
-    .score-orange { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
-    .score-red    { background: rgba(244, 67, 54, 0.15); color: #f44336; }
+    .return-positive { background: rgba(0, 200, 83, 0.15); color: #00c853; }
+    .return-negative { background: rgba(244, 67, 54, 0.15); color: #f44336; }
 
     .card-metrics {
       display: grid;
@@ -543,11 +541,9 @@
     const completedSection = document.getElementById('completed-section');
     const recapEl = document.getElementById('recap');
 
-    function scoreClass(score) {
-      if (score >= 80) return 'score-green';
-      if (score >= 60) return 'score-yellow';
-      if (score >= 40) return 'score-orange';
-      return 'score-red';
+    function returnMultiple(a) {
+      if (!a.alert_mcap || a.alert_mcap <= 0) return 1;
+      return (a.max_mcap || a.alert_mcap) / a.alert_mcap;
     }
 
     function fmtMcap(n) {
@@ -578,7 +574,7 @@
           <div class="card-header">
             <img class="card-logo" src="${logoSrc}" alt="" onerror="this.style.display='none'">
             <span class="card-name">${a.name}<span class="card-mint">${mintShort}</span></span>
-            <span class="card-score ${scoreClass(a.score)}">${a.score}</span>
+            <span class="card-return ${returnMultiple(a) >= 1 ? 'return-positive' : 'return-negative'}">${returnMultiple(a).toFixed(2)}x</span>
           </div>
           <div class="card-metrics">
             <div class="metric">
