@@ -301,7 +301,7 @@
 
     .recap-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 16px;
       text-align: center;
     }
@@ -506,6 +506,10 @@
             <div>
               <div class="recap-stat-label">&#x25CE; Win Rate</div>
               <div class="recap-stat-value" id="recap-winrate">—</div>
+            </div>
+            <div>
+              <div class="recap-stat-label">&#x2234; Total PNL (ROI)</div>
+              <div class="recap-stat-value" id="recap-roi">—</div>
             </div>
             <div>
               <div class="recap-stat-label">&#x2234; Avg Return</div>
@@ -737,6 +741,11 @@
       recapEl.style.display = '';
       document.getElementById('recap-total').textContent = recap.total;
       document.getElementById('recap-winrate').textContent = recap.win_rate + '%';
+
+      const roiEl = document.getElementById('recap-roi');
+      const totalPnl = recap.total_pnl || (recap.avg_pnl * recap.total);
+      roiEl.textContent = fmtPct(totalPnl);
+      roiEl.style.color = totalPnl >= 0 ? '#00c853' : '#f44336';
 
       const pnlEl = document.getElementById('recap-pnl');
       const avgX = (recap.avg_pnl / 100 + 1).toFixed(2);
