@@ -301,7 +301,7 @@
 
     .recap-grid {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       text-align: center;
     }
@@ -508,20 +508,12 @@
               <div class="recap-stat-value" id="recap-winrate">—</div>
             </div>
             <div>
-              <div class="recap-stat-label">&#x2234; Total PNL (ROI)</div>
-              <div class="recap-stat-value" id="recap-roi">—</div>
-            </div>
-            <div>
               <div class="recap-stat-label">&#x2234; Avg Return</div>
               <div class="recap-stat-value" id="recap-pnl">—</div>
             </div>
             <div>
               <div class="recap-stat-label">&#x2B06; Best</div>
               <div class="recap-stat-value" id="recap-best">—</div>
-            </div>
-            <div>
-              <div class="recap-stat-label">&#x2B07; Worst</div>
-              <div class="recap-stat-value" id="recap-worst">—</div>
             </div>
           </div>
         </div>
@@ -742,11 +734,6 @@
       document.getElementById('recap-total').textContent = recap.total;
       document.getElementById('recap-winrate').textContent = recap.win_rate + '%';
 
-      const roiEl = document.getElementById('recap-roi');
-      const totalPnl = recap.total_pnl || (recap.avg_pnl * recap.total);
-      roiEl.textContent = fmtPct(totalPnl);
-      roiEl.style.color = totalPnl >= 0 ? '#00c853' : '#f44336';
-
       const pnlEl = document.getElementById('recap-pnl');
       const avgX = (recap.avg_pnl / 100 + 1).toFixed(2);
       pnlEl.textContent = avgX + 'x';
@@ -759,12 +746,6 @@
         bestEl.style.color = '#00c853';
       }
 
-      const worstEl = document.getElementById('recap-worst');
-      if (recap.worst_trade) {
-        const worstX = (recap.worst_trade.pct / 100 + 1).toFixed(2);
-        worstEl.textContent = recap.worst_trade.name + ' ' + worstX + 'x';
-        worstEl.style.color = '#f44336';
-      }
     }
 
     async function fetchAlerts() {
