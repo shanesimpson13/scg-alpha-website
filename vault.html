@@ -767,7 +767,7 @@
     function renderCard(a) {
       const logoSrc = a.logo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" fill="%23222"/></svg>';
       const mintShort = a.mint.slice(0, 6) + '...' + a.mint.slice(-4);
-      const gmgnLink = 'https://gmgn.ai/sol/token/' + a.mint;
+      const gmgnLink = 'https://gmgn.ai/sol/token/' + a.mint + '?ref=scgalpha';
       const xMult = returnMultiple(a);
       const pnlClass = xMult >= 1 ? 'positive' : 'negative';
 
