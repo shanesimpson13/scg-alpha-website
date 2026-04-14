@@ -320,6 +320,51 @@
       font-weight: 600;
     }
 
+    /* Recap filters */
+    .recap-filters {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .filter-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.3);
+      letter-spacing: 1px;
+      margin-right: 6px;
+      text-transform: uppercase;
+    }
+
+    .filter-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.4);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 3px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      color: rgba(255, 255, 255, 0.7);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .filter-btn.active {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
     /* Completed controls */
     .completed-controls {
       display: flex;
@@ -531,6 +576,17 @@
         padding: 6px 14px;
       }
 
+      .recap-filters {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+      }
+
+      .filter-btn {
+        font-size: 10px;
+        padding: 3px 8px;
+      }
+
       /* Recap — 2 cols top row, 3 cols bottom, or just flow */
       .recap {
         padding: 24px 16px;
@@ -604,6 +660,20 @@
       <div id="completed-section" style="display:none;">
         <div class="section-label" style="margin-top: 48px;">COMPLETED</div>
         <div id="recap" class="recap">
+          <div class="recap-filters">
+            <div class="filter-group">
+              <span class="filter-label">Period</span>
+              <button class="filter-btn" data-period="1" onclick="setTimePeriod(1)">1D</button>
+              <button class="filter-btn" data-period="7" onclick="setTimePeriod(7)">7D</button>
+              <button class="filter-btn" data-period="30" onclick="setTimePeriod(30)">30D</button>
+              <button class="filter-btn active" data-period="0" onclick="setTimePeriod(0)">ALL</button>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">WR</span>
+              <button class="filter-btn wr-btn active" data-wr="1" onclick="setWrFilter(1)">All</button>
+              <button class="filter-btn wr-btn" data-wr="2" onclick="setWrFilter(2)">2x+</button>
+            </div>
+          </div>
           <div class="recap-grid">
             <div>
               <div class="recap-stat-label">&#x25A3; Total Calls</div>
@@ -845,27 +915,73 @@
       `;
     }
 
-    function renderRecap(recap) {
-      if (!recap || recap.total === 0) {
-        recapEl.style.display = 'none';
+    // Recap filter state
+    let recapPeriodDays = 0;  // 0 = ALL
+    let recapWrThreshold = 1; // 1 = all wins (>1x), 2 = 2x+ only
+
+    function setTimePeriod(days) {
+      recapPeriodDays = days;
+      document.querySelectorAll('.filter-btn[data-period]').forEach(b => b.classList.toggle('active', parseInt(b.dataset.period) === days));
+      computeRecap();
+      completedPage = 0;
+      renderCompletedPage();
+    }
+
+    function setWrFilter(threshold) {
+      recapWrThreshold = threshold;
+      document.querySelectorAll('.wr-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.wr) === threshold));
+      computeRecap();
+    }
+
+    function getFilteredCompleted() {
+      let filtered = completedAlerts;
+      if (recapPeriodDays > 0) {
+        const cutoff = Date.now() / 1000 - recapPeriodDays * 86400;
+        filtered = filtered.filter(a => a.alert_time >= cutoff);
+      }
+      return filtered;
+    }
+
+    function computeRecap() {
+      const filtered = getFilteredCompleted();
+      const total = filtered.length;
+      if (total === 0) {
+        document.getElementById('recap-total').textContent = '0';
+        document.getElementById('recap-winrate').textContent = '—';
+        document.getElementById('recap-pnl').textContent = '—';
+        document.getElementById('recap-pnl').style.color = '';
+        document.getElementById('recap-best').textContent = '—';
+        document.getElementById('recap-best').style.color = '';
         return;
       }
-      recapEl.style.display = '';
-      document.getElementById('recap-total').textContent = recap.total;
-      document.getElementById('recap-winrate').textContent = recap.win_rate + '%';
 
-      const pnlEl = document.getElementById('recap-pnl');
-      const avgX = (recap.avg_pnl / 100 + 1).toFixed(2);
-      pnlEl.textContent = avgX + 'x';
-      pnlEl.style.color = recap.avg_pnl >= 0 ? '#00c853' : '#f44336';
+      const mults = filtered.map(a => returnMultiple(a));
+      const winThreshold = recapWrThreshold;
+      const wins = mults.filter(m => m >= winThreshold).length;
+      const wr = Math.round(wins / total * 100);
+      const avgMult = mults.reduce((s, m) => s + m, 0) / total;
 
-      const bestEl = document.getElementById('recap-best');
-      if (recap.best_trade) {
-        const bestX = (recap.best_trade.pct / 100 + 1).toFixed(2);
-        bestEl.textContent = recap.best_trade.name + ' ' + bestX + 'x';
-        bestEl.style.color = '#00c853';
+      let best = filtered[0];
+      let bestMult = returnMultiple(best);
+      for (const a of filtered) {
+        const m = returnMultiple(a);
+        if (m > bestMult) { best = a; bestMult = m; }
       }
 
+      document.getElementById('recap-total').textContent = total;
+      document.getElementById('recap-winrate').textContent = wr + '%';
+
+      const pnlEl = document.getElementById('recap-pnl');
+      pnlEl.textContent = avgMult.toFixed(2) + 'x';
+      pnlEl.style.color = avgMult >= 1 ? '#00c853' : '#f44336';
+
+      const bestEl = document.getElementById('recap-best');
+      bestEl.textContent = best.name + ' ' + bestMult.toFixed(1) + 'x';
+      bestEl.style.color = '#00c853';
+
+      // Update WR label
+      const wrLabel = document.querySelector('.filter-group:last-child .filter-label');
+      if (wrLabel) wrLabel.textContent = 'WR';
     }
 
     // Completed list state
@@ -886,7 +1002,8 @@
     }
 
     function renderCompletedPage() {
-      const sorted = sortCompleted(completedAlerts, completedSort);
+      const filtered = getFilteredCompleted();
+      const sorted = sortCompleted(filtered, completedSort);
       const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
       const start = completedPage * PAGE_SIZE;
       const page = sorted.slice(start, start + PAGE_SIZE);
@@ -914,7 +1031,8 @@
     }
 
     function goPage(p) {
-      const totalPages = Math.ceil(completedAlerts.length / PAGE_SIZE);
+      const filtered = getFilteredCompleted();
+      const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
       if (p < 0 || p >= totalPages) return;
       completedPage = p;
       renderCompletedPage();
@@ -961,10 +1079,10 @@
           activeCardsEl.innerHTML = '<div class="status-msg">No active signals</div>';
         }
 
-        if (completedAlerts.length > 0 || (data.recap && data.recap.total > 0)) {
+        if (completedAlerts.length > 0) {
           completedSection.style.display = '';
+          computeRecap();
           renderCompletedPage();
-          renderRecap(data.recap);
         } else {
           completedSection.style.display = 'none';
         }
