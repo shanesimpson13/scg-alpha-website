@@ -3,31 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCG Alpha</title>
+  <title>SCG Alpha — The Signal Engine for Solana</title>
+  <meta name="description" content="Live Solana signals + the full stack to build your own bot. Real-time API access, playbook, templates, and community. $49/month.">
+  <meta property="og:title" content="SCG Alpha — The Signal Engine for Solana">
+  <meta property="og:description" content="Live Solana signals + the full stack to build your own bot. $49/month.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://scgalpha.com/">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --green: #7cffa0;
+      --dim:   rgba(255, 255, 255, 0.55);
+      --dimmer:rgba(255, 255, 255, 0.35);
+      --line:  rgba(255, 255, 255, 0.12);
     }
 
+    html, body { background: #000; }
     body {
-      background: #000;
       color: #fff;
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
       min-height: 100vh;
-      overflow: hidden;
+      overflow-x: hidden;
+      line-height: 1.6;
     }
 
     canvas#starfield {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
       z-index: 0;
     }
 
@@ -35,280 +42,846 @@
       position: relative;
       z-index: 1;
       min-height: 100vh;
+      padding: 100px 24px 140px;
     }
 
-    .title-logo {
-      display: block;
-      margin: 0 auto 32px;
-      width: 275px;
-      height: auto;
+    .logo { position: fixed; top: 28px; left: 32px; z-index: 10; }
+    .logo a { display: block; }
+    .logo img {
+      width: 100px; height: auto;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
     }
 
-    .body-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 0 24px 14vh;
+    .social-links {
+      position: fixed; bottom: 28px; right: 32px;
+      display: flex; gap: 20px; align-items: center; z-index: 10;
+    }
+    .social-links a { opacity: 0.4; transition: opacity 0.3s; }
+    .social-links a:hover { opacity: 1; }
+    .social-links svg { width: 24px; height: 24px; }
+    .social-links svg.x-icon { width: 20px; height: 20px; }
+
+    .wrap { max-width: 960px; margin: 0 auto; }
+
+    .hero { text-align: center; margin-bottom: 80px; }
+    .eyebrow {
+      font-size: 11px; letter-spacing: 3px; color: var(--green);
+      text-transform: uppercase; margin-bottom: 24px;
+    }
+    .eyebrow .dot {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); margin-right: 10px;
+      box-shadow: 0 0 12px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    h1 {
+      font-size: 44px; font-weight: 500;
+      letter-spacing: -0.5px; line-height: 1.15;
+      margin-bottom: 22px;
+    }
+    h1 .accent { color: var(--green); }
+    .title-logo {
+      display: block;
+      margin: 0 auto 28px;
+      width: 360px; height: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .lede {
+      font-size: 15px; color: var(--dim);
+      max-width: 580px; margin: 0 auto 36px;
+      line-height: 1.8;
     }
 
-    .body-text-wrapper {
-      max-width: 700px;
-      text-align: center;
+    .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block;
+      padding: 13px 28px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: transparent;
+      color: #fff; text-decoration: none;
+      font-family: inherit;
+      font-size: 12px; letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .btn:hover { border-color: #fff; background: rgba(255, 255, 255, 0.08); }
+    .btn-primary { border-color: var(--green); color: var(--green); }
+    .btn-primary:hover { background: rgba(124, 255, 160, 0.1); border-color: var(--green); }
+
+    section { margin-bottom: 90px; }
+    .section-label {
+      font-size: 10px; letter-spacing: 3px; color: var(--dimmer);
+      text-transform: uppercase; margin-bottom: 20px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--line);
     }
 
-    .body-text {
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 2;
-      letter-spacing: 0.3px;
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px; background: var(--line); border: 1px solid var(--line);
+    }
+    .stat { background: #000; padding: 26px 20px; }
+    .stat .val {
+      font-size: 30px; font-weight: 500; color: #fff;
+      letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 6px;
+    }
+    .stat .val.accent { color: var(--green); }
+    .stat .lbl { font-size: 10px; letter-spacing: 2px; color: var(--dimmer); text-transform: uppercase; }
+
+    .biggest {
+      margin-top: 24px; padding: 20px 24px; border: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .biggest-lbl { font-size: 10px; letter-spacing: 2px; color: var(--dimmer); text-transform: uppercase; }
+    .biggest-name { font-size: 16px; font-weight: 500; }
+    .biggest-name .mult { color: var(--green); margin-left: 8px; }
+    .biggest-mcap { font-size: 12px; color: var(--dim); }
+
+    .megas { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .megas th, .megas td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--line); }
+    .megas th { font-size: 10px; letter-spacing: 2px; color: var(--dimmer); text-transform: uppercase; font-weight: 500; }
+    .megas td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .megas td.mult { color: var(--green); text-align: right; font-weight: 500; }
+    .megas tr:last-child td { border-bottom: none; }
+    .megas-empty { color: var(--dim); padding: 24px 0; text-align: center; font-size: 13px; }
+    .megas tr.extra { display: none; }
+    .megas.expanded tr.extra { display: table-row; }
+    .megas-toggle {
+      display: flex; justify-content: flex-start; align-items: center;
+      margin-top: 10px; padding: 8px 14px;
+      background: transparent; border: none; cursor: pointer;
+      color: var(--dim);
+      transition: color 0.2s ease;
+    }
+    .megas-toggle:hover { color: var(--green); }
+    .megas-toggle svg {
+      width: 14px; height: 14px;
+      transition: transform 0.3s ease;
+    }
+    .megas-toggle.expanded svg { transform: rotate(180deg); }
+
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .step { padding: 24px; border: 1px solid var(--line); }
+    .step-num { font-size: 11px; color: var(--green); letter-spacing: 2px; margin-bottom: 14px; }
+    .step-title { font-size: 14px; font-weight: 500; margin-bottom: 10px; }
+    .step-body { font-size: 12px; color: var(--dim); line-height: 1.7; }
+
+    .code-wrap {
+      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--line);
+      padding: 24px; overflow-x: auto; font-size: 12px; line-height: 1.75;
+    }
+    .code-wrap pre { margin: 0; }
+    .code-wrap .c { color: var(--dimmer); }
+    .code-wrap .k { color: #ff79c6; }
+    .code-wrap .s { color: #f1fa8c; }
+    .code-wrap .n { color: #8be9fd; }
+
+    .narrative {
+      font-size: 15px; color: #fff; line-height: 1.85;
+      margin: 0 0 18px;
+    }
+    .narrative strong { font-weight: 500; }
+    .narrative code {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 6px; border-radius: 2px;
+      font-size: 12px; color: #8be9fd;
+    }
+
+    .code-wrap.sm { padding: 14px 18px; font-size: 11.5px; margin: 10px 0 0; }
+
+    /* AI prompt copy button */
+    #ai-prompt { position: relative; }
+    .copy-btn {
+      position: absolute; top: 14px; right: 14px;
+      background: transparent;
+      border: 1px solid var(--green); color: var(--green);
+      font-family: inherit; font-size: 11px; letter-spacing: 1.5px;
+      padding: 6px 14px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: rgba(124, 255, 160, 0.1); }
+    .copy-btn.copied { background: var(--green); color: #000; }
+
+    .quickstart-footer {
+      display: flex; gap: 28px; flex-wrap: wrap;
+      justify-content: center; margin-top: 28px;
+      font-size: 12px;
+    }
+    .ql-link { color: var(--green); text-decoration: none; letter-spacing: 0.3px; }
+    .ql-link:hover { text-decoration: underline; }
+
+    /* use cases */
+    .usecases {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: var(--line); border: 1px solid var(--line);
+    }
+    .usecase { background: #000; padding: 24px; }
+    .uc-icon { font-size: 22px; margin-bottom: 14px; opacity: 0.9; }
+    .uc-title { font-size: 14px; font-weight: 500; margin-bottom: 10px; color: #fff; }
+    .uc-body { font-size: 12px; color: var(--dim); line-height: 1.7; }
+    .uc-body code {
+      background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 2px;
+      font-size: 11px; color: #8be9fd;
+    }
+
+    /* walkthrough */
+    .walkthrough { display: flex; flex-direction: column; gap: 32px; }
+    .wt-step {
+      display: grid; grid-template-columns: 48px 1fr;
+      gap: 22px; align-items: start;
+    }
+    .wt-num {
+      width: 36px; height: 36px;
+      border: 1px solid var(--green); color: var(--green);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 500; border-radius: 50%;
+    }
+    .wt-title { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+    .wt-body { font-size: 13px; color: var(--dim); line-height: 1.75; }
+    .wt-body code {
+      background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 2px;
+      font-size: 12px; color: #8be9fd;
+    }
+
+    .pricing {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: var(--line); border: 1px solid var(--line);
+    }
+    .price-col { background: #000; padding: 26px; }
+    .price-col .lbl { font-size: 10px; letter-spacing: 2px; color: var(--dimmer); text-transform: uppercase; margin-bottom: 12px; }
+    .price-col .val { font-size: 26px; font-weight: 500; margin-bottom: 8px; }
+    .price-col .val.accent { color: var(--green); }
+    .price-col .sub { font-size: 12px; color: var(--dim); }
+
+    .founders-card {
+      border: 1px solid var(--green);
+      background: rgba(124, 255, 160, 0.03);
+      padding: 36px;
+    }
+    .fc-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 28px; flex-wrap: wrap; margin-bottom: 32px;
+      padding-bottom: 24px; border-bottom: 1px solid var(--line);
+    }
+    .fc-tier { font-size: 10px; letter-spacing: 3px; color: var(--green); margin-bottom: 12px; }
+    .fc-price { font-size: 42px; font-weight: 500; letter-spacing: -1px; margin-bottom: 8px; }
+    .fc-once { font-size: 14px; color: var(--dim); letter-spacing: 0; font-weight: 400; margin-left: 6px; }
+    .fc-sub { font-size: 13px; color: var(--dim); max-width: 420px; line-height: 1.6; }
+    .fc-cta { flex-shrink: 0; align-self: center; padding: 16px 32px; font-size: 13px; }
+    .fc-features {
+      display: flex; flex-wrap: wrap;
+      column-gap: 28px; row-gap: 10px;
       margin-bottom: 28px;
     }
-
-    .body-text:last-of-type {
-      margin-bottom: 35px;
+    .fc-row {
+      flex: 0 0 calc(50% - 14px);
+      min-height: 40px;
+      font-size: 13px; color: #fff; line-height: 1.55;
+      display: flex; align-items: center;
     }
-
-    .vault-link {
-      display: inline-block;
-      padding: 14px 36px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      color: #fff;
-      text-decoration: none;
-      font-size: 13px;
-      letter-spacing: 1.5px;
-      transition: border-color 0.3s, background 0.3s;
+    .fc-row.fc-guarantee {
+      color: var(--green);
+      flex: 0 0 100%;
+      min-height: 0;
+      margin-top: 10px; padding-top: 18px;
+      border-top: 1px solid var(--line);
     }
+    .fc-foot { font-size: 12px; color: var(--dim); line-height: 1.8; text-align: center; padding-top: 20px; border-top: 1px solid var(--line); }
 
-    .vault-link:hover {
-      border-color: #fff;
-      background: rgba(255, 255, 255, 0.08);
+    .footer-note { text-align: center; color: var(--dimmer); font-size: 11px; letter-spacing: 1px; margin-top: 80px; }
+    .footer-note a { color: var(--dim); text-decoration: underline; }
+
+    /* ─── scroll-reveal ─── */
+    .reveal {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.9s cubic-bezier(0.22, 0.61, 0.36, 1),
+                  transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
     }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal.delay-1 { transition-delay: 0.15s; }
+    .reveal.delay-2 { transition-delay: 0.30s; }
+    .reveal.delay-3 { transition-delay: 0.45s; }
+    .reveal.delay-4 { transition-delay: 0.60s; }
 
-    .social-links {
-      position: fixed;
-      bottom: 28px;
-      right: 32px;
-      display: flex;
-      gap: 16px;
-      align-items: center;
+    /* ─── hero lines ─── */
+    .hero-line {
+      font-size: 17px; color: #fff; line-height: 1.7;
+      max-width: 680px; margin: 0 auto;
+      letter-spacing: 0.2px;
     }
+    .hero-line.alt {
+      color: var(--green); font-size: 15px;
+      margin-top: 10px; letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    /* ─── numbers section ─── */
+    .numbers-wrap { position: relative; }
+    .numbers-inner { position: relative; z-index: 1; }
+    .scramble { font-variant-numeric: tabular-nums; }
 
-    .social-label {
-      font-size: 11px;
-      letter-spacing: 1px;
-      color: rgba(255, 255, 255, 0.3);
-      margin-right: 4px;
+    .stats-header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      gap: 16px; margin-bottom: 20px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--line);
+    }
+    .stats-header .section-label {
+      margin-bottom: 0; padding-bottom: 0; border-bottom: none;
+    }
+    .range-toggle { display: flex; }
+    .range-btn {
       position: relative;
-      top: -1px;
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--dim);
+      font-family: inherit; font-size: 10px; letter-spacing: 2px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .range-btn + .range-btn { margin-left: -1px; }
+    .range-btn:hover { color: #fff; }
+    .range-btn.active {
+      color: var(--green);
+      border-color: var(--green);
+      background: rgba(124, 255, 160, 0.05);
+      z-index: 1;
     }
 
-    .social-links a {
+    /* ─── value stack intro ─── */
+    .stack-intro {
+      font-size: 15px; color: var(--dim); line-height: 1.75;
+      max-width: 600px; margin: 0 0 44px;
+    }
+    .stack-intro strong { color: #fff; font-weight: 500; }
+
+    /* ─── engine diagram ─── */
+    .engine-diagram {
+      position: relative;
+      width: 100%;
+      max-width: 920px;
+      aspect-ratio: 920 / 720;
+      margin: 0 auto;
+    }
+    .engine-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .engine-svg .line-base {
+      fill: none;
+      stroke: var(--green);
+      stroke-width: 1;
+      stroke-dasharray: 4 6;
+      opacity: 0.35;
+      filter: drop-shadow(0 0 4px rgba(124, 255, 160, 0.25));
+      transition: opacity 0.25s, filter 0.25s;
+    }
+    .engine-svg .line-base.flowing {
+      opacity: 0.9;
+      filter: drop-shadow(0 0 6px rgba(124, 255, 160, 0.7));
+      animation: line-flow 1.2s linear infinite;
+    }
+    @keyframes line-flow {
+      from { stroke-dashoffset: 0; }
+      to   { stroke-dashoffset: -20; }
+    }
+
+    .hub {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      border: 1px solid var(--green);
+      background: #000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 3;
+      box-shadow: 0 0 30px rgba(124, 255, 160, 0.15), inset 0 0 20px rgba(124, 255, 160, 0.05);
+    }
+    .hub::before, .hub::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid var(--green);
       opacity: 0.4;
-      transition: opacity 0.3s;
+      pointer-events: none;
+      inset: -14px;
+      animation: hub-pulse 2.6s ease-out infinite;
     }
-
-    .social-links a:hover {
-      opacity: 1;
+    .hub::after {
+      inset: -28px;
+      animation-delay: 1.3s;
     }
-
-    .social-links svg {
-      width: 24px;
-      height: 24px;
+    @keyframes hub-pulse {
+      0%   { transform: scale(0.85); opacity: 0.5; }
+      100% { transform: scale(1.25); opacity: 0; }
     }
-
-    .social-links svg.x-icon {
-      width: 20px;
-      height: 20px;
+    .hub-title { font-size: 13px; color: var(--green); letter-spacing: 2.5px; font-weight: 500; }
+    .hub-sub { font-size: 9px; color: var(--dim); letter-spacing: 3px; margin-top: 5px; text-transform: uppercase; }
+    .hub-dot {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      opacity: 0.5;
+      animation: dot-blink 1.8s ease-in-out infinite;
     }
+    @keyframes dot-blink { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
 
-    @media (max-width: 600px) {
-      .title-logo {
-        width: 200px;
-        margin-bottom: 24px;
-      }
+    .node {
+      position: absolute;
+      width: 240px;
+      min-height: 128px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2;
+      transform: translate(-50%, -50%);
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+    }
+    .node:hover {
+      border-color: var(--green);
+      box-shadow: 0 0 24px rgba(124, 255, 160, 0.15);
+    }
+    .node-num { font-size: 10px; color: var(--green); letter-spacing: 2px; margin-bottom: 6px; font-weight: 500; }
+    .node-title { font-size: 13px; color: #fff; font-weight: 500; margin-bottom: 6px; letter-spacing: 0.3px; }
+    .node-desc { font-size: 11px; color: var(--dim); line-height: 1.55; }
 
-      .body-text {
-        font-size: 13px;
-        line-height: 1.9;
-      }
+    .node[data-pos="01"] { top: 11%; left: 50%; }
+    .node[data-pos="02"] { top: 38%; left: 82%; }
+    .node[data-pos="03"] { top: 82%; left: 68%; }
+    .node[data-pos="04"] { top: 82%; left: 32%; }
+    .node[data-pos="05"] { top: 38%; left: 18%; }
 
-      .body-wrapper {
-        padding: 60px 20px 80px;
-      }
+    /* ─── receipts strip ─── */
+    .receipts {
+      margin-top: 24px;
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 1px; background: var(--line); border: 1px solid var(--line);
+    }
+    .receipt { background: #000; padding: 18px 14px; text-align: center; }
+    .receipt .r-name { font-size: 12px; color: #fff; font-weight: 500; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .receipt .r-mult { font-size: 22px; color: var(--green); font-weight: 500; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .receipt .r-mcap { font-size: 10px; color: var(--dimmer); letter-spacing: 0.5px; }
 
-      .vault-link {
-        padding: 12px 28px;
-        font-size: 12px;
+    @media (max-width: 720px) {
+      .content { padding: 70px 18px 120px; }
+      h1 { font-size: 30px; }
+      .title-logo { width: 220px; margin-bottom: 22px; }
+      .lede { font-size: 13px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .steps { grid-template-columns: 1fr; }
+      .pricing { grid-template-columns: 1fr; }
+      .usecases { grid-template-columns: 1fr; }
+      .wt-step { grid-template-columns: 40px 1fr; gap: 16px; }
+      .wt-num { width: 32px; height: 32px; font-size: 12px; }
+      .social-links { bottom: 20px; right: 20px; gap: 14px; }
+      .social-links svg { width: 20px; height: 20px; }
+      .social-links svg.x-icon { width: 17px; height: 17px; }
+      .megas th:nth-child(3), .megas td:nth-child(3) { display: none; }
+      section { margin-bottom: 60px; }
+      .biggest { flex-direction: column; align-items: flex-start; }
+      .founders-card { padding: 24px; }
+      .fc-price { font-size: 34px; }
+      .fc-row { flex: 0 0 100%; min-height: 0; }
+      .fc-cta { width: 100%; text-align: center; }
+      .hero-line { font-size: 14px; }
+      .hero-line.alt { font-size: 12px; }
+      .stack-intro { max-width: 100%; }
+      .engine-diagram {
+        aspect-ratio: auto;
+        display: flex; flex-direction: column; gap: 14px;
+        max-width: 100%;
       }
-
-      .social-links {
-        bottom: 20px;
-        right: 20px;
+      .engine-svg, .hub { display: none; }
+      .node {
+        position: static;
+        width: 100%;
+        min-height: 0;
+        transform: none;
+        padding: 18px 20px;
       }
-
-      .social-label {
-        display: none;
-      }
-
-      .social-links svg {
-        width: 20px;
-        height: 20px;
-      }
-
-      .social-links svg.x-icon {
-        width: 17px;
-        height: 17px;
-      }
+      .node-title { font-size: 14px; }
+      .node-desc { font-size: 12px; }
+      .receipts { grid-template-columns: repeat(5, 1fr); }
+      .receipt { padding: 12px 6px; }
+      .receipt .r-name { font-size: 10px; }
+      .receipt .r-mult { font-size: 16px; }
+      .receipt .r-mcap { font-size: 9px; }
     }
   </style>
 </head>
 <body>
   <canvas id="starfield"></canvas>
+
+  <div class="social-links">
+    <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
+      <svg class="x-icon" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+    </a>
+    <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
+      <svg viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/>
+      </svg>
+    </a>
+  </div>
+
   <div class="content">
-    <div class="social-links">
-      <span class="social-label">Follow live strategies on X &amp; TG &rarr;</span>
-      <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
-        <svg class="x-icon" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-        </svg>
-      </a>
-      <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
-        <svg viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/>
-        </svg>
-      </a>
-    </div>
-    <div class="body-wrapper">
-      <div class="body-text-wrapper">
-        <img src="scg-alpha-title.png" alt="SCG Alpha" class="title-logo">
-        <p class="body-text">
-          A quantitative technology firm for onchain markets.
-        </p>
-        <p class="body-text">
-          SCG Alpha builds trading systems and data infrastructure at the intersection of AI and Solana.
-        </p>
-        <a href="vault.html" class="vault-link">Enter The Vault &rarr;</a>
+    <div class="wrap">
+
+      <div class="hero">
+        <div class="eyebrow reveal"><span class="dot"></span>The Engine is live</div>
+        <img src="scg-alpha-title.png" alt="SCG Alpha" class="title-logo reveal delay-1">
+        <p class="hero-line reveal delay-2">The Signal Engine for Solana.</p>
+        <p class="hero-line alt reveal delay-3">Build your edge on top.</p>
       </div>
+
+      <section id="stats" class="numbers-wrap">
+        <div class="numbers-inner">
+          <div class="stats-header reveal">
+            <div class="section-label">The numbers</div>
+            <div class="range-toggle">
+              <button class="range-btn" data-days="365">ALL</button>
+              <button class="range-btn active" data-days="30">30D</button>
+              <button class="range-btn" data-days="7">7D</button>
+            </div>
+          </div>
+          <div class="stats-grid reveal delay-1">
+            <div class="stat"><div class="val scramble" id="s-total" data-real="0">—</div><div class="lbl">Signals emitted</div></div>
+            <div class="stat"><div class="val accent scramble" id="s-2x" data-real="0">—</div><div class="lbl">≥ 2× winners</div></div>
+            <div class="stat"><div class="val accent scramble" id="s-5x" data-real="0">—</div><div class="lbl">≥ 5× winners</div></div>
+            <div class="stat"><div class="val accent scramble" id="s-10x" data-real="0">—</div><div class="lbl">≥ 10× MEGAs</div></div>
+          </div>
+          <div class="biggest reveal delay-2">
+            <div>
+              <div class="biggest-lbl">Biggest win · <span id="big-range">30d</span></div>
+              <div class="biggest-name"><span id="big-name">—</span><span class="mult" id="big-mult"></span></div>
+            </div>
+            <div class="biggest-mcap" id="big-mcap">—</div>
+          </div>
+          <table class="megas reveal delay-3" style="margin-top: 32px;">
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Date</th>
+                <th style="text-align:right;">Alert mcap</th>
+                <th style="text-align:right;">Peak mcap</th>
+                <th style="text-align:right;">Peak</th>
+              </tr>
+            </thead>
+            <tbody id="megas-body"><tr><td colspan="5" class="megas-empty">Loading…</td></tr></tbody>
+          </table>
+          <button class="megas-toggle reveal delay-3" id="megas-toggle" type="button" aria-label="Show more" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+        </div>
+      </section>
+
+      <section id="stack">
+        <div class="section-label reveal">What you're actually getting</div>
+        <p class="stack-intro reveal delay-1">
+          This isn't just API access. It's the full stack behind our own trading bot:
+          <strong>the data, the playbook, the templates, the guides, the room.</strong>
+          Everything you need to ship a profitable algo bot or Telegram signal bot without guessing.
+        </p>
+
+        <div class="engine-diagram reveal delay-1">
+          <svg class="engine-svg" viewBox="0 0 920 720" preserveAspectRatio="none">
+            <defs>
+              <path id="line1" d="M460,360 L460,80" />
+              <path id="line2" d="M460,360 L754,274" />
+              <path id="line3" d="M460,360 L626,590" />
+              <path id="line4" d="M460,360 L294,590" />
+              <path id="line5" d="M460,360 L166,274" />
+            </defs>
+            <use id="use-line1" href="#line1" class="line-base" />
+            <use id="use-line2" href="#line2" class="line-base" />
+            <use id="use-line3" href="#line3" class="line-base" />
+            <use id="use-line4" href="#line4" class="line-base" />
+            <use id="use-line5" href="#line5" class="line-base" />
+          </svg>
+
+          <div class="hub">
+            <div class="hub-dot"></div>
+            <div class="hub-title">SCG ALPHA</div>
+            <div class="hub-sub">The Engine</div>
+          </div>
+
+          <div class="node" data-pos="01">
+            <div class="node-num">01</div>
+            <div class="node-title">The Signal API</div>
+            <div class="node-desc">The proprietary engine behind our bot, via a single HTTP endpoint.</div>
+          </div>
+          <div class="node" data-pos="02">
+            <div class="node-num">02</div>
+            <div class="node-title">The Playbook</div>
+            <div class="node-desc">The framework for turning signals into a profitable algo or TG signal bot.</div>
+          </div>
+          <div class="node" data-pos="03">
+            <div class="node-num">03</div>
+            <div class="node-title">Reference Templates</div>
+            <div class="node-desc">Working code for both algo and TG signal engines. Fork, configure, run.</div>
+          </div>
+          <div class="node" data-pos="04">
+            <div class="node-num">04</div>
+            <div class="node-title">Step-by-Step Guides</div>
+            <div class="node-desc">Exact walkthroughs for building your own signal engine from scratch.</div>
+          </div>
+          <div class="node" data-pos="05">
+            <div class="node-num">05</div>
+            <div class="node-title">Founders Telegram</div>
+            <div class="node-desc">Direct line to Shane and the rest of the community.</div>
+          </div>
+        </div>
+
+      </section>
+
+      <section id="pricing">
+        <div class="section-label reveal">Membership</div>
+        <div class="founders-card reveal delay-1">
+          <div class="fc-top">
+            <div>
+              <div class="fc-tier">SCG ALPHA MEMBERSHIP</div>
+              <div class="fc-price">$49 <span class="fc-once">/ month</span></div>
+              <div class="fc-sub">Everything above, for the price of a single good trade. Cancel anytime.</div>
+            </div>
+            <a href="https://whop.com/checkout/plan_PSoceMO9deGzz" target="_blank" rel="noopener" id="whop-cta" class="btn btn-primary fc-cta">Start membership →</a>
+          </div>
+          <div class="fc-features">
+            <div class="fc-row">✓ The Signal API — our proprietary engine, yours to build on</div>
+            <div class="fc-row">✓ The Playbook — framework for turning signals into profit</div>
+            <div class="fc-row">✓ Reference templates — algo + TG signal engines</div>
+            <div class="fc-row">✓ Step-by-step build guides</div>
+            <div class="fc-row">✓ Private Telegram — direct line to Shane + the community</div>
+            <div class="fc-row">✓ Unlimited API calls</div>
+            <div class="fc-row fc-guarantee">✓ Cancel anytime</div>
+          </div>
+        </div>
+      </section>
+
+      <p class="footer-note">
+        Built on <a href="https://solana.com/" target="_blank" rel="noopener">Solana</a>
+        · Execution via <a href="https://jup.ag/" target="_blank" rel="noopener">Jupiter</a>
+        · Data via <a href="https://gmgn.ai/ai?ref=scgalpha&amp;chain=sol" target="_blank" rel="noopener">GMGN</a>
+      </p>
     </div>
   </div>
 
   <script>
-    // ── Starfield + Shooting Stars ──────────────────────────────────
     const canvas = document.getElementById('starfield');
     const ctx = canvas.getContext('2d');
     let W, H;
-
-    function resize() {
-      W = canvas.width = window.innerWidth;
-      H = canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Sparse, subtle stars
-    const NUM_STARS = 120;
-    const stars = [];
-    for (let i = 0; i < NUM_STARS; i++) {
-      stars.push({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        r: Math.random() * 1.1 + 0.3,
-        baseAlpha: Math.random() * 0.35 + 0.15,
-        twinkleSpeed: Math.random() * 0.005 + 0.001,
-        twinkleOffset: Math.random() * Math.PI * 2,
-      });
-    }
-
-    // Shooting stars
-    const shootingStars = [];
-
-    function spawnShootingStar() {
-      // Start from bottom-left region, travel toward top-right
-      const startX = Math.random() * W * 0.5;
-      const startY = H * 0.5 + Math.random() * H * 0.5;
-      const angle = -(Math.PI / 6 + Math.random() * Math.PI / 6); // -30 to -60 degrees (upward-right)
-      shootingStars.push({
-        x: startX,
-        y: startY,
-        angle: angle,
+    function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+    resize(); addEventListener('resize', resize);
+    const stars = Array.from({length: 120}, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      r: Math.random() * 1.1 + 0.3,
+      baseAlpha: Math.random() * 0.35 + 0.15,
+      twinkleSpeed: Math.random() * 0.005 + 0.001,
+      twinkleOffset: Math.random() * Math.PI * 2,
+    }));
+    const shooting = [];
+    let lastShoot = 0;
+    function spawn() {
+      shooting.push({
+        x: Math.random() * W * 0.5,
+        y: H * 0.5 + Math.random() * H * 0.5,
+        angle: -(Math.PI / 6 + Math.random() * Math.PI / 6),
         speed: 8 + Math.random() * 10,
         length: 60 + Math.random() * 100,
-        life: 1.0,
-        decay: 0.008 + Math.random() * 0.012,
+        life: 1.0, decay: 0.008 + Math.random() * 0.012,
       });
     }
-
-    let lastShootingStarTime = 0;
-
-    function animate(time) {
+    function animate(t) {
       ctx.clearRect(0, 0, W, H);
-
-      // Draw stars with twinkle
       for (const s of stars) {
-        const alpha = s.baseAlpha + Math.sin(time * s.twinkleSpeed + s.twinkleOffset) * 0.2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.05, Math.min(1, alpha))})`;
+        const a = s.baseAlpha + Math.sin(t * s.twinkleSpeed + s.twinkleOffset) * 0.2;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${Math.max(0.05, Math.min(1, a))})`;
         ctx.fill();
       }
-
-      // Spawn shooting stars sporadically (every 2-5 seconds)
-      if (time - lastShootingStarTime > 2000 + Math.random() * 3000) {
-        spawnShootingStar();
-        lastShootingStarTime = time;
-      }
-
-      // Draw shooting stars
-      for (let i = shootingStars.length - 1; i >= 0; i--) {
-        const ss = shootingStars[i];
-
-        // Move
-        ss.x += Math.cos(ss.angle) * ss.speed;
-        ss.y += Math.sin(ss.angle) * ss.speed;
-        ss.life -= ss.decay;
-
-        if (ss.life <= 0 || ss.x > W + 100 || ss.x < -100 || ss.y < -100 || ss.y > H + 100) {
-          shootingStars.splice(i, 1);
-          continue;
+      if (t - lastShoot > 2000 + Math.random() * 3000) { spawn(); lastShoot = t; }
+      for (let i = shooting.length - 1; i >= 0; i--) {
+        const s = shooting[i];
+        s.x += Math.cos(s.angle) * s.speed;
+        s.y += Math.sin(s.angle) * s.speed;
+        s.life -= s.decay;
+        if (s.life <= 0 || s.x > W + 100 || s.x < -100 || s.y < -100 || s.y > H + 100) {
+          shooting.splice(i, 1); continue;
         }
-
-        // Draw trail
-        const tailX = ss.x - Math.cos(ss.angle) * ss.length;
-        const tailY = ss.y - Math.sin(ss.angle) * ss.length;
-
-        const grad = ctx.createLinearGradient(tailX, tailY, ss.x, ss.y);
-        grad.addColorStop(0, `rgba(255, 255, 255, 0)`);
-        grad.addColorStop(1, `rgba(255, 255, 255, ${ss.life * 0.9})`);
-
-        ctx.beginPath();
-        ctx.moveTo(tailX, tailY);
-        ctx.lineTo(ss.x, ss.y);
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Bright head
-        ctx.beginPath();
-        ctx.arc(ss.x, ss.y, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${ss.life})`;
-        ctx.fill();
+        const tx = s.x - Math.cos(s.angle) * s.length;
+        const ty = s.y - Math.sin(s.angle) * s.length;
+        const g = ctx.createLinearGradient(tx, ty, s.x, s.y);
+        g.addColorStop(0, 'rgba(255,255,255,0)');
+        g.addColorStop(1, `rgba(255,255,255,${s.life * 0.9})`);
+        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(s.x, s.y);
+        ctx.strokeStyle = g; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath(); ctx.arc(s.x, s.y, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.life})`; ctx.fill();
       }
-
       requestAnimationFrame(animate);
     }
-
     requestAnimationFrame(animate);
 
-    // Re-scatter stars on resize
-    window.addEventListener('resize', () => {
-      for (const s of stars) {
-        s.x = Math.random() * W;
-        s.y = Math.random() * H;
-      }
+    const fmt = n => Number(n).toLocaleString('en-US');
+    const fmtMoney = n => '$' + Math.round(n).toLocaleString('en-US');
+    const fmtMcapCompact = n => {
+      if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return '$' + Math.round(n/1e3) + 'K';
+      return '$' + Math.round(n);
+    };
+    const fmtDate = ts => new Date(ts * 1000).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: '2-digit'});
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    // Store loaded data so scramble animations can trigger on scroll
+    let loaded = false;
+    let statsData = null;
+    let statsAnimated = false;
+
+    let currentWindowDays = 30;
+    const rangeLabelMap = { 7: '7d', 30: '30d', 365: 'all-time' };
+
+    async function loadStats(windowDays) {
+      if (windowDays) currentWindowDays = windowDays;
+      try {
+        const r = await fetch(`https://api.scgalpha.com/api/stats?window_days=${currentWindowDays}`);
+        const d = await r.json();
+        statsData = d;
+        loaded = true;
+
+        // Cache real values on the nodes (no visible change yet)
+        document.getElementById('s-total').dataset.real = d.total_signals;
+        document.getElementById('s-2x').dataset.real = d.winners_2x;
+        document.getElementById('s-5x').dataset.real = d.winners_5x;
+        document.getElementById('s-10x').dataset.real = d.winners_10x;
+
+        const b = d.biggest_win || {};
+        document.getElementById('big-name').textContent = b.name || '—';
+        document.getElementById('big-mult').textContent = b.mult ? `${b.mult}×` : '';
+        document.getElementById('big-mcap').textContent = b.alert_mcap ? `${fmtMoney(b.alert_mcap)} → ${fmtMoney(b.peak_mcap)}` : '';
+        document.getElementById('big-range').textContent = rangeLabelMap[currentWindowDays] || `${currentWindowDays}d`;
+
+        // Populate top-20 MEGAs table (always all-time, not window-filtered)
+        const tbody = document.getElementById('megas-body');
+        const rows = (d.all_time_megas || []).slice(0, 20);
+        tbody.innerHTML = rows.length ? rows.map((m, i) => `
+          <tr${i >= 10 ? ' class="extra"' : ''}>
+            <td>${esc(m.name || '—')}</td>
+            <td style="color:var(--dim);">${fmtDate(m.alert_time)}</td>
+            <td class="num">${fmtMoney(m.alert_mcap)}</td>
+            <td class="num">${fmtMoney(m.peak_mcap)}</td>
+            <td class="mult">${m.mult}×</td>
+          </tr>`).join('') : '<tr><td colspan="5" class="megas-empty">No MEGAs yet.</td></tr>';
+        const toggle = document.getElementById('megas-toggle');
+        toggle.style.display = rows.length > 10 ? 'flex' : 'none';
+
+        // Reset scramble so numbers re-animate with the new values
+        statsAnimated = false;
+        if (statsInView) runScramble();
+      } catch (e) { console.error(e); }
+    }
+    loadStats();
+    setInterval(() => loadStats(), 60000);
+
+    // ── MEGAs expand/collapse wiring ────────────────────────────────────
+    document.getElementById('megas-toggle').addEventListener('click', () => {
+      const table = document.querySelector('.megas');
+      const btn = document.getElementById('megas-toggle');
+      const expanded = table.classList.toggle('expanded');
+      btn.classList.toggle('expanded', expanded);
+      btn.setAttribute('aria-label', expanded ? 'Show less' : 'Show more');
     });
+
+    // ── Range toggle wiring ─────────────────────────────────────────────
+    document.querySelectorAll('.range-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        loadStats(Number(btn.dataset.days));
+      });
+    });
+
+    // ── Scramble animation ──────────────────────────────────────────────
+    const scrambleIds = ['s-total', 's-2x', 's-5x', 's-10x'];
+    function runScramble() {
+      if (statsAnimated) return;
+      statsAnimated = true;
+      scrambleIds.forEach((id, i) => {
+        const el = document.getElementById(id);
+        const real = Number(el.dataset.real || 0);
+        if (real === 0) return;
+        animateNumber(el, real, 1100 + i * 140);
+      });
+    }
+    function animateNumber(el, target, duration) {
+      const frames = 26;
+      const tickMs = duration / frames;
+      const digits = String(target).length;
+      let frame = 0;
+      const timer = setInterval(() => {
+        frame++;
+        if (frame >= frames) {
+          clearInterval(timer);
+          el.textContent = fmt(target);
+          return;
+        }
+        // Scramble: show a random number with the same digit count, morphing toward target
+        const progress = frame / frames;
+        if (progress < 0.7) {
+          // Pure scramble
+          let rand = '';
+          for (let i = 0; i < digits; i++) rand += Math.floor(Math.random() * 10);
+          el.textContent = fmt(Number(rand));
+        } else {
+          // Ease into the real value
+          const eased = Math.floor(target * (0.6 + 0.4 * ((progress - 0.7) / 0.3)));
+          el.textContent = fmt(eased);
+        }
+      }, tickMs);
+    }
+
+    // ── Scroll-reveal ───────────────────────────────────────────────────
+    let statsInView = false;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          // When the stats section comes into view, fire scramble
+          if (e.target.id === 'stats') {
+            statsInView = true;
+            if (loaded && !statsAnimated) runScramble();
+          }
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    io.observe(document.getElementById('stats'));
+
+    // Hero reveals on load (they're above the fold)
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.hero .reveal').forEach(el => el.classList.add('visible'));
+    });
+
+    // ── Node hover → flow its connecting line ──────────────────────────
+    document.querySelectorAll('.node').forEach(node => {
+      const idx = Number(node.dataset.pos);
+      const line = document.getElementById('use-line' + idx);
+      if (!line) return;
+      node.addEventListener('mouseenter', () => line.classList.add('flowing'));
+      node.addEventListener('mouseleave', () => line.classList.remove('flowing'));
+    });
+
+
   </script>
 </body>
 </html>

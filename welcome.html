@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to SCG Alpha</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --green: #7cffa0;
+      --dim:   rgba(255, 255, 255, 0.55);
+      --dimmer:rgba(255, 255, 255, 0.35);
+      --line:  rgba(255, 255, 255, 0.12);
+    }
+
+    html, body { background: #000; }
+    body {
+      color: #fff;
+      font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    canvas#starfield {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+
+    .content {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      padding: 100px 24px 140px;
+    }
+
+    .logo { position: fixed; top: 28px; left: 32px; z-index: 10; }
+    .logo a { display: block; }
+    .logo img {
+      width: 100px; height: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .wrap { max-width: 860px; margin: 0 auto; }
+
+    .hero { text-align: center; margin-bottom: 80px; }
+    .eyebrow {
+      font-size: 11px; letter-spacing: 3px; color: var(--green);
+      text-transform: uppercase; margin-bottom: 24px;
+    }
+    .eyebrow .dot {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); margin-right: 10px;
+      box-shadow: 0 0 12px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    h1 {
+      font-size: 44px; font-weight: 500;
+      letter-spacing: -0.5px; line-height: 1.15;
+      margin-bottom: 22px;
+    }
+    h1 .accent { color: var(--green); }
+    .lede {
+      font-size: 15px; color: var(--dim);
+      max-width: 620px; margin: 0 auto 36px;
+      line-height: 1.8;
+    }
+
+    .email-callout {
+      max-width: 620px; margin: 0 auto;
+      padding: 24px 28px;
+      border: 1px solid var(--green);
+      background: rgba(124, 255, 160, 0.04);
+      text-align: left;
+    }
+    .email-callout-title {
+      font-size: 10px; letter-spacing: 2px; color: var(--green);
+      text-transform: uppercase; margin-bottom: 10px;
+    }
+    .email-callout-body { font-size: 14px; color: #fff; line-height: 1.7; }
+    .email-callout-body .muted { color: var(--dim); font-size: 13px; display: block; margin-top: 8px; }
+
+    .discord-cta {
+      max-width: 620px; margin: 18px auto 0;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 20px 28px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.015);
+      text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .discord-cta:hover {
+      border-color: var(--green);
+      background: rgba(124, 255, 160, 0.04);
+    }
+    .discord-cta-text { text-align: left; }
+    .discord-cta-title { font-size: 14px; color: #fff; font-weight: 500; }
+    .discord-cta-sub { font-size: 12px; color: var(--dim); margin-top: 4px; }
+    .discord-cta-arrow { color: var(--green); font-size: 20px; flex-shrink: 0; }
+
+    .section-label {
+      font-size: 10px; letter-spacing: 3px; color: var(--dimmer);
+      text-transform: uppercase; margin-bottom: 24px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--line);
+    }
+
+    .modules { display: flex; flex-direction: column; gap: 14px; }
+
+    details.module {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.015);
+      transition: border-color 0.2s;
+    }
+    details.module[open] { border-color: var(--green); }
+    details.module summary {
+      list-style: none; cursor: pointer;
+      padding: 24px 28px;
+      display: flex; align-items: center; gap: 24px;
+      user-select: none;
+    }
+    details.module summary::-webkit-details-marker { display: none; }
+    details.module summary:hover { background: rgba(255, 255, 255, 0.02); }
+    .module-num {
+      font-size: 11px; letter-spacing: 2px; color: var(--green);
+      min-width: 32px;
+    }
+    .module-title { font-size: 16px; font-weight: 500; flex: 1; }
+    .module-chev {
+      color: var(--dim); font-size: 14px;
+      transition: transform 0.25s;
+    }
+    details.module[open] .module-chev { transform: rotate(180deg); color: var(--green); }
+
+    .module-body {
+      padding: 0 28px 28px 28px;
+      font-size: 14px; color: var(--dim); line-height: 1.75;
+    }
+    .module-body p { margin-bottom: 14px; }
+    .module-body p:last-child { margin-bottom: 0; }
+    .module-body strong { color: #fff; font-weight: 500; }
+    .module-body ol, .module-body ul { padding-left: 22px; margin-bottom: 14px; }
+    .module-body li { margin-bottom: 8px; }
+    .module-body code {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 6px; border-radius: 2px;
+      font-size: 12.5px; color: #fff;
+    }
+    .module-body .code-block {
+      display: block;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      margin: 12px 0;
+      font-size: 12.5px; color: #fff;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.6;
+    }
+    .module-placeholder {
+      color: var(--dimmer); font-style: italic;
+    }
+
+    .footer-help {
+      text-align: center; margin-top: 60px;
+      font-size: 13px; color: var(--dim);
+    }
+    .footer-help a { color: var(--green); text-decoration: none; }
+    .footer-help a:hover { text-decoration: underline; }
+
+    @media (max-width: 720px) {
+      h1 { font-size: 32px; }
+      .content { padding: 80px 18px 100px; }
+      .logo { position: absolute; top: 18px; left: 18px; }
+      .logo img { width: 48px; }
+      details.module summary { padding: 20px; gap: 16px; }
+      .module-body { padding: 0 20px 20px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+
+  <div class="logo"><a href="/"><img src="/scg-logo.png" alt="SCG"></a></div>
+
+  <div class="content">
+    <div class="wrap">
+      <div class="hero">
+        <div class="eyebrow"><span class="dot"></span>Payment confirmed</div>
+        <h1>Welcome to <span class="accent">SCG Alpha</span>.</h1>
+        <p class="lede">You're in. Your API key is on its way to your inbox — then everything below is yours to build on.</p>
+
+        <div class="email-callout">
+          <div class="email-callout-title">Check your email</div>
+          <div class="email-callout-body">
+            Your <strong>API key</strong> and activation instructions have been sent to the email you used at checkout.
+            <span class="muted">Didn't arrive in 5 minutes? Check spam, or ping us in the Discord and we'll resend.</span>
+          </div>
+        </div>
+
+        <a class="discord-cta" href="https://discord.gg/Vhxan2pvQ" target="_blank" rel="noopener">
+          <div class="discord-cta-text">
+            <div class="discord-cta-title">Join the SCG Alpha Discord</div>
+            <div class="discord-cta-sub">Live signals chat, API help, the playbook, and a direct line to the team.</div>
+          </div>
+          <div class="discord-cta-arrow">→</div>
+        </a>
+      </div>
+
+      <p class="footer-help">
+        The full playbook lives in the Discord. <a href="https://discord.gg/Vhxan2pvQ" target="_blank" rel="noopener">Hop in</a> and ask anything.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+    function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+    resize(); addEventListener('resize', resize);
+
+    const stars = Array.from({length: 80}, () => ({
+      x: Math.random() * innerWidth,
+      y: Math.random() * innerHeight,
+      r: Math.random() * 1.1 + 0.2,
+      a: Math.random() * 0.5 + 0.2,
+      ts: Math.random() * 0.005 + 0.001,
+      tp: Math.random() * Math.PI * 2,
+    }));
+    function animate() {
+      ctx.clearRect(0, 0, W, H);
+      for (const s of stars) {
+        s.tp += s.ts;
+        const twinkle = 0.6 + 0.4 * Math.sin(s.tp);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.a * twinkle})`;
+        ctx.fill();
+      }
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
