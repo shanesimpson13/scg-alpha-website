@@ -87,6 +87,72 @@
     .email-callout-body { font-size: 14px; color: #fff; line-height: 1.7; }
     .email-callout-body .muted { color: var(--dim); font-size: 13px; display: block; margin-top: 8px; }
 
+    .key-row {
+      display: flex; gap: 8px; margin-top: 14px;
+      align-items: stretch;
+    }
+    .key-display {
+      flex: 1 1 auto; min-width: 0;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: rgba(0, 0, 0, 0.4);
+      font-family: inherit; font-size: 13px; color: #fff;
+      overflow-x: auto; white-space: nowrap;
+      user-select: all;
+    }
+    .key-display.muted { color: var(--dim); }
+    .key-copy-btn {
+      flex-shrink: 0;
+      padding: 0 18px;
+      border: 1px solid var(--green); background: transparent;
+      color: var(--green); font-family: inherit; font-size: 11px;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .key-copy-btn:hover { background: rgba(124, 255, 160, 0.1); }
+    .key-copy-btn[data-copied="true"] {
+      background: rgba(124, 255, 160, 0.2);
+    }
+    .key-help {
+      font-size: 12px; color: var(--dim);
+      margin-top: 12px; line-height: 1.6;
+    }
+    .key-help code {
+      font-size: 11.5px; background: rgba(255,255,255,0.06);
+      padding: 1px 5px;
+    }
+
+    .recovery {
+      max-width: 620px; margin: 28px auto 0;
+      text-align: center; font-size: 12px; color: var(--dim);
+    }
+    .recovery a { color: var(--green); text-decoration: none; cursor: pointer; }
+    .recovery a:hover { text-decoration: underline; }
+    .recovery-form {
+      display: none; margin-top: 14px;
+      gap: 8px; justify-content: center;
+    }
+    .recovery-form.open { display: flex; }
+    .recovery-form input {
+      flex: 0 1 280px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--line); color: #fff;
+      font-family: inherit; font-size: 12px;
+    }
+    .recovery-form input:focus { outline: none; border-color: var(--green); }
+    .recovery-form button {
+      padding: 10px 20px;
+      border: 1px solid var(--green); background: transparent;
+      color: var(--green); font-family: inherit; font-size: 11px;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      cursor: pointer;
+    }
+    .recovery-form button:hover { background: rgba(124,255,160,0.1); }
+    .recovery-msg { margin-top: 10px; font-size: 12px; }
+    .recovery-msg.error { color: #ff7c7c; }
+
     .discord-cta {
       max-width: 620px; margin: 18px auto 0;
       display: flex; align-items: center; justify-content: space-between;
@@ -194,13 +260,18 @@
       <div class="hero">
         <div class="eyebrow"><span class="dot"></span>Payment confirmed</div>
         <h1>Welcome to <span class="accent">SCG Alpha</span>.</h1>
-        <p class="lede">You're in. Your API key is on its way to your inbox — then everything below is yours to build on.</p>
+        <p class="lede">You're in. Your API key is below — copy it somewhere safe, then jump into the Discord.</p>
 
         <div class="email-callout">
-          <div class="email-callout-title">Check your email</div>
+          <div class="email-callout-title">Your API key</div>
           <div class="email-callout-body">
-            Your <strong>API key</strong> and activation instructions have been sent to the email you used at checkout.
-            <span class="muted">Didn't arrive in 5 minutes? Check spam, or ping us in the Discord and we'll resend.</span>
+            <div class="key-row">
+              <div class="key-display muted" id="key-display">Loading…</div>
+              <button class="key-copy-btn" id="key-copy-btn" type="button" disabled>Copy</button>
+            </div>
+            <div class="key-help">
+              Save this somewhere safe. Send it as <code>Authorization: Bearer YOUR_KEY</code> on every API request.
+            </div>
           </div>
         </div>
 
@@ -211,6 +282,10 @@
           </div>
           <div class="discord-cta-arrow">→</div>
         </a>
+
+        <div class="recovery">
+          Lost your key? <a href="https://discord.gg/Vhxan2pvQ" target="_blank" rel="noopener">DM us in Discord</a> and we'll resend.
+        </div>
       </div>
 
       <p class="footer-help">
@@ -247,6 +322,65 @@
       requestAnimationFrame(animate);
     }
     requestAnimationFrame(animate);
+
+    // ── API key fetch + display ─────────────────────────────────────────
+    (() => {
+      const API_BASE = 'https://api.scgalpha.com';
+      const STORAGE_KEY = 'scg_api_key';
+
+      const display = document.getElementById('key-display');
+      const copyBtn = document.getElementById('key-copy-btn');
+
+      function showKey(key) {
+        display.textContent = key;
+        display.classList.remove('muted');
+        copyBtn.disabled = false;
+        try { localStorage.setItem(STORAGE_KEY, key); } catch {}
+      }
+      function showError(msg) {
+        display.textContent = msg;
+        display.classList.add('muted');
+        copyBtn.disabled = true;
+      }
+
+      // 1. URL param (just bought)
+      const params = new URLSearchParams(location.search);
+      const paymentId = params.get('payment_id') || params.get('receipt_id');
+
+      // 2. localStorage (returning visit, same browser)
+      let cached = null;
+      try { cached = localStorage.getItem(STORAGE_KEY); } catch {}
+
+      if (paymentId) {
+        fetch(`${API_BASE}/api/membership-key?payment_id=${encodeURIComponent(paymentId)}`)
+          .then(r => r.ok ? r.json() : Promise.reject(r))
+          .then(d => showKey(d.key))
+          .catch(() => {
+            if (cached) showKey(cached);
+            else showError('Couldn\u2019t fetch key. Use the recovery form below.');
+          });
+      } else if (cached) {
+        showKey(cached);
+      } else {
+        showError('Use the recovery form below to retrieve your key.');
+      }
+
+      // Copy
+      copyBtn.addEventListener('click', async () => {
+        const k = display.textContent;
+        if (!k || copyBtn.disabled) return;
+        try {
+          await navigator.clipboard.writeText(k);
+          copyBtn.dataset.copied = 'true';
+          copyBtn.textContent = 'Copied';
+          setTimeout(() => {
+            copyBtn.dataset.copied = 'false';
+            copyBtn.textContent = 'Copy';
+          }, 1600);
+        } catch {}
+      });
+
+    })();
   </script>
 </body>
 </html>
