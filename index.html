@@ -57,6 +57,24 @@
       position: fixed; bottom: 28px; right: 32px;
       display: flex; gap: 20px; align-items: center; z-index: 10;
     }
+
+    /* ─── small learn-more links (top corner + between sections) ─── */
+    .nav-cta {
+      position: fixed; top: 28px; right: 32px;
+      font-size: 11px; letter-spacing: 2px;
+      color: var(--green); text-decoration: none;
+      text-transform: uppercase;
+      padding: 10px 18px;
+      border: 1px solid rgba(124, 255, 160, 0.4);
+      background: rgba(124, 255, 160, 0.04);
+      border-radius: 3px;
+      z-index: 10;
+      transition: all 0.2s ease;
+    }
+    .nav-cta:hover {
+      background: rgba(124, 255, 160, 0.12);
+      border-color: var(--green);
+    }
     .social-links a { opacity: 0.4; transition: opacity 0.3s; }
     .social-links a:hover { opacity: 1; }
     .social-links svg { width: 24px; height: 24px; }
@@ -302,6 +320,55 @@
     .footer-note { text-align: center; color: var(--dimmer); font-size: 11px; letter-spacing: 1px; margin-top: 80px; }
     .footer-note a { color: var(--dim); text-decoration: underline; }
 
+    /* ─── big learn-more CTA ─── */
+    .big-cta {
+      display: inline-block;
+      padding: 26px 64px;
+      border: 2px solid var(--green);
+      background: rgba(124, 255, 160, 0.06);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 18px; font-weight: 500;
+      letter-spacing: 3px;
+      text-decoration: none;
+      text-transform: uppercase;
+      box-shadow: 0 0 24px rgba(124, 255, 160, 0.18);
+      transition: all 0.25s ease;
+      animation: cta-pulse 2.4s ease-in-out infinite;
+    }
+    .big-cta:hover {
+      background: rgba(124, 255, 160, 0.15);
+      box-shadow: 0 0 36px rgba(124, 255, 160, 0.4);
+      transform: translateY(-2px);
+      animation: none;
+    }
+    @keyframes cta-pulse {
+      0%, 100% { box-shadow: 0 0 24px rgba(124, 255, 160, 0.18); }
+      50%      { box-shadow: 0 0 40px rgba(124, 255, 160, 0.35); }
+    }
+    .big-cta-sub {
+      margin-top: 20px;
+      font-size: 12px; letter-spacing: 2px;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+    #cta-section {
+      margin-top: -40px;
+      padding: 56px 40px !important;
+      border: 1px solid rgba(124, 255, 160, 0.45);
+      background:
+        radial-gradient(ellipse at center, rgba(124, 255, 160, 0.07) 0%, rgba(124, 255, 160, 0) 70%),
+        rgba(124, 255, 160, 0.015);
+      box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
+      border-radius: 4px;
+    }
+    .cta-mark {
+      font-size: 11px; letter-spacing: 5px;
+      color: var(--green);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
     /* ─── scroll-reveal ─── */
     .reveal {
       opacity: 0; transform: translateY(24px);
@@ -492,6 +559,7 @@
       .wt-step { grid-template-columns: 40px 1fr; gap: 16px; }
       .wt-num { width: 32px; height: 32px; font-size: 12px; }
       .social-links { bottom: 20px; right: 20px; gap: 14px; }
+      .nav-cta { top: 18px; right: 18px; padding: 8px 12px; font-size: 10px; letter-spacing: 1.5px; }
       .social-links svg { width: 20px; height: 20px; }
       .social-links svg.x-icon { width: 17px; height: 17px; }
       .megas th:nth-child(3), .megas td:nth-child(3) { display: none; }
@@ -501,6 +569,10 @@
       .fc-price { font-size: 34px; }
       .fc-row { flex: 0 0 100%; min-height: 0; }
       .fc-cta { width: 100%; text-align: center; }
+      .big-cta { padding: 20px 32px; font-size: 14px; letter-spacing: 2px; }
+      .big-cta-sub { font-size: 10px; }
+      .cta-mark { font-size: 10px; letter-spacing: 4px; margin-bottom: 18px; }
+      #cta-section { padding: 36px 22px !important; margin-top: -20px; }
       .hero-line { font-size: 14px; }
       .hero-line.alt { font-size: 12px; }
       .stack-intro { max-width: 100%; }
@@ -529,6 +601,8 @@
 </head>
 <body>
   <canvas id="starfield"></canvas>
+
+  <a href="start.html" class="nav-cta">Learn more →</a>
 
   <div class="social-links">
     <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
@@ -653,27 +727,10 @@
 
       </section>
 
-      <section id="pricing">
-        <div class="section-label reveal">Membership</div>
-        <div class="founders-card reveal delay-1">
-          <div class="fc-top">
-            <div>
-              <div class="fc-tier">SCG ALPHA MEMBERSHIP</div>
-              <div class="fc-price">$99 <span class="fc-once">/ month</span></div>
-              <div class="fc-sub">Everything above, for the price of a single good trade. Cancel anytime.</div>
-            </div>
-            <a href="https://whop.com/checkout/plan_PIEj1u7qhZbNk" target="_blank" rel="noopener" id="whop-cta" class="btn btn-primary fc-cta">Start membership →</a>
-          </div>
-          <div class="fc-features">
-            <div class="fc-row">✓ The Signal API — our proprietary engine, yours to build on</div>
-            <div class="fc-row">✓ The Playbook — framework for turning signals into profit</div>
-            <div class="fc-row">✓ Reference templates — algo + TG signal engines</div>
-            <div class="fc-row">✓ Step-by-step build guides</div>
-            <div class="fc-row">✓ Private Discord — direct line to Shane + the community</div>
-            <div class="fc-row">✓ Unlimited API calls</div>
-            <div class="fc-row fc-guarantee">✓ Cancel anytime</div>
-          </div>
-        </div>
+      <section id="cta-section" style="text-align: center;">
+        <div class="cta-mark reveal">SCG ALPHA</div>
+        <a href="start.html" class="big-cta reveal delay-1">Learn more →</a>
+        <p class="big-cta-sub reveal delay-2">3 questions · 30 seconds · see if it's for you</p>
       </section>
 
       <p class="footer-note">
