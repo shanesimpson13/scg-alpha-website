@@ -148,6 +148,13 @@
     .megas td.mult { color: var(--green); text-align: right; font-weight: 500; }
     .megas tr:last-child td { border-bottom: none; }
     .megas-empty { color: var(--dim); padding: 24px 0; text-align: center; font-size: 13px; }
+    /* sequential row reveal — initial state hidden until staggered in */
+    .megas tbody tr {
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .megas tbody tr.row-in { opacity: 1; transform: translateY(0); }
+    .megas.done tbody tr { opacity: 1; transform: translateY(0); transition: none; }
     .megas tr.extra { display: none; }
     .megas.expanded tr.extra { display: table-row; }
     .megas-toggle {
@@ -453,6 +460,7 @@
     }
     .node-num { font-size: 10px; color: var(--green); letter-spacing: 2px; margin-bottom: 6px; font-weight: 500; }
     .node-title { font-size: 13px; color: #fff; font-weight: 500; margin-bottom: 6px; letter-spacing: 0.3px; }
+    .node-emoji { font-size: 13px; margin-left: 6px; letter-spacing: 0; }
     .node-desc { font-size: 11px; color: var(--dim); line-height: 1.55; }
 
     .node[data-pos="01"] { top: 11%; left: 50%; }
@@ -618,27 +626,27 @@
 
           <div class="node" data-pos="01">
             <div class="node-num">01</div>
-            <div class="node-title">The Signal API</div>
+            <div class="node-title">The Signal API<span class="node-emoji">📡</span></div>
             <div class="node-desc">The proprietary engine behind our bot, via a single HTTP endpoint.</div>
           </div>
           <div class="node" data-pos="02">
             <div class="node-num">02</div>
-            <div class="node-title">The Playbook</div>
+            <div class="node-title">The Playbook<span class="node-emoji">📘</span></div>
             <div class="node-desc">The framework for turning signals into a profitable algo or TG signal bot.</div>
           </div>
           <div class="node" data-pos="03">
             <div class="node-num">03</div>
-            <div class="node-title">Reference Templates</div>
+            <div class="node-title">Reference Templates<span class="node-emoji">🤖</span></div>
             <div class="node-desc">Working code for both algo and TG signal engines. Fork, configure, run.</div>
           </div>
           <div class="node" data-pos="04">
             <div class="node-num">04</div>
-            <div class="node-title">Step-by-Step Guides</div>
+            <div class="node-title">Step-by-Step Guides<span class="node-emoji">🗺️</span></div>
             <div class="node-desc">Exact walkthroughs for building your own signal engine from scratch.</div>
           </div>
           <div class="node" data-pos="05">
             <div class="node-num">05</div>
-            <div class="node-title">Founders Telegram</div>
+            <div class="node-title">Founders Telegram<span class="node-emoji">💬</span></div>
             <div class="node-desc">Direct line to Shane and the rest of the community.</div>
           </div>
         </div>
@@ -770,9 +778,13 @@
         document.getElementById('big-mcap').textContent = b.alert_mcap ? `${fmtMoney(b.alert_mcap)} → ${fmtMoney(b.peak_mcap)}` : '';
         document.getElementById('big-range').textContent = rangeLabelMap[currentWindowDays] || `${currentWindowDays}d`;
 
-        // Populate top-20 MEGAs table (always all-time, not window-filtered)
+        // Populate top-20 MEGAs table — filter by selected window
         const tbody = document.getElementById('megas-body');
-        const rows = (d.all_time_megas || []).slice(0, 20);
+        const allMegas = d.all_time_megas || [];
+        const nowSec = Date.now() / 1000;
+        const cutoff = currentWindowDays >= 365 ? 0 : nowSec - currentWindowDays * 86400;
+        const filteredMegas = allMegas.filter(m => (m.alert_time || 0) >= cutoff);
+        const rows = filteredMegas.slice(0, 20);
         tbody.innerHTML = rows.length ? rows.map((m, i) => `
           <tr${i >= 10 ? ' class="extra"' : ''}>
             <td>${esc(m.name || '—')}</td>
@@ -780,13 +792,15 @@
             <td class="num">${fmtMoney(m.alert_mcap)}</td>
             <td class="num">${fmtMoney(m.peak_mcap)}</td>
             <td class="mult">${m.mult}×</td>
-          </tr>`).join('') : '<tr><td colspan="5" class="megas-empty">No MEGAs yet.</td></tr>';
+          </tr>`).join('') : '<tr><td colspan="5" class="megas-empty">No 10× MEGAs in this window.</td></tr>';
         const toggle = document.getElementById('megas-toggle');
         toggle.style.display = rows.length > 10 ? 'flex' : 'none';
 
         // Reset scramble so numbers re-animate with the new values
         statsAnimated = false;
         if (statsInView) runScramble();
+        // Try staggered MEGAs reveal (no-op if already revealed or not in view)
+        if (typeof tryMegasReveal === 'function') tryMegasReveal();
       } catch (e) { console.error(e); }
     }
     loadStats();
@@ -866,6 +880,37 @@
 
     document.querySelectorAll('.reveal').forEach(el => io.observe(el));
     io.observe(document.getElementById('stats'));
+
+    // ── MEGAs row stagger reveal ────────────────────────────────────────
+    let megasInView = false;
+    let megasRevealed = false;
+    function tryMegasReveal() {
+      if (megasRevealed || !megasInView) return;
+      const trs = document.querySelectorAll('#megas-body tr');
+      if (!trs.length) return;
+      // skip if it's a placeholder (Loading… / No MEGAs yet)
+      if (trs.length === 1 && trs[0].querySelector('.megas-empty')) return;
+      trs.forEach((tr, i) => {
+        setTimeout(() => tr.classList.add('row-in'), i * 80);
+      });
+      // mark the table done so future re-renders don't hide rows
+      const total = trs.length;
+      setTimeout(() => {
+        const tbl = document.querySelector('.megas');
+        if (tbl) tbl.classList.add('done');
+      }, total * 80 + 700);
+      megasRevealed = true;
+    }
+    const megasIo = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          megasInView = true;
+          tryMegasReveal();
+        }
+      });
+    }, { threshold: 0.1 });
+    const megasTable = document.querySelector('.megas');
+    if (megasTable) megasIo.observe(megasTable);
 
     // Hero reveals on load (they're above the fold)
     requestAnimationFrame(() => {
