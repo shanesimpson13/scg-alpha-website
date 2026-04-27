@@ -747,9 +747,9 @@
   <div class="gate" id="gate">
     <div class="gate-card">
       <div class="gate-mark">SCG Alpha · Members</div>
-      <div class="gate-title">Enter your API key</div>
-      <div class="gate-sub">This dashboard is for active members only. Paste the API key you received when you joined.</div>
-      <input type="password" class="gate-input" id="gate-input" placeholder="scg_…" autocomplete="off" spellcheck="false" />
+      <div class="gate-title">Enter your Whop license key</div>
+      <div class="gate-sub">This dashboard is for active members only. Paste the license key from your Whop account (Whop → Memberships → SCG Alpha → License Key).</div>
+      <input type="password" class="gate-input" id="gate-input" placeholder="paste your license key" autocomplete="off" spellcheck="false" />
       <button class="gate-btn" id="gate-btn">Unlock →</button>
       <div class="gate-error" id="gate-error"></div>
       <div class="gate-foot">Not a member yet? <a href="index.html">Get access →</a></div>
@@ -938,8 +938,9 @@
     });
 
     // ── API config (used by gate + dashboard) ──────────────────────
-    // Same-origin proxy on Vercel — checks X-API-Key, then fetches EC2.
-    const API_URL = '/api/alerts';
+    // EC2 validates the Whop license key directly — no proxy needed.
+    const API_URL = 'https://api.scgalpha.com/api/alerts';
+    function authHeaders(k) { return { 'Authorization': 'Bearer ' + k }; }
 
     // ── Member Gate ────────────────────────────────────────────────
     const KEY_STORAGE = 'scg_member_key';
@@ -976,10 +977,10 @@
       gateBtnEl.disabled = true;
       gateErrEl.textContent = '';
       try {
-        const res = await fetch(API_URL, { headers: { 'X-API-Key': k } });
+        const res = await fetch(API_URL, { headers: authHeaders(k) });
         if (res.status === 401 || res.status === 403) {
           clearKey();
-          lockGate('Invalid or inactive key');
+          lockGate('Invalid or inactive license key');
           return false;
         }
         if (!res.ok) {
@@ -1276,10 +1277,10 @@
       try {
         const k = getKey();
         if (!k) { lockGate(); return; }
-        const res = await fetch(API_URL, { headers: { 'X-API-Key': k } });
+        const res = await fetch(API_URL, { headers: authHeaders(k) });
         if (res.status === 401 || res.status === 403) {
           clearKey();
-          lockGate('Your key is no longer active. Re-enter.');
+          lockGate('Your license is no longer active. Re-enter.');
           return;
         }
         if (!res.ok) return;
