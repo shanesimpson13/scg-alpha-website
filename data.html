@@ -229,14 +229,10 @@
       margin-bottom: 28px;
       position: relative; z-index: 2;
     }
-    .modal-brand-text {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 5px;
-      color: var(--green);
-      text-transform: uppercase;
-      line-height: 1;
-      text-shadow: 0 0 12px rgba(124, 255, 160, 0.4);
+    .modal-brand-img {
+      height: 28px; width: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
     }
     .modal-tok-corner {
       display: flex; align-items: center; gap: 10px;
@@ -525,7 +521,7 @@
     <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
     <div class="modal-card">
       <div class="modal-corners">
-        <span class="modal-brand-text">SCG Alpha</span>
+        <img src="scg-alpha-title-tr.png" alt="SCG Alpha" class="modal-brand-img">
         <div class="modal-tok-corner">
           <div class="modal-tok-corner-info">
             <div class="modal-tok-corner-name" id="m-name">—</div>
