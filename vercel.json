@@ -1,17 +1,5 @@
 {
   "buildCommand": "",
   "outputDirectory": ".",
-  "cleanUrls": true,
-  "redirects": [
-    {
-      "source": "/vault",
-      "destination": "/",
-      "permanent": true
-    },
-    {
-      "source": "/vault.html",
-      "destination": "/",
-      "permanent": true
-    }
-  ]
+  "cleanUrls": true
 }
