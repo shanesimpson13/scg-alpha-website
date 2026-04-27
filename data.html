@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCG Alpha — The Vault</title>
+  <title>SCG Alpha — Data</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #000;
+      --line: rgba(255, 255, 255, 0.08);
+      --dim: rgba(255, 255, 255, 0.55);
+      --dimmer: rgba(255, 255, 255, 0.32);
+      --green: #7cffa0;
     }
 
     body {
-      background: #000;
+      background: var(--bg);
       color: #fff;
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
       min-height: 100vh;
@@ -23,111 +27,260 @@
     }
 
     canvas#starfield {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
       z-index: 0;
     }
 
-    .content {
-      position: relative;
-      z-index: 1;
-      min-height: 100vh;
-    }
+    .content { position: relative; z-index: 1; min-height: 100vh; }
 
-    .logo {
-      position: fixed;
-      top: 28px;
-      left: 32px;
-      z-index: 10;
+    /* ── top-right scg mark + social ── */
+    .top-bar {
+      position: fixed; top: 28px; right: 32px;
+      display: flex; gap: 20px; align-items: center; z-index: 10;
     }
+    .top-bar a { opacity: 0.45; transition: opacity 0.3s; line-height: 0; }
+    .top-bar a:hover { opacity: 1; }
+    .top-bar svg { width: 22px; height: 22px; }
+    .top-bar svg.x-icon { width: 18px; height: 18px; }
 
-    .logo a {
-      display: block;
+    .home-link {
+      position: fixed; top: 28px; left: 32px;
+      font-size: 11px; letter-spacing: 2px;
+      color: var(--dimmer); text-decoration: none;
+      z-index: 10; text-transform: uppercase;
+      transition: color 0.2s;
     }
+    .home-link:hover { color: #fff; }
 
-    .logo img {
-      width: 100px;
-      height: auto;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
-
-    .social-links {
-      position: fixed;
-      bottom: 28px;
-      right: 32px;
-      display: flex;
-      gap: 20px;
-      align-items: center;
-      z-index: 10;
-    }
-
-    .social-links a {
-      opacity: 0.4;
-      transition: opacity 0.3s;
-    }
-
-    .social-links a:hover {
-      opacity: 1;
-    }
-
-    .social-links svg {
-      width: 24px;
-      height: 24px;
-    }
-
-    .social-links svg.x-icon {
-      width: 20px;
-      height: 20px;
-    }
-
-    .vault-wrapper {
-      max-width: 960px;
+    /* ── page wrap ── */
+    .wrap {
+      max-width: 1080px;
       margin: 0 auto;
-      padding: 120px 24px 120px;
+      padding: 110px 32px 60px;
     }
 
-    .vault-title {
-      font-size: 18px;
-      font-weight: 400;
-      letter-spacing: 2px;
-      margin-bottom: 12px;
-      text-align: center;
+    /* ── header ── */
+    .brand-mark {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px;
+    }
+    .brand-mark img { width: 22px; height: 22px; }
+    .brand-mark-text {
+      font-size: 12px; letter-spacing: 5px;
+      color: var(--green); text-transform: uppercase; font-weight: 600;
+    }
+    .page-title {
+      font-size: 28px; font-weight: 500;
+      letter-spacing: -0.3px; margin-bottom: 6px;
+    }
+    .page-sub {
+      font-size: 13px; color: var(--dim);
+      letter-spacing: 0.3px; margin-bottom: 36px;
     }
 
-    .vault-subtitle {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.35);
-      text-align: center;
-      margin-bottom: 48px;
-      letter-spacing: 0.5px;
+    /* ── stats grid ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--line);
+      margin-bottom: 28px;
+    }
+    .stat {
+      padding: 22px 24px;
+      border-right: 1px solid var(--line);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-val {
+      font-size: 30px; font-weight: 500;
+      letter-spacing: -0.3px;
+      line-height: 1.1;
+    }
+    .stat-val.accent { color: var(--green); }
+    .stat-lbl {
+      margin-top: 8px;
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--dimmer); text-transform: uppercase;
     }
 
-    /* Loading / Empty states */
-    .status-msg {
-      text-align: center;
-      padding: 80px 0;
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 14px;
-      letter-spacing: 0.5px;
+    /* ── filters ── */
+    .filters {
+      display: flex; flex-wrap: wrap;
+      gap: 28px;
+      margin-bottom: 22px;
+      align-items: center;
+    }
+    .filter-group {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .filter-label {
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--dimmer); text-transform: uppercase;
+    }
+    .filter-btns {
+      display: flex; gap: 4px;
+      border: 1px solid var(--line);
+    }
+    .filter-btn {
+      padding: 8px 14px;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      font-family: inherit;
+      font-size: 11px; letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { color: #fff; }
+    .filter-btn.active {
+      background: rgba(124, 255, 160, 0.1);
+      color: var(--green);
+      border: 1px solid var(--green);
+      margin: -1px;
     }
 
-    .status-msg.pulse {
-      animation: pulse 2s ease-in-out infinite;
+    /* ── signals table ── */
+    .table-wrap { border: 1px solid var(--line); }
+    table.signals {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    table.signals th {
+      text-align: left;
+      padding: 14px 18px;
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--dimmer); text-transform: uppercase;
+      font-weight: 500;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.015);
+    }
+    table.signals th.right { text-align: right; }
+    table.signals td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    table.signals td.right { text-align: right; }
+    table.signals tr.row { cursor: pointer; transition: background 0.15s; }
+    table.signals tr.row:hover { background: rgba(124, 255, 160, 0.04); }
+    table.signals tr:last-child td { border-bottom: none; }
+    .tok {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .tok img {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      object-fit: cover; flex-shrink: 0;
+    }
+    .tok-name { font-weight: 500; }
+    .peak-pos { color: var(--green); font-weight: 500; }
+    .peak-neg { color: rgba(255, 110, 110, 0.85); }
+
+    .empty {
+      padding: 40px 18px; text-align: center;
+      font-size: 12px; color: var(--dimmer);
+      letter-spacing: 1.5px; text-transform: uppercase;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 1; }
+    /* ── modal card (GMGN-style) ── */
+    .modal {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+    .modal.open { display: flex; }
+    .modal-card {
+      max-width: 460px; width: 100%;
+      background: #000;
+      border: 1px solid rgba(124, 255, 160, 0.45);
+      box-shadow: 0 0 80px rgba(124, 255, 160, 0.15);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 14px; right: 14px;
+      background: transparent; border: none;
+      color: var(--dimmer); cursor: pointer;
+      font-family: inherit; font-size: 14px;
+      transition: color 0.15s;
+      z-index: 2;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 22px;
+      border-bottom: 1px solid rgba(124, 255, 160, 0.18);
+      background:
+        linear-gradient(90deg, rgba(124, 255, 160, 0.08) 0%, rgba(124, 255, 160, 0) 60%),
+        rgba(124, 255, 160, 0.02);
+    }
+    .modal-brand img {
+      width: 18px; height: 18px;
+      filter: drop-shadow(0 0 4px rgba(124, 255, 160, 0.5));
+    }
+    .modal-brand-text {
+      font-size: 11px; letter-spacing: 5px;
+      color: var(--green); text-transform: uppercase; font-weight: 600;
+    }
+    .modal-body { padding: 26px 22px; }
+    .modal-tok {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 22px;
+    }
+    .modal-tok img {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06); object-fit: cover;
+    }
+    .modal-tok-info { flex: 1; min-width: 0; }
+    .modal-tok-name {
+      font-size: 18px; font-weight: 600;
+      letter-spacing: 0.2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .modal-tok-mint {
+      margin-top: 2px;
+      font-size: 11px; color: var(--dimmer);
+      cursor: pointer; transition: color 0.15s;
+    }
+    .modal-tok-mint:hover { color: var(--dim); }
+    .modal-mult {
+      font-size: 22px; font-weight: 600;
+      padding: 8px 14px;
+      background: rgba(124, 255, 160, 0.12);
+      border: 1px solid rgba(124, 255, 160, 0.3);
+      color: var(--green);
+      letter-spacing: -0.3px;
+    }
+    .modal-mult.neg {
+      background: rgba(255, 110, 110, 0.08);
+      border-color: rgba(255, 110, 110, 0.3);
+      color: rgba(255, 110, 110, 0.95);
+    }
+    .modal-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+    .modal-stat-lbl {
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--dimmer); text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .modal-stat-val {
+      font-size: 18px; font-weight: 500;
+      letter-spacing: -0.2px;
     }
 
-    /* License gate overlay */
+    /* ── member gate ── */
     .gate {
       position: fixed; inset: 0;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.88);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       display: flex; align-items: center; justify-content: center;
@@ -138,14 +291,13 @@
       max-width: 440px; width: 100%;
       padding: 44px 36px;
       border: 1px solid rgba(124, 255, 160, 0.4);
-      background: rgba(0, 0, 0, 0.85);
+      background: #000;
       box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
       text-align: center;
     }
     .gate-mark {
       font-size: 11px; letter-spacing: 5px;
-      color: #7cffa0;
-      text-transform: uppercase;
+      color: var(--green); text-transform: uppercase;
       margin-bottom: 14px;
     }
     .gate-title {
@@ -154,7 +306,7 @@
       margin-bottom: 12px;
     }
     .gate-sub {
-      font-size: 13px; color: rgba(255, 255, 255, 0.5);
+      font-size: 13px; color: var(--dim);
       line-height: 1.6; margin-bottom: 28px;
     }
     .gate-input {
@@ -168,587 +320,61 @@
       margin-bottom: 12px;
       transition: border-color 0.2s;
     }
-    .gate-input:focus {
-      outline: none;
-      border-color: rgba(124, 255, 160, 0.6);
-    }
+    .gate-input:focus { outline: none; border-color: rgba(124, 255, 160, 0.6); }
     .gate-btn {
-      width: 100%;
-      padding: 14px 24px;
-      border: 2px solid #7cffa0;
+      width: 100%; padding: 14px 24px;
+      border: 2px solid var(--green);
       background: rgba(124, 255, 160, 0.08);
-      color: #7cffa0;
+      color: var(--green);
       font-family: inherit;
       font-size: 12px; font-weight: 500;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all 0.2s;
+      letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s;
     }
-    .gate-btn:hover {
-      background: rgba(124, 255, 160, 0.16);
-    }
-    .gate-btn:disabled {
-      opacity: 0.5; cursor: not-allowed;
-    }
+    .gate-btn:hover { background: rgba(124, 255, 160, 0.16); }
+    .gate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .gate-error {
-      font-size: 11px;
-      color: #ff6b6b;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-top: 14px;
-      min-height: 14px;
+      font-size: 11px; color: #ff6b6b;
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-top: 14px; min-height: 14px;
     }
     .gate-foot {
       margin-top: 22px;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.35);
-      letter-spacing: 0.5px;
+      font-size: 11px; color: var(--dimmer);
     }
     .gate-foot a {
-      color: #7cffa0;
-      text-decoration: none;
+      color: var(--green); text-decoration: none;
       border-bottom: 1px solid rgba(124, 255, 160, 0.4);
     }
 
-    /* Token Cards */
-    .cards {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .card {
-      position: relative;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 24px 28px;
-      background: rgba(255, 255, 255, 0.02);
-      transition: border-color 0.3s;
-    }
-
-    .card:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    .card-brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: -24px -28px 18px;
-      padding: 10px 28px;
-      border-bottom: 1px solid rgba(124, 255, 160, 0.18);
-      background:
-        linear-gradient(90deg, rgba(124, 255, 160, 0.08) 0%, rgba(124, 255, 160, 0) 60%),
-        rgba(124, 255, 160, 0.02);
-    }
-    .card-brand img {
-      width: 16px; height: 16px;
-      filter: drop-shadow(0 0 4px rgba(124, 255, 160, 0.5));
-    }
-    .card-brand-text {
-      font-size: 10px;
-      letter-spacing: 4px;
-      color: #7cffa0;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-
-    .card-logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.06);
-      flex-shrink: 0;
-      object-fit: cover;
-    }
-
-    .card-name {
-      font-size: 18px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-    }
-
-    .card-mint {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.3);
-      margin-left: 10px;
-      letter-spacing: 0;
-    }
-
-    .card-return {
-      margin-left: auto;
-      font-size: 18px;
-      font-weight: 700;
-      padding: 6px 16px;
-      border-radius: 3px;
-      letter-spacing: 0.5px;
-    }
-
-    .return-positive { background: rgba(0, 200, 83, 0.15); color: #00c853; }
-    .return-negative { background: rgba(244, 67, 54, 0.15); color: #f44336; }
-
-    .card-metrics {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px 24px;
-      margin-bottom: 18px;
-    }
-
-    .metric {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .metric-label {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.4);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      font-weight: 500;
-    }
-
-    .metric-icon {
-      margin-right: 5px;
-      font-size: 14px;
-    }
-
-    .metric-icon.accent {
-      color: rgba(0, 200, 83, 0.7);
-    }
-
-    .metric-icon.warn {
-      color: rgba(255, 152, 0, 0.7);
-    }
-
-    .metric-value {
-      font-size: 16px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .metric-value.positive { color: #00c853; }
-    .metric-value.negative { color: #f44336; }
-
-    .card-divider {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 2px;
-      color: rgba(255, 255, 255, 0.3);
-      text-transform: uppercase;
-      padding: 12px 0 8px;
-      margin-bottom: 6px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-top: 14px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .card-twitter {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.4);
-    }
-
-    .card-twitter a {
-      color: rgba(255, 255, 255, 0.6);
-      text-decoration: none;
-    }
-
-    .card-twitter a:hover {
-      color: #fff;
-    }
-
-    .card-buy-link {
-      font-size: 13px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.6);
-      text-decoration: none;
-      letter-spacing: 1px;
-      padding: 8px 20px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.3s;
-    }
-
-    .card-buy-link:hover {
-      border-color: rgba(255, 255, 255, 0.4);
-      color: #fff;
-    }
-
-    .section-label {
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 3px;
-      color: rgba(255, 255, 255, 0.45);
-      margin-bottom: 20px;
-    }
-
-    /* Recap Section */
-    .recap {
-      margin-bottom: 32px;
-      padding: 36px 32px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    .recap-title {
-      font-size: 13px;
-      letter-spacing: 1.5px;
-      color: rgba(255, 255, 255, 0.5);
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .recap-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      text-align: center;
-    }
-
-    .recap-stat-label {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.45);
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-
-    .recap-stat-value {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    /* Recap filters */
-    .recap-filters {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .filter-group {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-    }
-
-    .filter-label {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.3);
-      letter-spacing: 1px;
-      margin-right: 6px;
-      text-transform: uppercase;
-    }
-
-    .filter-btn {
-      background: none;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: rgba(255, 255, 255, 0.4);
-      font-family: inherit;
-      font-size: 11px;
-      padding: 3px 10px;
-      cursor: pointer;
-      border-radius: 3px;
-      transition: all 0.2s;
-    }
-
-    .filter-btn:hover {
-      color: rgba(255, 255, 255, 0.7);
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    .filter-btn.active {
-      color: #fff;
-      border-color: rgba(255, 255, 255, 0.5);
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    /* Completed controls */
-    .completed-controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .sort-wrapper {
-      position: relative;
-    }
-
-    .sort-trigger {
-      background: none;
-      border: none;
-      color: rgba(255, 255, 255, 0.35);
-      font-family: inherit;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 0;
-      transition: color 0.3s;
-    }
-
-    .sort-trigger:hover {
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .sort-icon {
-      font-size: 14px;
-    }
-
-    .sort-dropdown {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 6px;
-      background: rgba(15, 15, 15, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      z-index: 20;
-      min-width: 140px;
-    }
-
-    .sort-dropdown.open {
-      display: block;
-    }
-
-    .sort-option {
-      display: block;
-      width: 100%;
-      background: none;
-      border: none;
-      color: rgba(255, 255, 255, 0.4);
-      font-family: inherit;
-      font-size: 12px;
-      letter-spacing: 0.5px;
-      padding: 10px 16px;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.2s;
-    }
-
-    .sort-option:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .sort-option.active {
-      color: #fff;
-    }
-
-    .pagination {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .page-btn {
-      background: none;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: rgba(255, 255, 255, 0.4);
-      font-family: inherit;
-      font-size: 12px;
-      padding: 6px 12px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .page-btn:hover {
-      border-color: rgba(255, 255, 255, 0.3);
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .page-btn.active {
-      border-color: rgba(255, 255, 255, 0.5);
-      color: #fff;
-    }
-
-    .page-btn:disabled {
-      opacity: 0.2;
-      cursor: default;
-    }
-
-    /* Responsive */
-    @media (max-width: 600px) {
-      .logo {
-        top: 16px;
-        left: 16px;
-      }
-
-      .logo img {
-        width: 72px;
-      }
-
-      .vault-wrapper {
-        padding: 80px 12px 80px;
-      }
-
-      .vault-title {
-        font-size: 15px;
-        margin-bottom: 8px;
-      }
-
-      .vault-subtitle {
-        font-size: 11px;
-        margin-bottom: 32px;
-      }
-
-      .card {
-        padding: 14px;
-      }
-
-      .card-header {
-        gap: 10px;
-        margin-bottom: 12px;
-      }
-
-      .card-logo {
-        width: 36px;
-        height: 36px;
-      }
-
-      .card-name {
-        font-size: 15px;
-      }
-
-      .card-mint {
-        font-size: 10px;
-        margin-left: 6px;
-      }
-
-      .card-return {
-        font-size: 14px;
-        padding: 4px 10px;
-      }
-
-      /* Live metrics row — always 3 columns */
-      .card-metrics-live {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px 12px;
-      }
-
-      .card-metrics-live .metric-label {
-        font-size: 9px;
-      }
-
-      .card-metrics-live .metric-value {
-        font-size: 14px;
-      }
-
-      /* AT SIGNAL metrics — 3 columns, tighter */
-      .card-metrics {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px 12px;
-      }
-
-      .metric-label {
-        font-size: 9px;
-        letter-spacing: 0.5px;
-      }
-
-      .metric-icon {
-        font-size: 11px;
-        margin-right: 3px;
-      }
-
-      .metric-value {
-        font-size: 13px;
-      }
-
-      .card-divider {
-        font-size: 10px;
-        padding: 8px 0 6px;
-      }
-
-      .card-footer {
-        padding-top: 10px;
-      }
-
-      .card-twitter {
-        font-size: 11px;
-      }
-
-      .card-buy-link {
-        font-size: 11px;
-        padding: 6px 14px;
-      }
-
-      .recap-filters {
-        flex-direction: column;
-        gap: 8px;
-        align-items: flex-start;
-      }
-
-      .filter-btn {
-        font-size: 10px;
-        padding: 3px 8px;
-      }
-
-      /* Recap — 2 cols top row, 3 cols bottom, or just flow */
-      .recap {
-        padding: 24px 16px;
-      }
-
-      .recap-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 18px 12px;
-      }
-
-      .recap-stat-label {
-        font-size: 10px;
-      }
-
-      .recap-stat-value {
-        font-size: 14px;
-      }
-
-      .section-label {
-        font-size: 12px;
-        letter-spacing: 2px;
-      }
-
-      /* Social links — don't overlap content */
-      .social-links {
-        position: fixed;
-        bottom: 12px;
-        right: 12px;
-        gap: 14px;
-      }
-
-      .social-links svg {
-        width: 18px;
-        height: 18px;
-      }
-
-      .social-links svg.x-icon {
-        width: 15px;
-        height: 15px;
-      }
+    /* ── responsive ── */
+    @media (max-width: 720px) {
+      .wrap { padding: 90px 18px 60px; }
+      .home-link { top: 20px; left: 20px; }
+      .top-bar { top: 20px; right: 20px; }
+      .page-title { font-size: 22px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .stat { border-right: none; border-bottom: 1px solid var(--line); }
+      .stat:nth-child(2) { border-right: none; }
+      .stat:nth-child(odd) { border-right: 1px solid var(--line); }
+      .stat:nth-last-child(-n+2) { border-bottom: none; }
+      .filters { gap: 16px; }
+      .filter-btn { padding: 7px 10px; font-size: 10px; }
+      table.signals th, table.signals td { padding: 12px 10px; }
+      table.signals th.hide-sm, table.signals td.hide-sm { display: none; }
+      .modal-mult { font-size: 18px; padding: 6px 10px; }
     }
   </style>
 </head>
 <body>
   <canvas id="starfield"></canvas>
 
+  <!-- ── member gate ── -->
   <div class="gate" id="gate">
     <div class="gate-card">
       <div class="gate-mark">SCG Alpha · Members</div>
       <div class="gate-title">Enter your Whop license key</div>
-      <div class="gate-sub">This dashboard is for active members only. Paste the license key from your Whop account (Whop → Memberships → SCG Alpha → License Key).</div>
+      <div class="gate-sub">This dashboard is for active members only. Paste your Whop license key to unlock.</div>
       <input type="password" class="gate-input" id="gate-input" placeholder="paste your license key" autocomplete="off" spellcheck="false" />
       <button class="gate-btn" id="gate-btn">Unlock →</button>
       <div class="gate-error" id="gate-error"></div>
@@ -756,221 +382,212 @@
     </div>
   </div>
 
-  <div class="content">
-    <div class="logo">
-      <a href="index.html"><img src="scg-logo.png" alt="SCG Alpha"></a>
-    </div>
-    <div class="social-links">
-      <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
-        <svg class="x-icon" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-        </svg>
-      </a>
-      <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
-        <svg viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/>
-        </svg>
-      </a>
-    </div>
-    <div class="vault-wrapper">
-      <h1 class="vault-title">The Vault</h1>
-      <p class="vault-subtitle">Live signal dashboard — scored, tracked, transparent<br><span style="display:inline-block;margin-top:8px"><a href="https://gmgn.ai/ai?ref=scgalpha" target="_blank" style="color: rgba(255,255,255,0.35); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.15); transition: color 0.3s;">Powered by GMGN</a></span></p>
+  <a href="index.html" class="home-link">← Home</a>
 
-      <div class="section-label">ACTIVE SIGNALS</div>
-      <div id="active-cards" class="cards">
-        <div class="status-msg pulse">Scanning...</div>
+  <div class="top-bar">
+    <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
+      <svg class="x-icon" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+    </a>
+    <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
+      <svg viewBox="0 0 24 24" fill="#fff"><path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/></svg>
+    </a>
+  </div>
+
+  <div class="content">
+    <div class="wrap">
+
+      <div class="brand-mark">
+        <img src="scg-logo.png" alt="">
+        <span class="brand-mark-text">SCG Alpha</span>
+      </div>
+      <h1 class="page-title">Member Data</h1>
+      <p class="page-sub">Every signal the engine has emitted. Click a row for details.</p>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Signals</div></div>
+        <div class="stat"><div class="stat-val accent" id="s-2x">—</div><div class="stat-lbl">≥ 2× winners</div></div>
+        <div class="stat"><div class="stat-val accent" id="s-5x">—</div><div class="stat-lbl">≥ 5× winners</div></div>
+        <div class="stat"><div class="stat-val accent" id="s-10x">—</div><div class="stat-lbl">≥ 10× MEGAs</div></div>
       </div>
 
-      <div id="completed-section" style="display:none;">
-        <div class="section-label" style="margin-top: 48px;">COMPLETED</div>
-        <div id="recap" class="recap">
-          <div class="recap-filters">
-            <div class="filter-group">
-              <span class="filter-label">Period</span>
-              <button class="filter-btn" data-period="1" onclick="setTimePeriod(1)">1D</button>
-              <button class="filter-btn" data-period="3" onclick="setTimePeriod(3)">3D</button>
-              <button class="filter-btn" data-period="7" onclick="setTimePeriod(7)">7D</button>
-              <button class="filter-btn" data-period="30" onclick="setTimePeriod(30)">30D</button>
-              <button class="filter-btn active" data-period="0" onclick="setTimePeriod(0)">ALL</button>
-            </div>
-            <div class="filter-group">
-              <span class="filter-label">WR</span>
-              <button class="filter-btn wr-btn active" data-wr="1" onclick="setWrFilter(1)">All</button>
-              <button class="filter-btn wr-btn" data-wr="2" onclick="setWrFilter(2)">2x+</button>
-            </div>
-          </div>
-          <div class="recap-grid">
-            <div>
-              <div class="recap-stat-label">&#x25A3; Total Calls</div>
-              <div class="recap-stat-value" id="recap-total">—</div>
-            </div>
-            <div>
-              <div class="recap-stat-label">&#x25CE; Win Rate</div>
-              <div class="recap-stat-value" id="recap-winrate">—</div>
-            </div>
-            <div>
-              <div class="recap-stat-label">&#x2234; Avg Return</div>
-              <div class="recap-stat-value" id="recap-pnl">—</div>
-            </div>
-            <div>
-              <div class="recap-stat-label">&#x2B06; Best</div>
-              <div class="recap-stat-value" id="recap-best">—</div>
-            </div>
+      <div class="filters">
+        <div class="filter-group">
+          <span class="filter-label">Period</span>
+          <div class="filter-btns" id="period-btns">
+            <button class="filter-btn" data-period="1">1D</button>
+            <button class="filter-btn" data-period="3">3D</button>
+            <button class="filter-btn" data-period="7">7D</button>
+            <button class="filter-btn" data-period="30">30D</button>
+            <button class="filter-btn active" data-period="0">ALL</button>
           </div>
         </div>
-        <div class="completed-controls">
-          <div class="sort-wrapper">
-            <button class="sort-trigger" id="sort-trigger">
-              <span class="sort-icon">&#x2195;</span>
-              <span id="sort-label">Performance</span>
-            </button>
-            <div class="sort-dropdown" id="sort-dropdown">
-              <button class="sort-option active" data-sort="performance">Performance</button>
-              <button class="sort-option" data-sort="age">Recent</button>
-            </div>
+        <div class="filter-group">
+          <span class="filter-label">Performance</span>
+          <div class="filter-btns" id="perf-btns">
+            <button class="filter-btn active" data-perf="0">All</button>
+            <button class="filter-btn" data-perf="2">2×+</button>
+            <button class="filter-btn" data-perf="5">5×+</button>
+            <button class="filter-btn" data-perf="10">10×+</button>
           </div>
-          <div class="pagination" id="pagination"></div>
         </div>
-        <div id="completed-cards" class="cards"></div>
-        <div class="pagination" id="pagination-bottom" style="margin-top: 16px; justify-content: flex-end;"></div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="signals">
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th class="hide-sm">Date</th>
+              <th class="right">Alert MC</th>
+              <th class="right hide-sm">Peak MC</th>
+              <th class="right">Peak</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="5" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── detail modal ── -->
+  <div class="modal" id="modal">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+      <div class="modal-brand">
+        <img src="scg-logo.png" alt="">
+        <span class="modal-brand-text">SCG Alpha</span>
+      </div>
+      <div class="modal-body">
+        <div class="modal-tok">
+          <img id="m-logo" src="" alt="">
+          <div class="modal-tok-info">
+            <div class="modal-tok-name" id="m-name">—</div>
+            <div class="modal-tok-mint" id="m-mint" title="Click to copy">—</div>
+          </div>
+          <div class="modal-mult" id="m-mult">—</div>
+        </div>
+        <div class="modal-stats">
+          <div>
+            <div class="modal-stat-lbl">Alert MC</div>
+            <div class="modal-stat-val" id="m-alert-mc">—</div>
+          </div>
+          <div>
+            <div class="modal-stat-lbl">ATH MC</div>
+            <div class="modal-stat-val" id="m-ath-mc">—</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    // ── Starfield ──────────────────────────────────────────────────
-    const canvas = document.getElementById('starfield');
-    const ctx = canvas.getContext('2d');
-    let W, H;
-
-    function resize() {
-      W = canvas.width = window.innerWidth;
-      H = canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    const NUM_STARS = 120;
-    const stars = [];
-    for (let i = 0; i < NUM_STARS; i++) {
-      stars.push({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        r: Math.random() * 1.1 + 0.3,
-        baseAlpha: Math.random() * 0.35 + 0.15,
-        twinkleSpeed: Math.random() * 0.005 + 0.001,
-        twinkleOffset: Math.random() * Math.PI * 2,
-      });
-    }
-
-    const shootingStars = [];
-
-    function spawnShootingStar() {
-      const startX = Math.random() * W * 0.5;
-      const startY = H * 0.5 + Math.random() * H * 0.5;
-      const angle = -(Math.PI / 6 + Math.random() * Math.PI / 6);
-      shootingStars.push({
-        x: startX, y: startY, angle: angle,
-        speed: 8 + Math.random() * 10,
-        length: 60 + Math.random() * 100,
-        life: 1.0,
-        decay: 0.008 + Math.random() * 0.012,
-      });
-    }
-
-    let lastShootingStarTime = 0;
-
-    function animate(time) {
-      ctx.clearRect(0, 0, W, H);
-
-      for (const s of stars) {
-        const alpha = s.baseAlpha + Math.sin(time * s.twinkleSpeed + s.twinkleOffset) * 0.2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.05, Math.min(1, alpha))})`;
-        ctx.fill();
+    /* ── starfield ──────────────────────────────────────────────── */
+    (function() {
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let W, H, stars = [];
+      function resize() {
+        W = canvas.width = innerWidth;
+        H = canvas.height = innerHeight;
       }
-
-      if (time - lastShootingStarTime > 2000 + Math.random() * 3000) {
-        spawnShootingStar();
-        lastShootingStarTime = time;
-      }
-
-      for (let i = shootingStars.length - 1; i >= 0; i--) {
-        const ss = shootingStars[i];
-        ss.x += Math.cos(ss.angle) * ss.speed;
-        ss.y += Math.sin(ss.angle) * ss.speed;
-        ss.life -= ss.decay;
-
-        if (ss.life <= 0 || ss.x > W + 100 || ss.x < -100 || ss.y < -100 || ss.y > H + 100) {
-          shootingStars.splice(i, 1);
-          continue;
+      function build() {
+        stars = [];
+        const n = Math.floor((W * H) / 12000);
+        for (let i = 0; i < n; i++) {
+          stars.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.2,
+            a: Math.random() * 0.7 + 0.1,
+            d: (Math.random() - 0.5) * 0.05
+          });
         }
-
-        const tailX = ss.x - Math.cos(ss.angle) * ss.length;
-        const tailY = ss.y - Math.sin(ss.angle) * ss.length;
-        const grad = ctx.createLinearGradient(tailX, tailY, ss.x, ss.y);
-        grad.addColorStop(0, `rgba(255, 255, 255, 0)`);
-        grad.addColorStop(1, `rgba(255, 255, 255, ${ss.life * 0.9})`);
-        ctx.beginPath();
-        ctx.moveTo(tailX, tailY);
-        ctx.lineTo(ss.x, ss.y);
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(ss.x, ss.y, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${ss.life})`;
-        ctx.fill();
       }
+      function tick() {
+        ctx.clearRect(0, 0, W, H);
+        for (const s of stars) {
+          s.a += s.d;
+          if (s.a < 0.1 || s.a > 0.9) s.d = -s.d;
+          ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        requestAnimationFrame(tick);
+      }
+      resize(); build();
+      addEventListener('resize', () => { resize(); build(); });
+      tick();
+    })();
 
-      requestAnimationFrame(animate);
+    /* ── helpers ─────────────────────────────────────────────────── */
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+
+    function fmtMcap(n) {
+      if (n == null || isNaN(n)) return '—';
+      if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+      return '$' + Math.round(n);
     }
 
-    requestAnimationFrame(animate);
+    function fmtDate(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts * 1000);
+      const m = d.toLocaleString('en-US', { month: 'short' });
+      return `${m} ${d.getDate()}, ${d.getFullYear() % 100}`;
+    }
 
-    window.addEventListener('resize', () => {
-      for (const s of stars) {
-        s.x = Math.random() * W;
-        s.y = Math.random() * H;
-      }
-    });
+    function multiplier(a) {
+      if (!a.alert_mcap || a.alert_mcap <= 0) return 1;
+      return (a.max_mcap || a.alert_mcap) / a.alert_mcap;
+    }
 
-    // ── API config (used by gate + dashboard) ──────────────────────
-    // EC2 validates the Whop license key directly — no proxy needed.
+    function shortMint(mint) {
+      if (!mint || mint.length < 10) return mint || '';
+      return mint.slice(0, 6) + '…' + mint.slice(-4);
+    }
+
+    function tokenLogo(a) {
+      const scan = a.scan_raw_at_alert || {};
+      return scan.logo || '';
+    }
+
+    function tokenName(a) {
+      const scan = a.scan_raw_at_alert || {};
+      return a.name || scan.symbol || scan.name || 'Unknown';
+    }
+
+    /* ── member gate ─────────────────────────────────────────────── */
     const API_URL = 'https://api.scgalpha.com/api/alerts';
-    function authHeaders(k) { return { 'Authorization': 'Bearer ' + k }; }
-
-    // ── Member Gate ────────────────────────────────────────────────
     const KEY_STORAGE = 'scg_member_key';
     const gateEl = document.getElementById('gate');
     const gateInputEl = document.getElementById('gate-input');
     const gateBtnEl = document.getElementById('gate-btn');
     const gateErrEl = document.getElementById('gate-error');
 
-    function getKey() {
-      try { return localStorage.getItem(KEY_STORAGE) || ''; } catch (e) { return ''; }
-    }
-    function setKey(k) {
-      try { localStorage.setItem(KEY_STORAGE, k); } catch (e) {}
-    }
-    function clearKey() {
-      try { localStorage.removeItem(KEY_STORAGE); } catch (e) {}
+    const getKey = () => { try { return localStorage.getItem(KEY_STORAGE) || ''; } catch (e) { return ''; } };
+    const setKey = (k) => { try { localStorage.setItem(KEY_STORAGE, k); } catch (e) {} };
+    const clearKey = () => { try { localStorage.removeItem(KEY_STORAGE); } catch (e) {} };
+    const authHeaders = (k) => ({ 'Authorization': 'Bearer ' + k });
+
+    function lockGate(msg) {
+      gateEl.style.display = 'flex';
+      gateErrEl.textContent = msg || '';
+      gateBtnEl.disabled = false;
     }
     function unlockGate() {
       gateEl.style.display = 'none';
-      // Begin polling now that we're authed
       fetchAlerts();
       if (!window._pollStarted) {
         setInterval(fetchAlerts, 30000);
         window._pollStarted = true;
       }
-    }
-    function lockGate(msg) {
-      gateEl.style.display = 'flex';
-      gateErrEl.textContent = msg || '';
-      gateBtnEl.disabled = false;
     }
 
     async function tryKey(k) {
@@ -983,10 +600,7 @@
           lockGate('Invalid or inactive license key');
           return false;
         }
-        if (!res.ok) {
-          lockGate('Server error — try again');
-          return false;
-        }
+        if (!res.ok) { lockGate('Server error — try again'); return false; }
         setKey(k);
         unlockGate();
         return true;
@@ -1005,273 +619,15 @@
       if (e.key === 'Enter') gateBtnEl.click();
     });
 
-    // Try stored key on load
     (function bootGate() {
       const stored = getKey();
-      if (stored) {
-        tryKey(stored);
-      }
+      if (stored) tryKey(stored);
     })();
 
-    // ── Dashboard Data ─────────────────────────────────────────────
-    const activeCardsEl = document.getElementById('active-cards');
-    const completedCardsEl = document.getElementById('completed-cards');
-    const completedSection = document.getElementById('completed-section');
-    const recapEl = document.getElementById('recap');
-
-    function returnMultiple(a) {
-      if (!a.alert_mcap || a.alert_mcap <= 0) return 1;
-      return (a.max_mcap || a.alert_mcap) / a.alert_mcap;
-    }
-
-    function fmtMcap(n) {
-      if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
-      if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
-      return '$' + n.toFixed(0);
-    }
-
-    function fmtPct(n) {
-      const sign = n >= 0 ? '+' : '';
-      return sign + n.toFixed(1) + '%';
-    }
-
-    function renderCard(a) {
-      const logoSrc = a.logo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" fill="%23222"/></svg>';
-      const mintShort = a.mint.slice(0, 6) + '...' + a.mint.slice(-4);
-      const gmgnLink = 'https://gmgn.ai/sol/token/' + a.mint + '?ref=scgalpha';
-      const xMult = returnMultiple(a);
-      const pnlClass = xMult >= 1 ? 'positive' : 'negative';
-
-      let twitterHtml = '';
-      if (a.twitter_handle) {
-        twitterHtml = `<a href="https://x.com/${a.twitter_handle}" target="_blank">@${a.twitter_handle}</a> (${a.twitter_followers.toLocaleString()})`;
-      }
-
-      return `
-        <div class="card">
-          <div class="card-brand">
-            <img src="scg-logo.png" alt="">
-            <span class="card-brand-text">SCG Alpha</span>
-          </div>
-          <div class="card-header">
-            <img class="card-logo" src="${logoSrc}" alt="" onerror="this.style.display='none'">
-            <span class="card-name">${a.name}<span class="card-mint" style="cursor:pointer" title="Copy mint address" onclick="navigator.clipboard.writeText('${a.mint}');this.textContent='copied!';setTimeout(()=>this.textContent='${mintShort}',1500);if(window._vTrack)window._vTrack('copy_mint',{mint:'${a.mint}',name:'${a.name.replace(/'/g, "")}'});event.stopPropagation()">${mintShort}</span></span>
-            <span class="card-return ${returnMultiple(a) >= 1 ? 'return-positive' : 'return-negative'}">${returnMultiple(a).toFixed(2)}x</span>
-          </div>
-          <div class="card-metrics card-metrics-live">
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x25C9;</span> MC @ Signal</span>
-              <span class="metric-value">${fmtMcap(a.alert_mcap)}</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon accent">&#x2B06;</span> ATH MC</span>
-              <span class="metric-value">${fmtMcap(a.max_mcap || a.alert_mcap)}</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x2234;</span> PNL</span>
-              <span class="metric-value ${pnlClass}">${fmtPct((xMult - 1) * 100)}</span>
-            </div>
-          </div>
-          <div class="card-divider">AT SIGNAL</div>
-          <div class="card-metrics">
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x23F1;</span> Age</span>
-              <span class="metric-value">${a.age_mins}m</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x21C5;</span> B/S Ratio</span>
-              <span class="metric-value">${a.bs_ratio}</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x2687;</span> Holders</span>
-              <span class="metric-value">${a.holders.toLocaleString()}</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon accent">&#x2197;</span> Holder Growth</span>
-              <span class="metric-value positive">+${a.holder_growth_pct}%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon warn">&#x2620;</span> Bot Degen</span>
-              <span class="metric-value">${a.bot_degen_pct}%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon">&#x2B21;</span> Liquidity</span>
-              <span class="metric-value">${fmtMcap(a.liquidity)}</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon warn">&#x26A0;</span> Bundler</span>
-              <span class="metric-value">${a.bundler_pct}%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon warn">&#x2716;</span> Top 10</span>
-              <span class="metric-value">${a.top10_pct || 0}%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label"><span class="metric-icon accent">&#x2605;</span> KOL</span>
-              <span class="metric-value">${a.kol_count}</span>
-            </div>
-          </div>
-          <div class="card-footer">
-            <span class="card-twitter">${twitterHtml}</span>
-            <a href="${gmgnLink}" target="_blank" class="card-buy-link" onclick="if(window._vTrack)window._vTrack('buy_click',{mint:'${a.mint}',name:'${a.name.replace(/'/g, "")}'})">BUY ON GMGN</a>
-          </div>
-        </div>
-      `;
-    }
-
-    // Recap filter state
-    let recapPeriodDays = 0;  // 0 = ALL
-    let recapWrThreshold = 1; // 1 = all wins (>1x), 2 = 2x+ only
-
-    function setTimePeriod(days) {
-      recapPeriodDays = days;
-      document.querySelectorAll('.filter-btn[data-period]').forEach(b => b.classList.toggle('active', parseInt(b.dataset.period) === days));
-      computeRecap();
-      completedPage = 0;
-      renderCompletedPage();
-      if (window._vTrack) window._vTrack('filter_period', {value: days});
-    }
-
-    function setWrFilter(threshold) {
-      recapWrThreshold = threshold;
-      document.querySelectorAll('.wr-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.wr) === threshold));
-      computeRecap();
-      if (window._vTrack) window._vTrack('filter_wr', {value: threshold});
-    }
-
-    function getFilteredCompleted() {
-      let filtered = completedAlerts;
-      if (recapPeriodDays > 0) {
-        const cutoff = Date.now() / 1000 - recapPeriodDays * 86400;
-        filtered = filtered.filter(a => a.alert_time >= cutoff);
-      }
-      return filtered;
-    }
-
-    function computeRecap() {
-      const filtered = getFilteredCompleted();
-      const total = filtered.length;
-      if (total === 0) {
-        document.getElementById('recap-total').textContent = '0';
-        document.getElementById('recap-winrate').textContent = '—';
-        document.getElementById('recap-pnl').textContent = '—';
-        document.getElementById('recap-pnl').style.color = '';
-        document.getElementById('recap-best').textContent = '—';
-        document.getElementById('recap-best').style.color = '';
-        return;
-      }
-
-      const mults = filtered.map(a => returnMultiple(a));
-      const winThreshold = recapWrThreshold;
-      const wins = mults.filter(m => m >= winThreshold).length;
-      const wr = Math.round(wins / total * 100);
-      const avgMult = mults.reduce((s, m) => s + m, 0) / total;
-
-      let best = filtered[0];
-      let bestMult = returnMultiple(best);
-      for (const a of filtered) {
-        const m = returnMultiple(a);
-        if (m > bestMult) { best = a; bestMult = m; }
-      }
-
-      document.getElementById('recap-total').textContent = total;
-      document.getElementById('recap-winrate').textContent = wr + '%';
-
-      const pnlEl = document.getElementById('recap-pnl');
-      pnlEl.textContent = avgMult.toFixed(2) + 'x';
-      pnlEl.style.color = avgMult >= 1 ? '#00c853' : '#f44336';
-
-      const bestEl = document.getElementById('recap-best');
-      bestEl.textContent = best.name + ' ' + bestMult.toFixed(1) + 'x';
-      bestEl.style.color = '#00c853';
-
-      // Update WR label
-      const wrLabel = document.querySelector('.filter-group:last-child .filter-label');
-      if (wrLabel) wrLabel.textContent = 'WR';
-    }
-
-    // Completed list state
-    let completedAlerts = [];
-    let completedSort = 'performance';  // 'performance' or 'age'
-    let completedPage = 0;
-    const PAGE_SIZE = 10;
-    const paginationEl = document.getElementById('pagination');
-
-    function sortCompleted(alerts, sortBy) {
-      const sorted = [...alerts];
-      if (sortBy === 'performance') {
-        sorted.sort((a, b) => returnMultiple(b) - returnMultiple(a));
-      } else {
-        sorted.sort((a, b) => b.alert_time - a.alert_time);
-      }
-      return sorted;
-    }
-
-    function renderCompletedPage() {
-      const filtered = getFilteredCompleted();
-      const sorted = sortCompleted(filtered, completedSort);
-      const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
-      const start = completedPage * PAGE_SIZE;
-      const page = sorted.slice(start, start + PAGE_SIZE);
-
-      completedCardsEl.innerHTML = page.map(renderCard).join('');
-
-      // Pagination — show arrows + up to 3 page buttons around current page
-      const paginationBottomEl = document.getElementById('pagination-bottom');
-      if (totalPages <= 1) {
-        paginationEl.innerHTML = '';
-        paginationBottomEl.innerHTML = '';
-        return;
-      }
-      let html = '';
-      html += `<button class="page-btn" onclick="goPage(${completedPage - 1})" ${completedPage === 0 ? 'disabled' : ''}>&larr;</button>`;
-      let startP = Math.max(0, completedPage - 1);
-      let endP = Math.min(totalPages - 1, startP + 2);
-      startP = Math.max(0, endP - 2);
-      for (let i = startP; i <= endP; i++) {
-        html += `<button class="page-btn ${i === completedPage ? 'active' : ''}" onclick="goPage(${i})">${i + 1}</button>`;
-      }
-      html += `<button class="page-btn" onclick="goPage(${completedPage + 1})" ${completedPage >= totalPages - 1 ? 'disabled' : ''}>&rarr;</button>`;
-      paginationEl.innerHTML = html;
-      paginationBottomEl.innerHTML = html;
-    }
-
-    function goPage(p) {
-      const filtered = getFilteredCompleted();
-      const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-      if (p < 0 || p >= totalPages) return;
-      completedPage = p;
-      renderCompletedPage();
-      if (window._vTrack) window._vTrack('paginate', {page: p});
-    }
-
-    // Sort dropdown
-    const sortTrigger = document.getElementById('sort-trigger');
-    const sortDropdown = document.getElementById('sort-dropdown');
-    const sortLabel = document.getElementById('sort-label');
-
-    sortTrigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sortDropdown.classList.toggle('open');
-    });
-
-    document.addEventListener('click', () => {
-      sortDropdown.classList.remove('open');
-    });
-
-    document.querySelectorAll('.sort-option').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.querySelectorAll('.sort-option').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        completedSort = btn.dataset.sort;
-        sortLabel.textContent = btn.textContent;
-        completedPage = 0;
-        sortDropdown.classList.remove('open');
-        renderCompletedPage();
-        if (window._vTrack) window._vTrack('sort_change', {value: btn.dataset.sort});
-      });
-    });
+    /* ── data ────────────────────────────────────────────────────── */
+    let allAlerts = [];
+    let periodDays = 0;     // 0 = ALL
+    let perfThreshold = 0;  // 0 = All
 
     async function fetchAlerts() {
       try {
@@ -1285,90 +641,133 @@
         }
         if (!res.ok) return;
         const data = await res.json();
-
-        const active = (data.alerts || []).filter(a => !a.completed);
-        completedAlerts = (data.alerts || []).filter(a => a.completed);
-
-        if (active.length > 0) {
-          activeCardsEl.innerHTML = active.map(renderCard).join('');
-        } else {
-          activeCardsEl.innerHTML = '<div class="status-msg">No active signals</div>';
-        }
-
-        if (completedAlerts.length > 0) {
-          completedSection.style.display = '';
-          computeRecap();
-          renderCompletedPage();
-        } else {
-          completedSection.style.display = 'none';
-        }
-      } catch (e) {
-        if (activeCardsEl.querySelector('.pulse')) {
-          activeCardsEl.innerHTML = '<div class="status-msg pulse">Scanning...</div>';
-        }
-      }
+        allAlerts = data.alerts || [];
+        render();
+      } catch (e) { /* keep showing last good state */ }
     }
 
-    // Initial fetch + poll are kicked off by the gate after auth (see unlockGate above).
-    // If user already has a stored key, bootGate() already started polling.
-
-    // ── Analytics Tracking ────────────────────────────────────────
-    (function() {
-      const ANALYTICS_URL = 'https://api.scgalpha.com/api/event';
-
-      // Visitor ID — persists across sessions
-      let visitorId = localStorage.getItem('_v_vid');
-      if (!visitorId) {
-        visitorId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
-        localStorage.setItem('_v_vid', visitorId);
+    function getFiltered() {
+      let out = allAlerts;
+      if (periodDays > 0) {
+        const cutoff = (Date.now() / 1000) - (periodDays * 86400);
+        out = out.filter(a => (a.alert_time || 0) >= cutoff);
       }
-
-      // Session ID — new per page load
-      const sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
-      const sessionStart = Date.now();
-
-      function track(event, data) {
-        try {
-          const payload = JSON.stringify({
-            e: event,
-            vid: visitorId,
-            sid: sessionId,
-            ts: Math.floor(Date.now() / 1000),
-            d: data || {}
-          });
-          if (navigator.sendBeacon) {
-            navigator.sendBeacon(ANALYTICS_URL, new Blob([payload], {type: 'application/json'}));
-          }
-        } catch(e) {}
+      if (perfThreshold > 0) {
+        out = out.filter(a => multiplier(a) >= perfThreshold);
       }
+      return out;
+    }
 
-      // Page view
-      const isReturn = localStorage.getItem('_v_visited') === '1';
-      track('page_view', {
-        referrer: document.referrer || '',
-        screen_w: screen.width,
-        screen_h: screen.height,
-        is_return: isReturn
+    function renderStats(filtered) {
+      const total = filtered.length;
+      let n2 = 0, n5 = 0, n10 = 0;
+      for (const a of filtered) {
+        const m = multiplier(a);
+        if (m >= 2) n2++;
+        if (m >= 5) n5++;
+        if (m >= 10) n10++;
+      }
+      document.getElementById('s-total').textContent = total;
+      document.getElementById('s-2x').textContent = n2;
+      document.getElementById('s-5x').textContent = n5;
+      document.getElementById('s-10x').textContent = n10;
+    }
+
+    function renderRows(filtered) {
+      const tbody = document.getElementById('rows');
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">No signals match these filters</td></tr>';
+        return;
+      }
+      // Sort by recent alert_time desc
+      const sorted = filtered.slice().sort((a, b) => (b.alert_time || 0) - (a.alert_time || 0));
+      tbody.innerHTML = sorted.map(a => {
+        const mult = multiplier(a);
+        const peakClass = mult >= 1 ? 'peak-pos' : 'peak-neg';
+        const logo = tokenLogo(a);
+        const name = tokenName(a);
+        return `
+          <tr class="row" data-mint="${esc(a.mint)}">
+            <td>
+              <div class="tok">
+                ${logo ? `<img src="${esc(logo)}" alt="" onerror="this.style.visibility='hidden'">` : `<img alt="" style="visibility:hidden">`}
+                <span class="tok-name">${esc(name)}</span>
+              </div>
+            </td>
+            <td class="hide-sm">${esc(fmtDate(a.alert_time))}</td>
+            <td class="right">${esc(fmtMcap(a.alert_mcap))}</td>
+            <td class="right hide-sm">${esc(fmtMcap(a.max_mcap))}</td>
+            <td class="right ${peakClass}">${mult.toFixed(1)}×</td>
+          </tr>
+        `;
+      }).join('');
+      // Wire row clicks
+      tbody.querySelectorAll('tr.row').forEach(tr => {
+        tr.addEventListener('click', () => {
+          const mint = tr.dataset.mint;
+          const a = allAlerts.find(x => x.mint === mint);
+          if (a) openModal(a);
+        });
       });
-      localStorage.setItem('_v_visited', '1');
+    }
 
-      // Heartbeat every 30s (only when visible)
-      setInterval(function() {
-        if (!document.hidden) track('heartbeat');
-      }, 30000);
+    function render() {
+      const filtered = getFiltered();
+      renderStats(filtered);
+      renderRows(filtered);
+    }
 
-      // Session end
-      function sendEnd() {
-        track('session_end', {duration_s: Math.round((Date.now() - sessionStart) / 1000)});
-      }
-      window.addEventListener('beforeunload', sendEnd);
-      document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'hidden') sendEnd();
+    /* ── filter wiring ──────────────────────────────────────────── */
+    document.querySelectorAll('#period-btns .filter-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#period-btns .filter-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        periodDays = parseInt(b.dataset.period, 10) || 0;
+        render();
       });
+    });
+    document.querySelectorAll('#perf-btns .filter-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#perf-btns .filter-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        perfThreshold = parseFloat(b.dataset.perf) || 0;
+        render();
+      });
+    });
 
-      // Expose for inline event handlers
-      window._vTrack = track;
-    })();
+    /* ── modal ──────────────────────────────────────────────────── */
+    const modalEl = document.getElementById('modal');
+    function openModal(a) {
+      const mult = multiplier(a);
+      const logo = tokenLogo(a);
+      const mLogo = document.getElementById('m-logo');
+      mLogo.src = logo || '';
+      mLogo.style.visibility = logo ? 'visible' : 'hidden';
+      mLogo.onerror = () => { mLogo.style.visibility = 'hidden'; };
+
+      document.getElementById('m-name').textContent = tokenName(a);
+      const mintEl = document.getElementById('m-mint');
+      mintEl.textContent = shortMint(a.mint);
+      mintEl.onclick = () => {
+        if (!a.mint) return;
+        navigator.clipboard.writeText(a.mint);
+        const orig = mintEl.textContent;
+        mintEl.textContent = 'copied!';
+        setTimeout(() => { mintEl.textContent = orig; }, 1200);
+      };
+      const multEl = document.getElementById('m-mult');
+      multEl.textContent = mult.toFixed(1) + '×';
+      multEl.classList.toggle('neg', mult < 1);
+
+      document.getElementById('m-alert-mc').textContent = fmtMcap(a.alert_mcap);
+      document.getElementById('m-ath-mc').textContent = fmtMcap(a.max_mcap);
+
+      modalEl.classList.add('open');
+    }
+    function closeModal() { modalEl.classList.remove('open'); }
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   </script>
 </body>
 </html>
