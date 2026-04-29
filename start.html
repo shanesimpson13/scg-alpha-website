@@ -3,13 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCG Alpha — Is this for you?</title>
-  <meta name="description" content="3 quick questions to see if SCG Alpha is right for you. $99/month — first 40 founders only.">
-  <meta property="og:title" content="SCG Alpha — Is this for you?">
-  <meta property="og:description" content="3 questions. 30 seconds. Then see exactly what you'd be getting.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://scgalpha.com/start">
-  <meta name="twitter:card" content="summary_large_image">
+  <title>SCG Alpha — Get Live Access</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -17,294 +11,364 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
+      --bg: #000;
+      --line: rgba(255, 255, 255, 0.08);
+      --dim: rgba(255, 255, 255, 0.55);
+      --dimmer: rgba(255, 255, 255, 0.32);
       --green: #7cffa0;
-      --dim:   rgba(255, 255, 255, 0.55);
-      --dimmer:rgba(255, 255, 255, 0.35);
-      --line:  rgba(255, 255, 255, 0.12);
     }
 
-    html, body { background: #000; }
     body {
+      background: var(--bg);
       color: #fff;
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
       min-height: 100vh;
       overflow-x: hidden;
-      line-height: 1.6;
     }
 
     canvas#starfield {
-      position: fixed; top: 0; left: 0;
+      position: fixed; inset: 0;
       width: 100%; height: 100%;
       z-index: 0;
     }
+    .content { position: relative; z-index: 1; min-height: 100vh; }
 
-    .content {
-      position: relative;
-      z-index: 1;
-      min-height: 100vh;
-      padding: 80px 24px 120px;
-    }
-
-    .wrap { max-width: 760px; margin: 0 auto; }
-
-    .social-links {
-      position: fixed; bottom: 28px; right: 32px;
-      display: flex; gap: 20px; align-items: center; z-index: 10;
-    }
-    .social-links a { opacity: 0.4; transition: opacity 0.3s; }
-    .social-links a:hover { opacity: 1; }
-    .social-links svg { width: 24px; height: 24px; }
-    .social-links svg.x-icon { width: 20px; height: 20px; }
-
-    /* ─── back link ─── */
-    .back-link {
+    .home-link {
       position: fixed; top: 28px; left: 32px;
       font-size: 11px; letter-spacing: 2px;
       color: var(--dimmer); text-decoration: none;
       z-index: 10; text-transform: uppercase;
       transition: color 0.2s;
     }
-    .back-link:hover { color: #fff; }
+    .home-link:hover { color: #fff; }
 
-    /* ─── skip link (inline, below the answers, left-aligned) ─── */
-    .skip-funnel-wrap {
-      margin-top: 16px;
-      display: flex; justify-content: flex-start;
+    .top-bar {
+      position: fixed; top: 28px; right: 32px;
+      display: flex; gap: 20px; align-items: center; z-index: 10;
     }
-    .skip-funnel {
-      font-size: 11px; letter-spacing: 2px;
-      color: var(--dimmer); text-decoration: none;
-      text-transform: uppercase;
-      transition: color 0.2s;
-      padding: 6px 2px;
-    }
-    .skip-funnel:hover { color: var(--dim); }
+    .top-bar a { opacity: 0.45; transition: opacity 0.3s; line-height: 0; }
+    .top-bar a:hover { opacity: 1; }
+    .top-bar svg { width: 22px; height: 22px; }
+    .top-bar svg.x-icon { width: 18px; height: 18px; }
 
-    /* ─── hero ─── */
-    .hero { text-align: center; margin-bottom: 80px; }
-    .eyebrow {
-      font-size: 11px; letter-spacing: 3px; color: var(--green);
-      text-transform: uppercase; margin-bottom: 22px;
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 110px 32px 60px;
     }
-    .hero h1 {
+
+    /* ── hero ── */
+    .hero { text-align: center; margin-bottom: 56px; }
+    .title-logo {
+      display: block;
+      width: 360px; height: auto;
+      margin: 0 auto 22px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .hero-eyebrow {
+      font-size: 11px; letter-spacing: 4px;
+      color: var(--green); text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero-title {
       font-size: 36px; font-weight: 500;
-      letter-spacing: -0.5px; line-height: 1.2;
+      letter-spacing: -0.6px; line-height: 1.2;
+      max-width: 680px; margin: 0 auto 16px;
+    }
+    .hero-title .accent { color: var(--green); }
+    .hero-sub {
+      font-size: 15px; color: var(--dim);
+      letter-spacing: 0.3px; line-height: 1.7;
+      max-width: 540px; margin: 0 auto;
+    }
+
+    /* ── pricing cards ── */
+    .pricing {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-bottom: 80px;
+    }
+    .price-card {
+      position: relative;
+      padding: 38px 32px 32px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.018);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .price-card.featured {
+      border-color: rgba(124, 255, 160, 0.5);
+      background:
+        radial-gradient(ellipse at top right, rgba(124, 255, 160, 0.12) 0%, rgba(124, 255, 160, 0) 60%),
+        rgba(124, 255, 160, 0.025);
+      box-shadow: 0 0 80px rgba(124, 255, 160, 0.18);
+    }
+    .price-badge {
+      position: absolute; top: -11px; left: 24px;
+      padding: 5px 12px;
+      background: var(--green); color: #000;
+      font-size: 10px; letter-spacing: 3px; font-weight: 700;
+      text-transform: uppercase;
+    }
+    .price-tier {
+      font-size: 11px; letter-spacing: 4px;
+      color: var(--dimmer); text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .price-card.featured .price-tier { color: var(--green); }
+    .price-num {
+      font-size: 56px; font-weight: 600;
+      letter-spacing: -2.5px; line-height: 1;
+      margin-bottom: 6px;
+    }
+    .price-num .currency {
+      font-size: 26px; font-weight: 500;
+      letter-spacing: -1px;
+      vertical-align: 14px;
+      margin-right: 2px;
+    }
+    .price-num .freq {
+      font-size: 14px; color: var(--dim);
+      letter-spacing: 0; font-weight: 400;
+      margin-left: 4px;
+    }
+    .price-strike {
+      font-size: 13px; color: var(--dimmer);
+      letter-spacing: 0.3px;
       margin-bottom: 18px;
     }
-    .hero h1 .accent { color: var(--green); }
-    .hero .lede {
-      font-size: 14px; color: var(--dim);
-      max-width: 480px; margin: 0 auto;
-      line-height: 1.7;
+    .price-strike s { color: rgba(255, 110, 110, 0.7); }
+    .price-tagline {
+      font-size: 13px; color: var(--dim);
+      line-height: 1.6;
+      margin-bottom: 28px;
+      min-height: 42px;
     }
-
-    /* ─── question step ─── */
-    .step {
-      margin-bottom: 60px;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-      pointer-events: none;
-      scroll-margin-top: 80px;
-    }
-    .step.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
-
-    .step-q {
-      font-size: 11px; letter-spacing: 3px; color: var(--green);
-      text-transform: uppercase; margin-bottom: 14px;
-    }
-    .step-q .num { color: var(--dimmer); margin-right: 12px; }
-    .step-title {
-      font-size: 22px; font-weight: 500;
-      line-height: 1.35; letter-spacing: -0.3px;
-      margin-bottom: 26px;
-    }
-
-    .options {
-      display: grid; gap: 10px;
-    }
-    .option {
-      padding: 16px 20px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.01);
-      color: #fff;
-      font-family: inherit; font-size: 14px;
-      letter-spacing: 0.2px;
-      text-align: left;
-      cursor: pointer;
+    .price-cta {
+      display: block; width: 100%;
+      padding: 18px 24px;
+      border: 2px solid var(--green);
+      background: rgba(124, 255, 160, 0.06);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 13px; font-weight: 500;
+      letter-spacing: 3px;
+      text-decoration: none;
+      text-transform: uppercase;
+      text-align: center;
       transition: all 0.2s ease;
     }
-    .option:hover {
-      border-color: var(--dim);
-      background: rgba(255, 255, 255, 0.04);
-      transform: translateX(2px);
+    .price-cta:hover {
+      background: rgba(124, 255, 160, 0.18);
+      box-shadow: 0 0 24px rgba(124, 255, 160, 0.3);
     }
-    .option.selected {
-      border-color: var(--green);
-      background: rgba(124, 255, 160, 0.08);
-      color: var(--green);
+    .price-card.featured .price-cta {
+      background: rgba(124, 255, 160, 0.18);
+      box-shadow: 0 0 24px rgba(124, 255, 160, 0.25);
     }
-    .option.selected::before {
-      content: "✓ ";
-      color: var(--green);
-      font-weight: 500;
-      margin-right: 6px;
+    .price-card.featured .price-cta:hover {
+      background: rgba(124, 255, 160, 0.28);
+      box-shadow: 0 0 36px rgba(124, 255, 160, 0.5);
+      transform: translateY(-2px);
     }
-    .step.answered .option:not(.selected) {
-      opacity: 0.35;
-    }
-
-    /* ─── proof section ─── */
-    .proof-intro {
-      margin-bottom: 26px;
-    }
-    .proof-intro .label {
-      font-size: 11px; letter-spacing: 3px; color: var(--green);
-      text-transform: uppercase; margin-bottom: 14px;
-    }
-    .proof-intro h2 {
-      font-size: 24px; font-weight: 500;
-      letter-spacing: -0.3px; line-height: 1.35;
+    .price-foot {
+      margin-top: 14px;
+      font-size: 11px; letter-spacing: 0.3px;
+      color: var(--dimmer); text-align: center;
     }
 
-    .proof-grid {
+    /* ── what's included ── */
+    .section-label {
+      font-size: 11px; letter-spacing: 4px;
+      color: var(--green); text-transform: uppercase;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .section-title {
+      font-size: 28px; font-weight: 500;
+      letter-spacing: -0.4px; line-height: 1.25;
+      max-width: 640px; margin: 0 auto 14px;
+      text-align: center;
+    }
+    .section-sub {
+      font-size: 14px; color: var(--dim);
+      letter-spacing: 0.3px; line-height: 1.7;
+      max-width: 560px; margin: 0 auto 48px;
+      text-align: center;
+    }
+
+    .stack {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      margin-bottom: 28px;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 40px;
     }
-    .proof-shot {
+    .stack-item {
+      padding: 22px 24px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.015);
+    }
+    .stack-num {
+      font-size: 11px; letter-spacing: 3px;
+      color: var(--dimmer); margin-bottom: 8px;
+    }
+    .stack-title {
+      font-size: 16px; font-weight: 600;
+      letter-spacing: -0.1px;
+      margin-bottom: 8px;
+    }
+    .stack-title .emoji { margin-right: 8px; }
+    .stack-desc {
+      font-size: 13px; color: var(--dim);
+      line-height: 1.65;
+      margin-bottom: 8px;
+    }
+    .stack-value {
+      display: inline-block;
+      padding: 3px 9px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--dimmer);
+      font-size: 10px; letter-spacing: 1px;
+    }
+    .stack-value s { color: rgba(255, 110, 110, 0.6); }
+
+    .total-bar {
+      padding: 22px 28px;
+      border: 1px solid rgba(124, 255, 160, 0.35);
+      background:
+        linear-gradient(90deg, rgba(124, 255, 160, 0.06) 0%, rgba(124, 255, 160, 0) 60%),
+        rgba(124, 255, 160, 0.02);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+      margin-bottom: 80px;
+    }
+    .total-bar-l { font-size: 14px; color: var(--dim); }
+    .total-bar-l strong { color: #fff; font-weight: 600; }
+    .total-bar-r {
+      font-size: 18px; font-weight: 600;
+      color: var(--green);
+      letter-spacing: 0.3px;
+    }
+    .total-bar-r s { color: rgba(255, 110, 110, 0.6); font-weight: 400; margin-right: 8px; }
+
+    /* ── receipts ── */
+    .receipts {
+      margin-bottom: 80px;
+    }
+    .receipts-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .receipt {
+      padding: 18px 14px;
       border: 1px solid var(--line);
       background: rgba(255, 255, 255, 0.02);
-      overflow: hidden;
-      display: block;
-    }
-    .proof-shot img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
-    /* ─── pitch ─── */
-    .pitch-section { margin-bottom: 50px; }
-    .pitch-label {
-      font-size: 11px; letter-spacing: 3px; color: var(--green);
-      text-transform: uppercase; margin-bottom: 14px;
-    }
-    .pitch-h {
-      font-size: 22px; font-weight: 500;
-      line-height: 1.4; margin-bottom: 24px;
-      letter-spacing: -0.3px;
-    }
-    .pitch-h .accent { color: var(--green); }
-    .pitch-list {
-      display: flex; flex-direction: column; gap: 14px;
-    }
-    .pitch-item {
-      display: grid; grid-template-columns: 28px 1fr;
-      gap: 14px; align-items: start;
-      padding: 14px 0;
-      border-bottom: 1px solid var(--line);
-    }
-    .pitch-item:last-child { border-bottom: none; }
-    .pitch-num { color: var(--green); font-size: 11px; letter-spacing: 1.5px; padding-top: 2px; }
-    .pitch-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-    .pitch-desc { font-size: 12px; color: var(--dim); line-height: 1.6; }
-
-    /* ─── final paywall (mirrors index.html founders-card) ─── */
-    .founders-card {
-      border: 1px solid var(--green);
-      background: rgba(124, 255, 160, 0.03);
-      padding: 36px;
-    }
-    .fc-top {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      gap: 28px; flex-wrap: wrap; margin-bottom: 32px;
-      padding-bottom: 24px; border-bottom: 1px solid var(--line);
-    }
-    .fc-tier { font-size: 10px; letter-spacing: 3px; color: var(--green); margin-bottom: 12px; }
-    .fc-price { font-size: 42px; font-weight: 500; letter-spacing: -1px; margin-bottom: 8px; }
-    .fc-once { font-size: 14px; color: var(--dim); letter-spacing: 0; font-weight: 400; margin-left: 6px; }
-    .fc-sub { font-size: 13px; color: var(--dim); max-width: 420px; line-height: 1.6; }
-    .fc-cta {
-      flex-shrink: 0; align-self: center;
-      padding: 16px 32px; font-size: 13px;
-      display: inline-block;
-      border: 1px solid var(--green);
-      color: var(--green);
-      text-decoration: none;
-      font-family: inherit;
-      letter-spacing: 1.5px;
-      transition: all 0.2s;
-    }
-    .fc-cta:hover {
-      background: rgba(124, 255, 160, 0.1);
-    }
-    .fc-features {
-      display: flex; flex-wrap: wrap;
-      column-gap: 28px; row-gap: 10px;
-      margin-bottom: 28px;
-    }
-    .fc-row {
-      flex: 0 0 calc(50% - 14px);
-      min-height: 40px;
-      font-size: 13px; color: #fff; line-height: 1.55;
-      display: flex; align-items: center;
-    }
-    .fc-row.fc-guarantee {
-      color: var(--green);
-      flex: 0 0 100%;
-      min-height: 0;
-      margin-top: 10px; padding-top: 18px;
-      border-top: 1px solid var(--line);
-    }
-
-    .skip-link {
-      display: block;
       text-align: center;
-      margin-top: 28px;
-      font-size: 11px; letter-spacing: 1.5px;
-      color: var(--dimmer);
-      text-decoration: none;
     }
-    .skip-link:hover { color: var(--dim); }
+    .receipt-name {
+      font-size: 12px; letter-spacing: 0.5px;
+      color: var(--dim); margin-bottom: 6px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .receipt-mult {
+      font-size: 24px; font-weight: 600;
+      color: var(--green);
+      letter-spacing: -0.5px;
+    }
 
-    /* ─── mobile ─── */
+    /* ── final cta ── */
+    .final-cta {
+      padding: 56px 32px;
+      text-align: center;
+      border: 1px solid rgba(124, 255, 160, 0.45);
+      background:
+        radial-gradient(ellipse at center, rgba(124, 255, 160, 0.10) 0%, rgba(124, 255, 160, 0) 70%),
+        rgba(124, 255, 160, 0.02);
+      box-shadow: 0 0 60px rgba(124, 255, 160, 0.15);
+    }
+    .final-eye {
+      font-size: 11px; letter-spacing: 4px;
+      color: var(--green); text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .final-title {
+      font-size: 28px; font-weight: 500;
+      letter-spacing: -0.4px; line-height: 1.3;
+      margin-bottom: 16px;
+      max-width: 580px; margin-left: auto; margin-right: auto;
+    }
+    .final-sub {
+      font-size: 14px; color: var(--dim);
+      max-width: 480px; margin: 0 auto 32px;
+      line-height: 1.65;
+    }
+    .final-btns { display: inline-flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .final-btn {
+      display: inline-block;
+      padding: 22px 42px;
+      border: 2px solid var(--green);
+      background: rgba(124, 255, 160, 0.08);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 13px; font-weight: 500;
+      letter-spacing: 3px;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+    }
+    .final-btn:hover {
+      background: rgba(124, 255, 160, 0.2);
+      box-shadow: 0 0 30px rgba(124, 255, 160, 0.4);
+      transform: translateY(-2px);
+    }
+    .final-btn.primary {
+      background: rgba(124, 255, 160, 0.2);
+      box-shadow: 0 0 24px rgba(124, 255, 160, 0.3);
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--dimmer);
+      font-size: 11px; letter-spacing: 1px;
+      margin-top: 60px;
+    }
+    .footer-note a { color: var(--dim); text-decoration: underline; }
+
+    /* ── responsive ── */
     @media (max-width: 720px) {
-      .content { padding: 70px 18px 100px; }
-      .back-link { top: 20px; left: 20px; }
-      .skip-funnel-wrap { margin-top: 14px; }
-      .proof-grid { grid-template-columns: 1fr; }
-      .hero h1 { font-size: 26px; }
-      .hero .lede { font-size: 13px; }
-      .step-title { font-size: 18px; }
-      .option { font-size: 13px; padding: 14px 16px; }
-      .pitch-h { font-size: 18px; }
-      .founders-card { padding: 24px; }
-      .fc-price { font-size: 32px; }
-      .fc-row { flex: 0 0 100%; min-height: 0; }
-      .fc-cta { width: 100%; text-align: center; }
-      .social-links { bottom: 20px; right: 20px; gap: 14px; }
-      .social-links svg { width: 20px; height: 20px; }
-      .social-links svg.x-icon { width: 17px; height: 17px; }
+      .wrap { padding: 90px 18px 60px; }
+      .home-link { top: 20px; left: 20px; }
+      .top-bar { top: 20px; right: 20px; }
+      .title-logo { width: 240px; }
+      .hero-title { font-size: 24px; }
+      .hero-sub { font-size: 13px; }
+      .pricing { grid-template-columns: 1fr; gap: 32px; margin-bottom: 60px; }
+      .price-num { font-size: 44px; }
+      .price-num .currency { font-size: 22px; vertical-align: 11px; }
+      .stack { grid-template-columns: 1fr; }
+      .receipts-grid { grid-template-columns: repeat(2, 1fr); }
+      .receipt-mult { font-size: 18px; }
+      .section-title { font-size: 20px; }
+      .total-bar { flex-direction: column; align-items: flex-start; }
+      .final-cta { padding: 40px 22px; }
+      .final-title { font-size: 20px; }
+      .final-btn { padding: 18px 28px; font-size: 12px; letter-spacing: 2px; width: 100%; }
     }
   </style>
 </head>
 <body>
   <canvas id="starfield"></canvas>
 
-  <a href="index.html" class="back-link">← Back</a>
+  <a href="home.html" class="home-link">← Back</a>
 
-  <div class="social-links">
+  <div class="top-bar">
     <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
-      <svg class="x-icon" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-      </svg>
+      <svg class="x-icon" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
     </a>
     <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
-      <svg viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-        <path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/>
-      </svg>
+      <svg viewBox="0 0 24 24" fill="#fff"><path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/></svg>
     </a>
   </div>
 
@@ -312,261 +376,180 @@
     <div class="wrap">
 
       <div class="hero">
-        <div class="eyebrow">Before you join</div>
-        <h1>3 quick questions.</h1>
-        <p class="lede">Just to understand where you're at.</p>
+        <img src="scg-alpha-title-tr.png" alt="SCG Alpha" class="title-logo">
+        <div class="hero-eyebrow">Members only</div>
+        <h1 class="hero-title">The Solana signal engine. <span class="accent">Live.</span></h1>
+        <p class="hero-sub">Real-time alerts. 30 days of receipts. No delay.</p>
       </div>
 
-      <!-- ─── Q1 ─── -->
-      <div class="step visible" id="step-1" data-step="1">
-        <div class="step-q"><span class="num">01</span>Question one</div>
-        <div class="step-title">Have you tried automated trading on Solana before?</div>
-        <div class="options">
-          <button class="option" data-q="1" data-a="lost">Yes — and I've lost money</button>
-          <button class="option" data-q="1" data-a="mixed">Yes — results have been mixed</button>
-          <button class="option" data-q="1" data-a="new">No, I'm new to it</button>
-          <button class="option" data-q="1" data-a="running">Running something now but want better signals</button>
+      <!-- ── pricing ── -->
+      <div class="pricing">
+        <div class="price-card">
+          <div class="price-tier">Monthly</div>
+          <div class="price-num"><span class="currency">$</span>49<span class="freq"> / month</span></div>
+          <div class="price-strike"><s>was $99</s> · cancel anytime</div>
+          <div class="price-tagline">Full access. Pay as you go. Cancel whenever you want.</div>
+          <a href="#" id="cta-monthly" class="price-cta">Start membership →</a>
+          <div class="price-foot">First month, $49</div>
         </div>
-        <div class="skip-funnel-wrap">
-          <a href="#step-paywall" class="skip-funnel">Skip ↓</a>
-        </div>
-      </div>
 
-      <!-- ─── Q2 ─── -->
-      <div class="step" id="step-2" data-step="2">
-        <div class="step-q"><span class="num">02</span>Question two</div>
-        <div class="step-title">What's actually blocking you?</div>
-        <div class="options">
-          <button class="option" data-q="2" data-a="code">I don't know how to code</button>
-          <button class="option" data-q="2" data-a="signal">I have no reliable signal source</button>
-          <button class="option" data-q="2" data-a="bots">The bots / TG calls I've tried have been bad</button>
-          <button class="option" data-q="2" data-a="time">Not enough time to build my own</button>
-        </div>
-        <div class="skip-funnel-wrap">
-          <a href="#step-paywall" class="skip-funnel">Skip ↓</a>
+        <div class="price-card featured">
+          <div class="price-badge">Best Value</div>
+          <div class="price-tier">Lifetime</div>
+          <div class="price-num"><span class="currency">$</span>499<span class="freq"> · once</span></div>
+          <div class="price-strike">10 months pays for itself · then free forever</div>
+          <div class="price-tagline">One payment. Locked in for life. No renewal, no price hikes, no expiration.</div>
+          <a href="#" id="cta-lifetime" class="price-cta">Get lifetime access →</a>
+          <div class="price-foot">Limited founder pricing — going up after launch</div>
         </div>
       </div>
 
-      <!-- ─── Q3 ─── -->
-      <div class="step" id="step-3" data-step="3">
-        <div class="step-q"><span class="num">03</span>Question three</div>
-        <div class="step-title">What does success look like in 30 days?</div>
-        <div class="options">
-          <button class="option" data-q="3" data-a="mega">Catching 1+ MEGA per week</button>
-          <button class="option" data-q="3" data-a="daily">Consistent daily profit</button>
-          <button class="option" data-q="3" data-a="build">Building my own algo from scratch</button>
-          <button class="option" data-q="3" data-a="learn">Just want to learn the space properly</button>
+      <!-- ── PRIMARY: signals ── -->
+      <div class="section-label">The signals</div>
+      <h2 class="section-title">Live alerts. The room. The receipts.</h2>
+
+      <div class="stack" style="margin-top: 32px;">
+        <div class="stack-item">
+          <div class="stack-num">01</div>
+          <div class="stack-title"><span class="emoji">📡</span>Live Telegram Alerts</div>
+          <div class="stack-desc">Every signal the engine fires, the moment it fires. Telegram bot pushes it straight to your phone — no 1-hour delay.</div>
+          <div class="stack-value"><s>$199/mo</s> standalone</div>
         </div>
-        <div class="skip-funnel-wrap">
-          <a href="#step-paywall" class="skip-funnel">Skip ↓</a>
+        <div class="stack-item">
+          <div class="stack-num">02</div>
+          <div class="stack-title"><span class="emoji">💬</span>Founders Discord</div>
+          <div class="stack-desc">Direct line to me and the rest of the room. Filter changes, regime calls, tape reads in real time. No mods, no spam.</div>
+          <div class="stack-value">Members only</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-num">03</div>
+          <div class="stack-title"><span class="emoji">🧠</span>Direct Access to Shane</div>
+          <div class="stack-desc">DM me directly. Get help reading the tape, sizing entries, anything. You bought the membership, you get the founder.</div>
+          <div class="stack-value">Priceless</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-num">04</div>
+          <div class="stack-title"><span class="emoji">📈</span>Backtest Data + Receipts</div>
+          <div class="stack-desc">30+ days of every signal the engine has fired, including price ticks. See the track record yourself, no cherry-picked screenshots.</div>
+          <div class="stack-value">Members only</div>
         </div>
       </div>
 
-      <!-- ─── PROOF ─── -->
-      <div class="step" id="step-proof">
-        <div class="proof-intro">
-          <div class="label">Real users · Real wins</div>
-          <h2>Here's what people are doing with the Engine right now.</h2>
-        </div>
+      <!-- ── SECONDARY: automation ── -->
+      <div class="section-label" style="margin-top: 80px;">Want to automate?</div>
+      <h2 class="section-title">Build your own bot on the engine.</h2>
 
-        <div class="proof-grid">
-          <div class="proof-shot">
-            <img src="proof/proof-1.jpg" alt="MARVIN +487% runner caught with SCG Alpha bot" loading="lazy">
-          </div>
-          <div class="proof-shot">
-            <img src="proof/proof-2.jpg" alt="Overnight wins from SCG Alpha bot — multiple open positions" loading="lazy">
-          </div>
-          <div class="proof-shot">
-            <img src="proof/proof-3.jpg" alt="SCG Alpha automated — Day one +$500, SAM +993%" loading="lazy">
-          </div>
-          <div class="proof-shot">
-            <img src="proof/proof-4.jpg" alt="48-hour SCG Alpha recap — 62 signals, 8 did 5x+, top runner 54x" loading="lazy">
-          </div>
+      <div class="stack" style="margin-top: 32px;">
+        <div class="stack-item">
+          <div class="stack-num">05</div>
+          <div class="stack-title"><span class="emoji">⚡</span>Full Signal API</div>
+          <div class="stack-desc">Unlimited calls. Same engine endpoint our bot reads from. Build a TG bot, a copy trader, an alpha scanner — whatever you want.</div>
+          <div class="stack-value"><s>$299/mo</s></div>
         </div>
-      </div>
-
-      <!-- ─── PITCH (mirror their pain → solution) ─── -->
-      <div class="step" id="step-pitch">
-        <div class="pitch-section">
-          <div class="pitch-label">Built for you</div>
-          <h2 class="pitch-h">You don't need another TG call group. <span class="accent">You need the engine.</span></h2>
-          <div class="pitch-list">
-            <div class="pitch-item">
-              <div class="pitch-num">01</div>
-              <div>
-                <div class="pitch-title">The Signal API</div>
-                <div class="pitch-desc">The proprietary engine behind our bot, via a single HTTP endpoint. Unlimited calls.</div>
-              </div>
-            </div>
-            <div class="pitch-item">
-              <div class="pitch-num">02</div>
-              <div>
-                <div class="pitch-title">The Playbook</div>
-                <div class="pitch-desc">The framework for turning raw signals into a profitable algo or TG signal bot.</div>
-              </div>
-            </div>
-            <div class="pitch-item">
-              <div class="pitch-num">03</div>
-              <div>
-                <div class="pitch-title">Reference Templates</div>
-                <div class="pitch-desc">Working code. Fork it, plug in your wallet, run it. Same architecture our bot uses.</div>
-              </div>
-            </div>
-            <div class="pitch-item">
-              <div class="pitch-num">04</div>
-              <div>
-                <div class="pitch-title">Step-by-Step Guides</div>
-                <div class="pitch-desc">Exact walkthroughs for building your own signal engine from scratch.</div>
-              </div>
-            </div>
-            <div class="pitch-item">
-              <div class="pitch-num">05</div>
-              <div>
-                <div class="pitch-title">Founders Discord</div>
-                <div class="pitch-desc">Direct line to Shane and the rest of the community. New filters, regime calls, real-time market reads.</div>
-              </div>
-            </div>
-          </div>
+        <div class="stack-item">
+          <div class="stack-num">06</div>
+          <div class="stack-title"><span class="emoji">🤖</span>Auto-Bot Builder Course</div>
+          <div class="stack-desc">Step-by-step build of your own automated trading bot using the SCG Signal API. Same architecture our bot runs on.</div>
+          <div class="stack-value"><s>$997</s></div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-num">07</div>
+          <div class="stack-title"><span class="emoji">🛠️</span>Filter Engineering Course</div>
+          <div class="stack-desc">Build your own conviction filter on top of the engine. Tighter, looser, custom — pick the thresholds that match your style.</div>
+          <div class="stack-value"><s>$497</s></div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-num">08</div>
+          <div class="stack-title"><span class="emoji">📦</span>Reference Bot Templates</div>
+          <div class="stack-desc">Working code for both the algo bot and the TG signal bot. Fork it, plug in your wallet, run it. Don't reinvent the wheel.</div>
+          <div class="stack-value"><s>$297</s></div>
         </div>
       </div>
 
-      <!-- ─── PAYWALL ─── -->
-      <div class="step" id="step-paywall">
-        <div class="founders-card">
-          <div class="fc-top">
-            <div>
-              <div class="fc-tier">SCG ALPHA MEMBERSHIP</div>
-              <div class="fc-price">$99 <span class="fc-once">/ month</span></div>
-              <div class="fc-sub">Everything above, for the price of a single good trade. Cancel anytime.</div>
-            </div>
-            <a href="https://whop.com/checkout/plan_PIEj1u7qhZbNk" target="_blank" rel="noopener" class="fc-cta">Start membership →</a>
-          </div>
-          <div class="fc-features">
-            <div class="fc-row">✓ The Signal API — our proprietary engine, yours to build on</div>
-            <div class="fc-row">✓ The Playbook — framework for turning signals into profit</div>
-            <div class="fc-row">✓ Reference templates — algo + TG signal engines</div>
-            <div class="fc-row">✓ Step-by-step build guides</div>
-            <div class="fc-row">✓ Private Discord — direct line to Shane + the community</div>
-            <div class="fc-row">✓ Unlimited API calls</div>
-            <div class="fc-row fc-guarantee">✓ Cancel anytime</div>
-          </div>
-        </div>
-        <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" class="skip-link">Not ready? Watch us trade live → @scg_alpha</a>
+      <div class="total-bar">
+        <div class="total-bar-l"><strong>If you bought all of this separately:</strong> just the courses + API + templates</div>
+        <div class="total-bar-r"><s>$2,290+</s>$49/mo or $499 once</div>
       </div>
 
+      <!-- ── receipts ── -->
+      <div class="receipts">
+        <div class="section-label">The engine's track record</div>
+        <h2 class="section-title">28 MEGAs in 30 days. Here's a sample.</h2>
+        <p class="section-sub">Every one of these was a signal members saw the moment it fired.</p>
+        <div class="receipts-grid">
+          <div class="receipt"><div class="receipt-name">ASTROID</div><div class="receipt-mult">73.6×</div></div>
+          <div class="receipt"><div class="receipt-name">LASTMAN</div><div class="receipt-mult">64.1×</div></div>
+          <div class="receipt"><div class="receipt-name">assface</div><div class="receipt-mult">54.3×</div></div>
+          <div class="receipt"><div class="receipt-name">XRP</div><div class="receipt-mult">49.1×</div></div>
+          <div class="receipt"><div class="receipt-name">Nintondo</div><div class="receipt-mult">34.3×</div></div>
+          <div class="receipt"><div class="receipt-name">Republicans</div><div class="receipt-mult">33.7×</div></div>
+          <div class="receipt"><div class="receipt-name">SAM</div><div class="receipt-mult">24.2×</div></div>
+          <div class="receipt"><div class="receipt-name">HIGHER</div><div class="receipt-mult">21.7×</div></div>
+        </div>
+      </div>
+
+      <!-- ── final cta ── -->
+      <div class="final-cta">
+        <div class="final-eye">Ready to plug in?</div>
+        <h2 class="final-title">Pick a tier. Be in the room in under 60 seconds.</h2>
+        <p class="final-sub">$49/mo if you want to try it. $499 lifetime if you're serious. Either way, you get everything above the moment you subscribe.</p>
+        <div class="final-btns">
+          <a href="#" id="cta-monthly-2" class="final-btn">$49 / month →</a>
+          <a href="#" id="cta-lifetime-2" class="final-btn primary">$499 lifetime →</a>
+        </div>
+      </div>
+
+      <p class="footer-note">
+        Already a member? <a href="data.html">Open the dashboard →</a>
+      </p>
     </div>
   </div>
 
   <script>
-    // ── Starfield (shared with index.html) ─────────────────────────
-    const canvas = document.getElementById('starfield');
-    const ctx = canvas.getContext('2d');
-    let W, H;
-    function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
-    resize(); addEventListener('resize', resize);
-    const stars = Array.from({length: 120}, () => ({
-      x: Math.random() * W, y: Math.random() * H,
-      r: Math.random() * 1.1 + 0.3,
-      baseAlpha: Math.random() * 0.35 + 0.15,
-      twinkleSpeed: Math.random() * 0.005 + 0.001,
-      twinkleOffset: Math.random() * Math.PI * 2,
-    }));
-    const shooting = [];
-    let lastShoot = 0;
-    function spawn() {
-      shooting.push({
-        x: Math.random() * W * 0.5,
-        y: H * 0.5 + Math.random() * H * 0.5,
-        angle: -(Math.PI / 6 + Math.random() * Math.PI / 6),
-        speed: 8 + Math.random() * 10,
-        length: 60 + Math.random() * 100,
-        life: 1.0, decay: 0.008 + Math.random() * 0.012,
-      });
-    }
-    function animate(t) {
-      ctx.clearRect(0, 0, W, H);
-      for (const s of stars) {
-        const a = s.baseAlpha + Math.sin(t * s.twinkleSpeed + s.twinkleOffset) * 0.2;
-        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${Math.max(0.05, Math.min(1, a))})`;
-        ctx.fill();
-      }
-      if (t - lastShoot > 2000 + Math.random() * 3000) { spawn(); lastShoot = t; }
-      for (let i = shooting.length - 1; i >= 0; i--) {
-        const s = shooting[i];
-        s.x += Math.cos(s.angle) * s.speed;
-        s.y += Math.sin(s.angle) * s.speed;
-        s.life -= s.decay;
-        if (s.life <= 0 || s.x > W + 100 || s.x < -100 || s.y < -100 || s.y > H + 100) {
-          shooting.splice(i, 1); continue;
+    /* ── starfield ──────────────────────────────────────────────── */
+    (function() {
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let W, H, stars = [];
+      function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+      function build() {
+        stars = [];
+        const n = Math.floor((W * H) / 12000);
+        for (let i = 0; i < n; i++) {
+          stars.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.2,
+            a: Math.random() * 0.7 + 0.1,
+            d: (Math.random() - 0.5) * 0.05
+          });
         }
-        const tx = s.x - Math.cos(s.angle) * s.length;
-        const ty = s.y - Math.sin(s.angle) * s.length;
-        const g = ctx.createLinearGradient(tx, ty, s.x, s.y);
-        g.addColorStop(0, 'rgba(255,255,255,0)');
-        g.addColorStop(1, `rgba(255,255,255,${s.life * 0.9})`);
-        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(s.x, s.y);
-        ctx.strokeStyle = g; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.beginPath(); ctx.arc(s.x, s.y, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${s.life})`; ctx.fill();
       }
-      requestAnimationFrame(animate);
-    }
-    requestAnimationFrame(animate);
-
-    // ── Funnel logic ────────────────────────────────────────────────
-    const stepOrder = ['step-1', 'step-2', 'step-3', 'step-proof', 'step-pitch', 'step-paywall'];
-    const answers = {};
-
-    function revealStep(id) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.classList.add('visible');
-      // Smooth scroll the new step into view
-      setTimeout(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 200);
-    }
-
-    function advanceFrom(currentStep) {
-      const idx = stepOrder.indexOf(currentStep);
-      // Reveal all subsequent steps from PROOF onward in one shot once Q3 is answered
-      if (currentStep === 'step-3') {
-        revealStep('step-proof');
-        setTimeout(() => document.getElementById('step-pitch').classList.add('visible'), 400);
-        setTimeout(() => document.getElementById('step-paywall').classList.add('visible'), 700);
-        return;
+      function tick() {
+        ctx.clearRect(0, 0, W, H);
+        for (const s of stars) {
+          s.a += s.d;
+          if (s.a < 0.1 || s.a > 0.9) s.d = -s.d;
+          ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        requestAnimationFrame(tick);
       }
-      const next = stepOrder[idx + 1];
-      if (next) revealStep(next);
-    }
+      resize(); build();
+      addEventListener('resize', () => { resize(); build(); });
+      tick();
+    })();
 
-    // Skip button — reveal everything and jump to paywall
-    document.querySelectorAll('.skip-funnel').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.querySelectorAll('.step').forEach(s => s.classList.add('visible'));
-        setTimeout(() => {
-          document.getElementById('step-paywall').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-      });
-    });
+    /* ── checkout links — TODO: replace with real Whop URLs ──────── */
+    const CHECKOUT_MONTHLY  = 'https://whop.com/checkout/plan_PSoceMO9deGzz';
+    const CHECKOUT_LIFETIME = 'https://whop.com/checkout/plan_UGWHs9Ps9X5BB';
 
-    document.querySelectorAll('.option').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const q = btn.dataset.q;
-        const a = btn.dataset.a;
-        answers['q' + q] = a;
-        try { localStorage.setItem('scg_funnel_answers', JSON.stringify(answers)); } catch (e) {}
-        // Mark step answered + selected
-        const step = btn.closest('.step');
-        step.classList.add('answered');
-        step.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        // Advance
-        advanceFrom(step.id);
-      });
-    });
+    document.getElementById('cta-monthly').href     = CHECKOUT_MONTHLY;
+    document.getElementById('cta-lifetime').href    = CHECKOUT_LIFETIME;
+    document.getElementById('cta-monthly-2').href   = CHECKOUT_MONTHLY;
+    document.getElementById('cta-lifetime-2').href  = CHECKOUT_LIFETIME;
   </script>
 </body>
 </html>
