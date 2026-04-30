@@ -759,12 +759,13 @@
 
       <div class="mode-toggle">
         <div class="mode-btns" id="mode-btns">
-          <button class="mode-btn active" data-mode="safe">Safe Filter</button>
-          <button class="mode-btn" data-mode="normal">Normal Vault</button>
+          <button class="mode-btn active" data-mode="vault">VAULT</button>
+          <button class="mode-btn" data-mode="smart">SMART</button>
+          <button class="mode-btn" data-mode="safe">SAFE</button>
         </div>
       </div>
       <div class="mode-desc" id="mode-desc">
-        Highly selective filter — only the cleanest setups. Same one our bot trades on.
+        Every signal the engine fires. Wider net, more setups to scan.
       </div>
 
       <div class="stats">
@@ -1000,7 +1001,7 @@
     let allAlerts = [];
     let periodDays = 1;     // 24H default
     let sortBy = 'performance';    // 'time' (newest first) or 'performance' (highest mult first)
-    let mode = 'safe';      // 'safe' (tight bot filter) or 'normal' (full vault)
+    let mode = 'vault';     // 'vault' (all) | 'smart' (smart-wallet whitelist) | 'safe' (clean tokens)
 
     /* Safe filter — uses server-computed is_safe field from /api/feed.
        Falls back to flat-field check for legacy snapshots without is_safe. */
@@ -1055,9 +1056,11 @@
         out = out.filter(a => (a.alert_time || 0) >= cutoff);
       }
 
-      // Mode filter (Safe / Normal Vault)
+      // Mode filter — Vault (no filter) | Smart (smart-wallet whitelist) | Safe (clean tokens)
       if (mode === 'safe') {
         out = out.filter(passesSafeFilter);
+      } else if (mode === 'smart') {
+        out = out.filter(a => a.is_smart === true);
       }
 
       return out;
@@ -1177,17 +1180,18 @@
       });
     });
 
-    // Mode toggle (Safe / Normal)
+    // Mode toggle (Vault / Smart / Safe)
     const MODE_DESCRIPTIONS = {
-      safe: 'Highly selective filter — only the cleanest setups. Same one our bot trades on.',
-      normal: 'Every signal the engine fires. Wider net, more setups to scan.'
+      vault: 'Every signal the engine fires. Wider net, more setups to scan.',
+      smart: 'Tokens where smart-money wallets are already in the top holders. Same filter our bot trades on.',
+      safe:  'Tokens with clean structure — low bundler, no whale concentration, real liquidity. Avoids rug-pattern setups.'
     };
     const modeDescEl = document.getElementById('mode-desc');
     document.querySelectorAll('#mode-btns .mode-btn').forEach(b => {
       b.addEventListener('click', () => {
         document.querySelectorAll('#mode-btns .mode-btn').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
-        mode = b.dataset.mode || 'safe';
+        mode = b.dataset.mode || 'vault';
         modeDescEl.textContent = MODE_DESCRIPTIONS[mode];
         displayedCount = PAGE_SIZE;
         render();
