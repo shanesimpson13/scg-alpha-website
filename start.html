@@ -86,7 +86,8 @@
     /* ── pricing cards ── */
     .pricing {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 640px);
+      justify-content: center;
       gap: 22px;
       margin-bottom: 80px;
     }
@@ -384,23 +385,13 @@
 
       <!-- ── pricing ── -->
       <div class="pricing">
-        <div class="price-card">
+        <div class="price-card featured">
           <div class="price-tier">Monthly</div>
           <div class="price-num"><span class="currency">$</span>49<span class="freq"> / month</span></div>
           <div class="price-strike"><s>was $99</s> · cancel anytime</div>
           <div class="price-tagline">Full access. Pay as you go. Cancel whenever you want.</div>
           <a href="#" id="cta-monthly" class="price-cta">Start membership →</a>
           <div class="price-foot">First month, $49</div>
-        </div>
-
-        <div class="price-card featured">
-          <div class="price-badge">Best Value</div>
-          <div class="price-tier">Lifetime</div>
-          <div class="price-num"><span class="currency">$</span>499<span class="freq"> · once</span></div>
-          <div class="price-strike">10 months pays for itself · then free forever</div>
-          <div class="price-tagline">One payment. Locked in for life. No renewal, no price hikes, no expiration.</div>
-          <a href="#" id="cta-lifetime" class="price-cta">Get lifetime access →</a>
-          <div class="price-foot">Limited founder pricing — going up after launch</div>
         </div>
       </div>
 
@@ -448,27 +439,15 @@
         </div>
         <div class="stack-item">
           <div class="stack-num">06</div>
-          <div class="stack-title"><span class="emoji">🤖</span>Auto-Bot Builder Course</div>
-          <div class="stack-desc">Step-by-step build of your own automated trading bot using the SCG Signal API. Same architecture our bot runs on.</div>
-          <div class="stack-value"><s>$997</s></div>
-        </div>
-        <div class="stack-item">
-          <div class="stack-num">07</div>
-          <div class="stack-title"><span class="emoji">🛠️</span>Filter Engineering Course</div>
-          <div class="stack-desc">Build your own conviction filter on top of the engine. Tighter, looser, custom — pick the thresholds that match your style.</div>
-          <div class="stack-value"><s>$497</s></div>
-        </div>
-        <div class="stack-item">
-          <div class="stack-num">08</div>
-          <div class="stack-title"><span class="emoji">📦</span>Reference Bot Templates</div>
-          <div class="stack-desc">Working code for both the algo bot and the TG signal bot. Fork it, plug in your wallet, run it. Don't reinvent the wheel.</div>
-          <div class="stack-value"><s>$297</s></div>
+          <div class="stack-title"><span class="emoji">🤖</span>Bot Starter Kit</div>
+          <div class="stack-desc">Working Python repo with the swap layer, Telegram controls, and dry-run mode built in. Plug in your wallet, write your filter, run it.</div>
+          <div class="stack-value"><s>$197</s></div>
         </div>
       </div>
 
       <div class="total-bar">
-        <div class="total-bar-l"><strong>If you bought all of this separately:</strong> just the courses + API + templates</div>
-        <div class="total-bar-r"><s>$2,290+</s>$49/mo or $499 once</div>
+        <div class="total-bar-l"><strong>If you bought all of this separately:</strong> alerts + API + starter kit</div>
+        <div class="total-bar-r"><s>$695+</s>$49/mo</div>
       </div>
 
       <!-- ── receipts ── -->
@@ -491,11 +470,10 @@
       <!-- ── final cta ── -->
       <div class="final-cta">
         <div class="final-eye">Ready to plug in?</div>
-        <h2 class="final-title">Pick a tier. Be in the room in under 60 seconds.</h2>
-        <p class="final-sub">$49/mo if you want to try it. $499 lifetime if you're serious. Either way, you get everything above the moment you subscribe.</p>
+        <h2 class="final-title">Be in the room in under 60 seconds.</h2>
+        <p class="final-sub">$49/mo. Cancel anytime. You get everything above the moment you subscribe.</p>
         <div class="final-btns">
-          <a href="#" id="cta-monthly-2" class="final-btn">$49 / month →</a>
-          <a href="#" id="cta-lifetime-2" class="final-btn primary">$499 lifetime →</a>
+          <a href="#" id="cta-monthly-2" class="final-btn primary">Start membership →</a>
         </div>
       </div>
 
@@ -542,14 +520,11 @@
       tick();
     })();
 
-    /* ── checkout links — TODO: replace with real Whop URLs ──────── */
-    const CHECKOUT_MONTHLY  = 'https://whop.com/checkout/plan_PSoceMO9deGzz';
-    const CHECKOUT_LIFETIME = 'https://whop.com/checkout/plan_UGWHs9Ps9X5BB';
+    /* ── checkout links ─────────────────────────────────────────── */
+    const CHECKOUT_MONTHLY = 'https://whop.com/checkout/plan_PSoceMO9deGzz';
 
-    document.getElementById('cta-monthly').href     = CHECKOUT_MONTHLY;
-    document.getElementById('cta-lifetime').href    = CHECKOUT_LIFETIME;
-    document.getElementById('cta-monthly-2').href   = CHECKOUT_MONTHLY;
-    document.getElementById('cta-lifetime-2').href  = CHECKOUT_LIFETIME;
+    document.getElementById('cta-monthly').href   = CHECKOUT_MONTHLY;
+    document.getElementById('cta-monthly-2').href = CHECKOUT_MONTHLY;
   </script>
 </body>
 </html>
