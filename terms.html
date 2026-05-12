@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCG Alpha — Terms</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #000;
+      --line: rgba(255, 255, 255, 0.08);
+      --dim: rgba(255, 255, 255, 0.55);
+      --dimmer: rgba(255, 255, 255, 0.32);
+      --green: #7cffa0;
+    }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    canvas#starfield {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+    .content { position: relative; z-index: 1; min-height: 100vh; }
+
+    .home-link {
+      position: fixed; top: 28px; left: 32px;
+      font-size: 11px; letter-spacing: 2px;
+      color: var(--dimmer); text-decoration: none;
+      z-index: 10; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .home-link:hover { color: #fff; }
+
+    .top-bar {
+      position: fixed; top: 28px; right: 32px;
+      display: flex; gap: 20px; align-items: center; z-index: 10;
+    }
+    .top-bar a { opacity: 0.45; transition: opacity 0.3s; line-height: 0; }
+    .top-bar a:hover { opacity: 1; }
+    .top-bar svg { width: 22px; height: 22px; }
+    .top-bar svg.x-icon { width: 18px; height: 18px; }
+
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 110px 32px 60px;
+    }
+
+    .eyebrow {
+      font-size: 11px; letter-spacing: 4px;
+      color: var(--green); text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    h1.title {
+      font-size: 36px; font-weight: 500;
+      letter-spacing: -0.6px; line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .updated {
+      font-size: 12px; color: var(--dimmer);
+      letter-spacing: 0.3px;
+      margin-bottom: 40px;
+    }
+
+    h2 {
+      font-size: 16px; font-weight: 600;
+      letter-spacing: -0.1px;
+      color: var(--green);
+      margin-top: 36px;
+      margin-bottom: 12px;
+    }
+    h2 .num {
+      color: var(--dimmer);
+      margin-right: 10px;
+      font-weight: 500;
+    }
+
+    p, li {
+      font-size: 14px;
+      color: var(--dim);
+      line-height: 1.75;
+      letter-spacing: 0.2px;
+    }
+    p + p { margin-top: 12px; }
+
+    ul {
+      margin-top: 8px;
+      padding-left: 22px;
+    }
+    li { margin-bottom: 6px; }
+    li::marker { color: var(--dimmer); }
+
+    strong { color: #fff; font-weight: 600; }
+
+    .footer-note {
+      text-align: center;
+      color: var(--dimmer);
+      font-size: 11px; letter-spacing: 1px;
+      margin-top: 60px;
+    }
+    .footer-note a { color: var(--dim); text-decoration: underline; }
+
+    @media (max-width: 720px) {
+      .wrap { padding: 90px 18px 60px; }
+      .home-link { top: 20px; left: 20px; }
+      .top-bar { top: 20px; right: 20px; }
+      h1.title { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+
+  <a href="index.html" class="home-link">← Back</a>
+
+  <div class="top-bar">
+    <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
+      <svg class="x-icon" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+    </a>
+    <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
+      <svg viewBox="0 0 24 24" fill="#fff"><path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/></svg>
+    </a>
+  </div>
+
+  <div class="content">
+    <div class="wrap">
+
+      <div class="eyebrow">The fine print</div>
+      <h1 class="title">Terms</h1>
+      <div class="updated">Last updated: May 2026</div>
+
+      <h2><span class="num">01</span>Risk disclosure</h2>
+      <p>Memecoins and other crypto tokens are highly volatile. Most lose value. Some go to zero in minutes. You can lose every dollar you put in, and you should expect to at some point.</p>
+      <p>The historical results, multipliers, and screenshots on this site reflect past signals the engine has fired. <strong>Past performance is not a guarantee of future returns.</strong> No signal, regardless of how it has performed historically, is a guarantee that a future trade will be profitable.</p>
+      <p>Only trade with capital you can afford to lose completely.</p>
+
+      <h2><span class="num">02</span>What you get</h2>
+      <p>A subscription gives you access to:</p>
+      <ul>
+        <li>Live Telegram alerts when the engine fires a signal</li>
+        <li>The Discord community</li>
+        <li>The historical dashboard and engine track record</li>
+        <li>Whatever else is bundled in your tier at the time of purchase</li>
+      </ul>
+      <p>You do not get: a managed account, custody of your funds, executed trades on your behalf, or one-on-one personalized advice.</p>
+
+      <h2><span class="num">03</span>Not financial advice</h2>
+      <p>Signals are <strong>information</strong>, not financial advice. They are not personalized to your situation, risk tolerance, or financial goals. We are not your broker, fiduciary, or advisor.</p>
+      <p>Every trade you make is your own decision. You are responsible for sizing, entries, exits, taxes, and outcomes. Do your own research.</p>
+
+      <h2><span class="num">04</span>Billing &amp; cancellation</h2>
+      <p>Subscriptions are billed monthly through Whop at the price shown at checkout. Subscriptions auto-renew until you cancel.</p>
+      <p>You can cancel anytime from your Whop account. Cancellation stops future renewals — your access continues through the end of the current paid period.</p>
+      <p><strong>All sales are final. No refunds — full or partial — for any reason, including unused time, accidental purchases, or dissatisfaction with signals or results.</strong> If you don't agree to this, do not subscribe.</p>
+
+      <h2><span class="num">05</span>Acceptable use</h2>
+      <p>Your subscription is for personal use. You may not:</p>
+      <ul>
+        <li>Share, resell, or transfer your access to anyone else</li>
+        <li>Redistribute, republish, or resell signals or any other paid content</li>
+        <li>Scrape, mirror, or extract bulk data from the dashboard or API beyond normal personal use</li>
+        <li>Use the service to harass other members, run scams, or pump tokens</li>
+      </ul>
+      <p>Access may be revoked at any time for abuse, with no refund.</p>
+
+      <h2><span class="num">06</span>Changes to these terms</h2>
+      <p>These terms may be updated as the service evolves. Material changes will be announced in the Discord and Telegram. Continued use of the service after a change means you accept the updated terms.</p>
+
+      <p class="footer-note">
+        <a href="start.html">← Back to membership</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let W, H, stars = [];
+      function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+      function build() {
+        stars = [];
+        const n = Math.floor((W * H) / 12000);
+        for (let i = 0; i < n; i++) {
+          stars.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.2,
+            a: Math.random() * 0.7 + 0.1,
+            d: (Math.random() - 0.5) * 0.05
+          });
+        }
+      }
+      function tick() {
+        ctx.clearRect(0, 0, W, H);
+        for (const s of stars) {
+          s.a += s.d;
+          if (s.a < 0.1 || s.a > 0.9) s.d = -s.d;
+          ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        requestAnimationFrame(tick);
+      }
+      resize(); build();
+      addEventListener('resize', () => { resize(); build(); });
+      tick();
+    })();
+  </script>
+</body>
+</html>

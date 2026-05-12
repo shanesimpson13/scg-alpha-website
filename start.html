@@ -329,11 +329,27 @@
       box-shadow: 0 0 24px rgba(124, 255, 160, 0.3);
     }
 
+    .disclaimer {
+      margin-top: 56px;
+      padding: 20px 24px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.015);
+      color: var(--dimmer);
+      font-size: 11px;
+      letter-spacing: 0.3px;
+      line-height: 1.7;
+      text-align: center;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .disclaimer strong { color: var(--dim); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+
     .footer-note {
       text-align: center;
       color: var(--dimmer);
       font-size: 11px; letter-spacing: 1px;
-      margin-top: 60px;
+      margin-top: 32px;
     }
     .footer-note a { color: var(--dim); text-decoration: underline; }
 
@@ -477,8 +493,14 @@
         </div>
       </div>
 
+      <p class="disclaimer">
+        <strong>Risk disclosure.</strong> Memecoins are highly volatile and most lose value. The historical results above are a sample of past signals, not a promise of future returns. Signals are information, not financial advice. Only trade what you can afford to lose.
+      </p>
+
       <p class="footer-note">
         Already a member? <a href="data.html">Open the dashboard →</a>
+        <br><br>
+        <a href="terms.html">Terms</a>
       </p>
     </div>
   </div>
