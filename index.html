@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCG Alpha — The Solana Signal Platform</title>
+  <title>SCG Alpha — Agentic Trading on Solana</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -12,754 +12,731 @@
 
     :root {
       --bg: #000;
+      --bg-card: rgba(255, 255, 255, 0.015);
+      --bg-card-hover: rgba(124, 255, 160, 0.035);
       --line: rgba(255, 255, 255, 0.08);
-      --dim: rgba(255, 255, 255, 0.55);
-      --dimmer: rgba(255, 255, 255, 0.32);
+      --line-strong: rgba(255, 255, 255, 0.16);
+      --text: #ffffff;
+      --dim: rgba(255, 255, 255, 0.62);
+      --dimmer: rgba(255, 255, 255, 0.38);
       --green: #7cffa0;
+      --green-2: #5fee83;
+      --green-soft: rgba(124, 255, 160, 0.85);
+      --green-dim: rgba(124, 255, 160, 0.55);
+      --green-glow: rgba(124, 255, 160, 0.22);
     }
 
-    body {
+    html, body {
       background: var(--bg);
-      color: #fff;
+      color: var(--text);
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
       min-height: 100vh;
-      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
+    body { overflow-x: clip; }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; }
 
     canvas#starfield {
       position: fixed; inset: 0;
       width: 100%; height: 100%;
       z-index: 0;
-    }
-
-    .content { position: relative; z-index: 1; min-height: 100vh; }
-
-    /* ── top-right scg mark + social ── */
-    .top-bar {
-      position: fixed; top: 28px; right: 32px;
-      display: flex; gap: 20px; align-items: center; z-index: 10;
-    }
-    .top-bar a { opacity: 0.45; transition: opacity 0.3s; line-height: 0; }
-    .top-bar a:hover { opacity: 1; }
-    .top-bar svg { width: 22px; height: 22px; }
-    .top-bar svg.x-icon { width: 18px; height: 18px; }
-
-    .home-link {
-      position: fixed; top: 28px; left: 32px;
-      font-size: 11px; letter-spacing: 2px;
-      color: var(--dimmer); text-decoration: none;
-      z-index: 10; text-transform: uppercase;
-      transition: color 0.2s;
-    }
-    .home-link:hover { color: #fff; }
-
-    /* ── page wrap ── */
-    .wrap {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 110px 32px 60px;
-    }
-
-    /* ── header ── */
-    .title-logo {
-      display: block;
-      width: 360px; height: auto;
-      margin: 0 auto 18px;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
-    .page-title {
-      font-size: 28px; font-weight: 500;
-      letter-spacing: -0.3px; margin-bottom: 6px;
-    }
-    .page-sub {
-      font-size: 13px; color: var(--dim);
-      letter-spacing: 0.3px; margin-bottom: 36px;
-    }
-
-    /* ── stats grid ── */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      border: 1px solid var(--line);
-      margin-bottom: 28px;
-    }
-    .stat {
-      padding: 22px 24px;
-      border-right: 1px solid var(--line);
-    }
-    .stat:last-child { border-right: none; }
-    .stat-val {
-      font-size: 30px; font-weight: 500;
-      letter-spacing: -0.3px;
-      line-height: 1.1;
-    }
-    .stat-val.accent { color: var(--green); }
-    .stat-lbl {
-      margin-top: 8px;
-      font-size: 10px; letter-spacing: 2.5px;
-      color: var(--dimmer); text-transform: uppercase;
-    }
-
-    /* ── filters ── */
-    .filters {
-      display: flex; flex-wrap: wrap;
-      gap: 28px;
-      margin-bottom: 22px;
-      align-items: center;
-    }
-    .filter-group {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .filter-label {
-      font-size: 10px; letter-spacing: 2.5px;
-      color: var(--dimmer); text-transform: uppercase;
-    }
-    .filter-btns {
-      display: flex; gap: 4px;
-      border: 1px solid var(--line);
-    }
-    .filter-btn {
-      padding: 8px 14px;
-      background: transparent;
-      border: none;
-      color: var(--dim);
-      font-family: inherit;
-      font-size: 11px; letter-spacing: 1.5px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .filter-btn:hover { color: #fff; }
-    .filter-btn.active {
-      background: rgba(124, 255, 160, 0.1);
-      color: var(--green);
-      border: 1px solid var(--green);
-      margin: -1px;
-    }
-
-    /* ── signals table ── */
-    .table-wrap { border: 1px solid var(--line); }
-    table.signals {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    table.signals th {
-      text-align: left;
-      padding: 14px 18px;
-      font-size: 10px; letter-spacing: 2.5px;
-      color: var(--dimmer); text-transform: uppercase;
-      font-weight: 500;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.015);
-    }
-    table.signals th.right { text-align: right; }
-    table.signals td {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--line);
-      vertical-align: middle;
-    }
-    table.signals td.right { text-align: right; }
-    table.signals tr.row { cursor: pointer; transition: background 0.15s; }
-    table.signals tr.row:hover { background: rgba(124, 255, 160, 0.04); }
-    table.signals tr:last-child td { border-bottom: none; }
-    .tok {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .tok img {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: rgba(255, 255, 255, 0.06);
-      object-fit: cover; flex-shrink: 0;
-    }
-    .tok-name { font-weight: 500; }
-    .peak-pos { color: var(--green); font-weight: 500; }
-    .peak-neg { color: rgba(255, 110, 110, 0.85); }
-
-    .empty {
-      padding: 40px 18px; text-align: center;
-      font-size: 12px; color: var(--dimmer);
-      letter-spacing: 1.5px; text-transform: uppercase;
-    }
-
-    /* ── ghost rows (faded preview of more signals) ── */
-    table.signals tr.ghost { pointer-events: none; }
-    table.signals tr.ghost td {
-      filter: blur(3.5px);
-      opacity: 0.35;
-    }
-
-    /* ── locked teaser row (the "more behind paywall" CTA) ── */
-    table.signals tr.locked-row td {
-      padding: 22px 18px;
-      text-align: center;
-      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(124, 255, 160, 0.06) 100%);
-      border-top: 1px solid rgba(124, 255, 160, 0.25);
-    }
-    .locked-text {
-      font-size: 12px;
-      color: var(--dim);
-      letter-spacing: 0.5px;
-      margin-bottom: 12px;
-    }
-    .locked-text strong { color: #fff; font-weight: 600; }
-    .locked-cta {
-      display: inline-block;
-      padding: 12px 22px;
-      border: 1px solid var(--green);
-      background: rgba(124, 255, 160, 0.10);
-      color: var(--green);
-      font-family: inherit;
-      font-size: 11px; letter-spacing: 2.5px;
-      text-transform: uppercase; font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .locked-cta:hover {
-      background: rgba(124, 255, 160, 0.22);
-      box-shadow: 0 0 20px rgba(124, 255, 160, 0.3);
-    }
-
-    /* ── modal card (GMGN-style) ── */
-    .modal {
-      position: fixed; inset: 0;
-      background: rgba(0, 0, 0, 0.78);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: none;
-      align-items: center; justify-content: center;
-      padding: 20px;
-      z-index: 50;
-    }
-    .modal.open { display: flex; }
-    .modal-card {
-      max-width: 540px; width: 100%;
-      background: #0a0a0a;
-      border: 1px solid rgba(124, 255, 160, 0.35);
-      box-shadow: 0 0 100px rgba(124, 255, 160, 0.15);
-      position: relative;
-      overflow: hidden;
-      padding: 26px 28px 22px;
-    }
-    .modal-card::before {
-      content: '';
-      position: absolute; top: 0; right: 0;
-      width: 70%; height: 100%;
-      background: radial-gradient(ellipse at top right, rgba(124, 255, 160, 0.18) 0%, rgba(124, 255, 160, 0) 60%);
       pointer-events: none;
     }
-    .modal-close {
-      position: absolute; top: 28px; right: 32px;
-      background: transparent; border: none;
-      color: rgba(255, 255, 255, 0.55);
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 30px; line-height: 1;
-      padding: 8px 12px;
-      transition: color 0.15s, transform 0.15s;
-      z-index: 60;
-    }
-    .modal-close:hover { color: #fff; transform: scale(1.1); }
 
-    /* corners */
-    .modal-corners {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 28px;
-      position: relative; z-index: 2;
+    /* ── motion ── */
+    @keyframes hero-fade-up {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    .modal-brand-img {
-      height: 28px; width: auto;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
+    @keyframes hero-slide-right {
+      from { opacity: 0; transform: translateX(56px); }
+      to   { opacity: 1; transform: translateX(0); }
     }
-    .modal-tok-corner {
-      display: flex; align-items: center; gap: 10px;
-      max-width: 60%;
+    @keyframes glow-drift {
+      0%   { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.8; }
+      20%  { transform: translate(-70px, 40px) scale(1.12) rotate(4deg); opacity: 0.95; }
+      40%  { transform: translate(50px, 70px) scale(0.92) rotate(-2deg); opacity: 1; }
+      60%  { transform: translate(90px, -20px) scale(1.08) rotate(3deg); opacity: 0.9; }
+      80%  { transform: translate(-30px, -50px) scale(0.96) rotate(-4deg); opacity: 0.85; }
+      100% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.8; }
     }
-    .modal-tok-corner img {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: rgba(255, 255, 255, 0.06); object-fit: cover;
-      flex-shrink: 0;
-    }
-    .modal-tok-corner-info { min-width: 0; text-align: right; }
-    .modal-tok-corner-name {
-      font-size: 16px; font-weight: 600;
-      letter-spacing: 0.2px; line-height: 1.1;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .modal-tok-corner-mint {
-      margin-top: 2px;
-      font-size: 10px; color: var(--dimmer);
-      letter-spacing: 0.5px;
-      cursor: pointer; transition: color 0.15s;
-    }
-    .modal-tok-corner-mint:hover { color: var(--dim); }
-
-    /* big date */
-    .modal-date {
-      font-size: 32px; font-weight: 600;
-      letter-spacing: -0.8px;
-      line-height: 1.1;
-      margin-bottom: 16px;
-      color: #fff;
-      position: relative; z-index: 2;
-    }
-
-    /* hero pill */
-    .modal-pill {
-      display: flex; align-items: center;
-      gap: 18px;
-      padding: 22px 26px;
-      background: #1ce783;
-      border-radius: 10px;
-      margin-bottom: 22px;
-      box-shadow: 0 8px 40px rgba(28, 231, 131, 0.25);
-      position: relative; z-index: 2;
-    }
-    .modal-pill.neg {
-      background: #ff6b6b;
-      box-shadow: 0 8px 40px rgba(255, 107, 107, 0.25);
-    }
-    .modal-pill-emoji {
-      font-size: 36px; line-height: 1;
-      flex-shrink: 0;
-    }
-    .modal-pill-num {
-      font-size: 44px; font-weight: 800;
-      letter-spacing: -2px; line-height: 1;
-      color: #000;
-      flex: 1;
-    }
-    .modal-pill-mult {
-      font-size: 18px; font-weight: 700;
-      color: rgba(0, 0, 0, 0.7);
-      letter-spacing: -0.3px;
-      flex-shrink: 0;
-      padding-left: 14px;
-      border-left: 1.5px solid rgba(0, 0, 0, 0.18);
-    }
-
-    /* stat rows */
-    .modal-rows {
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 18px;
-      position: relative; z-index: 2;
-    }
-    .modal-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 2px;
-      border-bottom: 1px solid var(--line);
-      font-size: 14px;
-    }
-    .modal-row:last-child { border-bottom: none; }
-    .modal-row-lbl { color: var(--dim); }
-    .modal-row-val { color: #fff; font-weight: 600; }
-    .modal-row-val.accent { color: var(--green); }
-
-    /* bottom bar */
-    .modal-bottom {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 12px;
-      position: relative; z-index: 2;
-    }
-    .modal-bottom-brand {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 12px; color: var(--dim);
-      letter-spacing: 0.3px;
-    }
-    .modal-bottom-brand img {
-      height: 14px; width: auto;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      opacity: 0.8;
-      mix-blend-mode: screen;
-    }
-    .modal-bottom-brand a {
-      color: var(--green); text-decoration: none;
-      font-weight: 600;
-    }
-    .modal-bottom-handle {
-      font-size: 12px; color: var(--dimmer);
-      letter-spacing: 0.3px;
-    }
-
-    /* ── member gate ── */
-    .gate {
-      position: fixed; inset: 0;
-      background: rgba(0, 0, 0, 0.88);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 100;
-      padding: 20px;
-    }
-    .gate-card {
-      max-width: 440px; width: 100%;
-      padding: 44px 36px;
-      border: 1px solid rgba(124, 255, 160, 0.4);
-      background: #000;
-      box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
-      text-align: center;
-    }
-    .gate-mark {
-      font-size: 11px; letter-spacing: 5px;
-      color: var(--green); text-transform: uppercase;
-      margin-bottom: 14px;
-    }
-    .gate-title {
-      font-size: 22px; font-weight: 500;
-      letter-spacing: -0.3px; line-height: 1.3;
-      margin-bottom: 12px;
-    }
-    .gate-sub {
-      font-size: 13px; color: var(--dim);
-      line-height: 1.6; margin-bottom: 28px;
-    }
-    .gate-input {
-      width: 100%;
-      padding: 14px 16px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #fff;
-      font-family: inherit; font-size: 13px;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-      transition: border-color 0.2s;
-    }
-    .gate-input:focus { outline: none; border-color: rgba(124, 255, 160, 0.6); }
-    .gate-btn {
-      width: 100%; padding: 14px 24px;
-      border: 2px solid var(--green);
-      background: rgba(124, 255, 160, 0.08);
-      color: var(--green);
-      font-family: inherit;
-      font-size: 12px; font-weight: 500;
-      letter-spacing: 3px; text-transform: uppercase;
-      cursor: pointer; transition: all 0.2s;
-    }
-    .gate-btn:hover { background: rgba(124, 255, 160, 0.16); }
-    .gate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .gate-error {
-      font-size: 11px; color: #ff6b6b;
-      letter-spacing: 1px; text-transform: uppercase;
-      margin-top: 14px; min-height: 14px;
-    }
-    .gate-foot {
-      margin-top: 22px;
-      font-size: 11px; color: var(--dimmer);
-    }
-    .gate-foot a {
-      color: var(--green); text-decoration: none;
-      border-bottom: 1px solid rgba(124, 255, 160, 0.4);
-    }
-
-    /* ── homepage hero ── */
-    .hero {
-      text-align: center;
-      margin-bottom: 36px;
-    }
-    .hero-eyebrow {
-      font-size: 11px; letter-spacing: 3px;
-      color: var(--green); text-transform: uppercase;
-      margin-bottom: 16px;
-    }
-    .hero-eyebrow .dot {
-      display: inline-block; width: 6px; height: 6px;
-      background: var(--green); border-radius: 50%;
-      margin-right: 8px;
-      box-shadow: 0 0 8px var(--green);
-      animation: pulse-dot 2s ease-in-out infinite;
+    @keyframes glow-drift-2 {
+      0%   { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.65; }
+      25%  { transform: translate(-60px, -50px) scale(1.06) rotate(-6deg); opacity: 0.9; }
+      50%  { transform: translate(70px, -40px) scale(0.88) rotate(5deg); opacity: 1; }
+      75%  { transform: translate(50px, 60px) scale(1.14) rotate(-3deg); opacity: 0.8; }
+      100% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.65; }
     }
     @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .hero-title {
-      font-size: 30px; font-weight: 500;
-      letter-spacing: -0.5px; line-height: 1.2;
-      max-width: 700px; margin: 0 auto 14px;
-    }
-    .hero-title .accent { color: var(--green); }
-    .hero-sub {
-      font-size: 14px; color: var(--dim);
-      letter-spacing: 0.3px; line-height: 1.6;
-      max-width: 520px; margin: 0 auto 28px;
+    @keyframes ch-spin { to { transform: rotate(360deg); } }
+    @keyframes ch-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(1.4); }
     }
 
-    /* ── mode toggle (Safe / Normal) ── */
-    .mode-toggle {
-      display: flex; justify-content: center;
-      margin-bottom: 14px;
+    /* hero entrance sequence */
+    .hero .eyebrow-text { animation: hero-fade-up 0.7s cubic-bezier(0.22, 0.61, 0.18, 1) both; animation-delay: 0.1s; }
+    .hero-title         { animation: hero-fade-up 0.9s cubic-bezier(0.22, 0.61, 0.18, 1) both; animation-delay: 0.3s; }
+    .hero-tag           { animation: hero-fade-up 0.7s cubic-bezier(0.22, 0.61, 0.18, 1) both; animation-delay: 0.85s; }
+
+    /* scroll-triggered reveals */
+    .reveal { opacity: 0; transform: translateY(36px); transition: opacity 0.9s cubic-bezier(0.22, 0.61, 0.18, 1), transform 0.9s cubic-bezier(0.22, 0.61, 0.18, 1); }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+    .reveal[data-delay="1"].in-view { transition-delay: 0.12s; }
+    .reveal[data-delay="2"].in-view { transition-delay: 0.24s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
-    .mode-btns {
-      display: flex; gap: 4px;
-      border: 1px solid var(--line);
-      padding: 4px;
-      background: rgba(255, 255, 255, 0.015);
+
+    /* ── HEADER ── */
+    .header {
+      position: sticky; top: 0; z-index: 50;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: stretch;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background: rgba(0, 0, 0, 0.55);
+      border-bottom: 1px solid var(--line);
     }
-    .mode-btn {
-      padding: 12px 24px;
-      background: transparent; border: none;
+    .header-brand {
+      display: flex; align-items: center;
+      padding: 20px 36px;
+    }
+    .header-logo-img {
+      height: 26px; width: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      /* keep original white pixel art — no colorize filter */
+    }
+    .header-nav {
+      display: flex; align-items: center;
+      gap: 4px; padding: 0 8px;
+    }
+    .header-nav .nav-item {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 10px 16px;
+      font-size: 12px; font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
       color: var(--dim);
-      font-family: inherit;
-      font-size: 12px; letter-spacing: 2px;
-      text-transform: uppercase; font-weight: 600;
-      cursor: pointer;
-      transition: all 0.18s;
+      transition: color 0.18s;
     }
-    .mode-btn:hover { color: #fff; }
-    .mode-btn.active {
-      background: rgba(124, 255, 160, 0.12);
-      color: var(--green);
-      border: 1px solid var(--green);
-      margin: -1px;
+    .header-nav .nav-item:hover { color: var(--text); }
+    .header-nav .caret {
+      display: inline-block;
+      width: 0; height: 0;
+      border-left: 3.5px solid transparent;
+      border-right: 3.5px solid transparent;
+      border-top: 4.5px solid currentColor;
+      margin-left: 2px; margin-top: 2px;
+      opacity: 0.7;
     }
-    .mode-desc {
-      text-align: center;
-      font-size: 12px; color: var(--dimmer);
-      letter-spacing: 0.5px; line-height: 1.6;
-      max-width: 520px; margin: 0 auto 28px;
-      min-height: 18px;
+    .header-ctas { display: flex; align-items: stretch; }
+    .header-cta {
+      display: flex; align-items: center;
+      padding: 0 32px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      border-left: 1px solid var(--line);
+      transition: background 0.18s, color 0.18s;
     }
-
-    /* ── delay banner ── */
-    .delay-banner {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; flex-wrap: wrap;
-      padding: 14px 18px;
-      border: 1px solid rgba(124, 255, 160, 0.35);
-      background:
-        linear-gradient(90deg, rgba(124, 255, 160, 0.06) 0%, rgba(124, 255, 160, 0) 60%),
-        rgba(124, 255, 160, 0.015);
-      margin-bottom: 22px;
-    }
-    .delay-text {
-      font-size: 12px; color: var(--dim);
-      letter-spacing: 0.3px; line-height: 1.5;
-    }
-    .delay-text strong { color: #fff; font-weight: 600; }
-    .delay-cta {
-      flex-shrink: 0;
-      padding: 10px 18px;
-      border: 1px solid var(--green);
+    .header-cta.dark {
       background: rgba(124, 255, 160, 0.08);
       color: var(--green);
-      font-family: inherit;
-      font-size: 11px; letter-spacing: 2px;
-      text-transform: uppercase; font-weight: 600;
-      text-decoration: none;
-      transition: all 0.18s;
+      border-left-color: rgba(124, 255, 160, 0.3);
     }
-    .delay-cta:hover {
+    .header-cta.dark:hover {
       background: rgba(124, 255, 160, 0.18);
+      box-shadow: inset 0 0 32px rgba(124, 255, 160, 0.12);
     }
 
-    /* ── big bottom CTA ── */
-    .bottom-cta {
-      margin-top: 60px;
-      padding: 48px 32px;
-      text-align: center;
-      border: 1px solid rgba(124, 255, 160, 0.45);
-      background:
-        radial-gradient(ellipse at center, rgba(124, 255, 160, 0.08) 0%, rgba(124, 255, 160, 0) 70%),
-        rgba(124, 255, 160, 0.02);
-      box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      padding: 64px 0 28px;
+      overflow: hidden;
+      z-index: 1;
     }
-    .bottom-cta-eye {
-      font-size: 11px; letter-spacing: 4px;
-      color: var(--green); text-transform: uppercase;
-      margin-bottom: 14px;
+    .hero-inner {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 0 36px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 28px;
+      position: relative;
     }
-    .bottom-cta-title {
-      font-size: 24px; font-weight: 500;
-      letter-spacing: -0.3px; line-height: 1.3;
-      margin-bottom: 14px;
-      max-width: 560px; margin-left: auto; margin-right: auto;
+
+    .hero-top-left {
+      grid-column: 1; grid-row: 1;
+      position: relative; z-index: 3;
     }
-    .bottom-cta-sub {
-      font-size: 13px; color: var(--dim);
-      max-width: 460px; margin: 0 auto 28px;
-      line-height: 1.6;
+    .hero-right-bg {
+      grid-column: 2; grid-row: 1 / 3;
+      position: relative;
+      min-height: 360px;
     }
-    .bottom-cta-btn {
-      display: inline-block;
-      padding: 22px 50px;
-      border: 2px solid var(--green);
-      background: rgba(124, 255, 160, 0.06);
-      color: var(--green);
-      font-family: inherit;
-      font-size: 15px; font-weight: 500;
+    .hero-tag-cell {
+      grid-column: 1; grid-row: 2;
+      position: relative; z-index: 3;
+    }
+
+    .eyebrow { margin-bottom: 28px; }
+    .eyebrow-text {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 11px; font-weight: 600;
       letter-spacing: 3px;
-      text-decoration: none;
       text-transform: uppercase;
-      box-shadow: 0 0 24px rgba(124, 255, 160, 0.18);
-      transition: all 0.25s ease;
+      color: var(--green);
     }
-    .bottom-cta-btn:hover {
-      background: rgba(124, 255, 160, 0.18);
-      box-shadow: 0 0 36px rgba(124, 255, 160, 0.4);
-      transform: translateY(-2px);
+    .eyebrow-text::before {
+      content: '';
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green), 0 0 18px var(--green-soft);
+      animation: pulse-dot 2s ease-in-out infinite;
     }
 
-    /* ── responsive ── */
-    @media (max-width: 720px) {
-      .wrap { padding: 90px 18px 60px; }
-      .home-link { top: 20px; left: 20px; }
-      .top-bar { top: 20px; right: 20px; }
-      .page-title { font-size: 22px; }
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      .stat { border-right: none; border-bottom: 1px solid var(--line); }
-      .stat:nth-child(2) { border-right: none; }
-      .stat:nth-child(odd) { border-right: 1px solid var(--line); }
-      .stat:nth-last-child(-n+2) { border-bottom: none; }
-      .filters { gap: 16px; }
-      .filter-btn { padding: 7px 10px; font-size: 10px; }
-      table.signals th, table.signals td { padding: 12px 10px; }
-      table.signals th.hide-sm, table.signals td.hide-sm { display: none; }
-      .modal-mult { font-size: 18px; padding: 6px 10px; }
-      .hero-title { font-size: 22px; }
-      .hero-sub { font-size: 13px; }
-      .mode-btn { padding: 10px 14px; font-size: 11px; letter-spacing: 1.5px; }
-      .delay-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
-      .delay-cta { width: 100%; text-align: center; }
-      .bottom-cta { padding: 36px 22px; margin-top: 48px; }
-      .bottom-cta-title { font-size: 18px; }
-      .bottom-cta-btn { padding: 18px 32px; font-size: 13px; letter-spacing: 2px; }
+    .hero-title {
+      font-size: clamp(40px, 5.4vw, 72px);
+      font-weight: 500;
+      letter-spacing: -1.5px;
+      line-height: 1.05;
+      color: var(--text);
+      margin: 0;
+    }
+    .hero-title .line {
+      display: block;
+      white-space: nowrap;
+    }
+    .hero-title .accent { color: var(--green); }
+
+    .hero-tag {
+      position: relative;
+      display: inline-block;
+      padding-top: 18px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--green);
+    }
+    .hero-tag::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 72px; height: 1px;
+      background: var(--green); opacity: 0.7;
+    }
+
+    /* green halo glow on the right side */
+    .blob-wrap {
+      position: absolute;
+      inset: -60px -160px -40px -80px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .blob {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 60% 45%, rgba(124, 255, 160, 0.18) 0%, transparent 50%),
+        radial-gradient(circle at 70% 60%, rgba(124, 230, 200, 0.10) 0%, transparent 55%),
+        radial-gradient(circle at 30% 30%, rgba(160, 220, 255, 0.06) 0%, transparent 45%);
+      filter: blur(30px);
+      animation: glow-drift 11s ease-in-out infinite;
+    }
+    .blob-2 {
+      background:
+        radial-gradient(circle at 55% 60%, rgba(124, 255, 160, 0.12) 0%, transparent 55%),
+        radial-gradient(circle at 75% 35%, rgba(110, 180, 230, 0.07) 0%, transparent 50%);
+      filter: blur(70px);
+      animation: glow-drift-2 15s ease-in-out infinite;
+    }
+
+    /* ── DIVIDER ── */
+    .divider { border-top: 1px solid var(--line); position: relative; z-index: 1; }
+
+    /* ── FEATURES (3-column band) ── */
+    .features {
+      position: relative; z-index: 1;
+      border-bottom: 1px solid var(--line);
+    }
+    .features-inner {
+      max-width: 1480px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+    .feature {
+      padding: 48px 56px 72px;
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--line);
+      position: relative;
+    }
+    .feature:last-child { border-right: none; }
+    .feature-icon {
+      width: 44px; height: 44px;
+      color: var(--green);
+      margin-bottom: 40px;
+      filter: drop-shadow(0 0 12px rgba(124, 255, 160, 0.25));
+    }
+    .feature-icon svg { width: 100%; height: 100%; display: block; }
+    .feature-icon .ch-ring-outer { transform-origin: 24px 24px; animation: ch-spin 14s linear infinite; }
+    .feature-icon .ch-ring-mid   { transform-origin: 24px 24px; animation: ch-spin 22s linear infinite reverse; }
+    .feature-icon .ch-dot        { transform-origin: 24px 24px; animation: ch-pulse 1.8s ease-in-out infinite; }
+
+    .feature-title {
+      font-size: 22px;
+      font-weight: 500;
+      line-height: 1.25;
+      letter-spacing: -0.4px;
+      color: var(--text);
+      margin-bottom: 18px;
+      max-width: 320px;
+    }
+    .feature-body {
+      font-size: 13px;
+      line-height: 1.65;
+      letter-spacing: 0.15px;
+      color: var(--dim);
+      margin-bottom: 32px;
+      max-width: 380px;
+      flex: 1;
+    }
+    .feature-link {
+      align-self: flex-start;
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 10px 0;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--green);
+      border-bottom: 1px solid rgba(124, 255, 160, 0.3);
+      transition: gap 0.22s, border-color 0.22s;
+    }
+    .feature-link:hover { gap: 14px; border-color: var(--green); }
+    .feature-link .arrow {
+      display: inline-block;
+      transition: transform 0.22s;
+    }
+    .feature-link:hover .arrow { transform: translateX(2px); }
+
+    /* ── AGENTS ── */
+    .agents-section {
+      padding: 80px 36px;
+      max-width: 1480px; margin: 0 auto;
+      position: relative; z-index: 1;
+    }
+    .agents-head {
+      display: flex; align-items: end; justify-content: space-between;
+      margin-bottom: 36px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .agents-head-left .lab-eyebrow {
+      position: relative; padding-top: 18px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 16px;
+    }
+    .agents-head-left .lab-eyebrow::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 72px; height: 1px; background: var(--green); opacity: 0.7;
+    }
+    .agents-head-left h2 {
+      font-size: 44px; font-weight: 500;
+      letter-spacing: -1.2px; line-height: 1.05;
+      color: var(--text);
+    }
+    .agents-meta {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--dimmer);
+      padding-bottom: 8px;
+    }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 0;
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+    .agent-card {
+      position: relative;
+      display: flex; flex-direction: column;
+      padding: 32px 32px 26px;
+      background: var(--bg-card);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      min-height: 360px;
+      transition: background 0.18s, border-color 0.18s;
+      overflow: hidden;
+    }
+    .agent-card:not(.ghost):hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(124, 255, 160, 0.25);
+    }
+    .agent-card::before {
+      content: '';
+      position: absolute; top: 0; right: 0;
+      width: 60%; height: 100%;
+      background: radial-gradient(ellipse at top right, rgba(124, 255, 160, 0.08) 0%, transparent 60%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .agent-card:not(.ghost):hover::before { opacity: 1; }
+
+    .agent-card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 22px;
+      position: relative; z-index: 2;
+    }
+    .agent-card-logo {
+      height: 24px; width: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .agent-card-status {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10px; letter-spacing: 2.2px; text-transform: uppercase;
+      font-weight: 700;
+      padding: 6px 12px;
+      border: 1px solid rgba(124, 255, 160, 0.35);
+      color: var(--green);
+      background: rgba(124, 255, 160, 0.06);
+    }
+    .agent-card-status .dot {
+      width: 6px; height: 6px;
+      background: var(--green); border-radius: 50%;
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    .agent-card-label {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 2.4px; text-transform: uppercase;
+      color: var(--dimmer);
+      margin-bottom: 14px;
+      position: relative; z-index: 2;
+    }
+    .agent-card-tagline {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.55;
+      letter-spacing: 0.15px;
+      color: var(--dim);
+      margin-bottom: 32px;
+      position: relative; z-index: 2;
+    }
+
+    .agent-card-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      margin-top: auto;
+      margin-bottom: 26px;
+      position: relative; z-index: 2;
+    }
+    .agent-stat-val {
+      font-size: 24px; font-weight: 600;
+      letter-spacing: -0.5px; line-height: 1.1;
+      color: var(--green);
+    }
+    .agent-stat-lbl {
+      margin-top: 6px;
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--dimmer);
+    }
+    .agent-card-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--green);
+      position: relative; z-index: 2;
+    }
+    .agent-card-foot .arrow {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 1px solid rgba(124, 255, 160, 0.35);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s, border-color 0.18s, color 0.18s;
+    }
+    .agent-card:hover .agent-card-foot .arrow {
+      background: rgba(124, 255, 160, 0.15);
+      border-color: var(--green);
+      color: var(--green);
+      box-shadow: 0 0 18px rgba(124, 255, 160, 0.18);
+    }
+
+    /* ghost (in-queue) card */
+    .agent-card.ghost {
+      pointer-events: none;
+    }
+    .agent-card.ghost .agent-card-label,
+    .agent-card.ghost .agent-card-tagline,
+    .agent-card.ghost .agent-stat-val {
+      color: rgba(255, 255, 255, 0.16);
+    }
+    .agent-card.ghost .agent-card-tagline { filter: blur(0.6px); }
+    .ghost-logo-placeholder {
+      height: 24px; width: 110px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 3px;
+    }
+    .agent-card.ghost .ghost-status {
+      color: var(--dimmer); border-color: rgba(255,255,255,0.15);
+      background: transparent;
+    }
+    .agent-card.ghost .ghost-status .dot {
+      background: var(--dimmer); box-shadow: none; animation: none;
+    }
+    .agent-card.ghost .agent-card-foot { color: var(--dimmer); }
+    .agent-card.ghost .agent-card-foot .arrow {
+      border-color: rgba(255,255,255,0.15);
+      color: var(--dimmer);
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      border-top: 1px solid var(--line);
+      padding: 36px;
+      position: relative; z-index: 1;
+    }
+    .footer-inner {
+      max-width: 1480px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--dimmer);
+    }
+    .footer-inner .footer-links { display: flex; gap: 28px; }
+    .footer-inner .footer-links a { font-weight: 500; transition: color 0.18s; }
+    .footer-inner .footer-links a:hover { color: var(--green); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      .header { grid-template-columns: 1fr auto; }
+      .header-nav { display: none; }
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-title { font-size: 56px; letter-spacing: -1.8px; }
+      .hero-right-bg { min-height: 280px; }
+      .agents-head { flex-direction: column; gap: 16px; align-items: flex-start; }
+      .agents-head-left h2 { font-size: 32px; letter-spacing: -0.8px; }
+      .agents-section { padding: 56px 24px; }
+      .hero { padding: 48px 0 60px; }
+      .hero-inner { padding: 0 24px; }
+      .footer-inner { flex-direction: column; gap: 18px; }
+    }
+    @media (max-width: 960px) {
+      .features-inner { grid-template-columns: 1fr; }
+      .feature { border-right: none; border-bottom: 1px solid var(--line); padding: 48px 24px; }
+      .feature:last-child { border-bottom: none; }
+    }
+    @media (max-width: 640px) {
+      .header-brand { padding: 18px 20px; }
+      .header-cta { padding: 0 18px; font-size: 10px; letter-spacing: 2px; }
+      .hero-title { font-size: 40px; letter-spacing: -1.2px; }
+      .agents-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
+
   <canvas id="starfield"></canvas>
 
-  <a href="/data" class="home-link">Members →</a>
-
-  <div class="top-bar">
-    <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
-      <svg class="x-icon" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+  <header class="header">
+    <a class="header-brand" href="/">
+      <img src="/scg-alpha-title-tr.png" alt="SCG Alpha" class="header-logo-img">
     </a>
-    <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
-      <svg viewBox="0 0 24 24" fill="#fff"><path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/></svg>
-    </a>
-  </div>
 
-  <div class="content">
-    <div class="wrap">
+    <nav class="header-nav">
+      <a href="#agents" class="nav-item">Agents</a>
+      <a href="/company.html" class="nav-item">Company</a>
+    </nav>
 
-      <div class="hero">
-        <div class="hero-eyebrow"><span class="dot"></span>The Solana signal platform</div>
-        <img src="scg-alpha-title-tr.png" alt="SCG Alpha" class="title-logo">
-        <p class="hero-sub">Pick a mode. See every call the engine has fired and how it ran.</p>
-      </div>
+    <div class="header-ctas">
+      <a href="/apply.html" class="header-cta dark">Apply Now →</a>
+    </div>
+  </header>
 
-      <div class="mode-toggle">
-        <div class="mode-btns" id="mode-btns">
-          <button class="mode-btn active" data-mode="vault">VAULT</button>
-          <button class="mode-btn" data-mode="smart">SMART</button>
-          <button class="mode-btn" data-mode="safe">SAFE</button>
+  <section class="hero">
+    <div class="hero-inner">
+
+      <div class="hero-top-left">
+        <div class="eyebrow">
+          <div class="eyebrow-text">Welcome to the lab</div>
         </div>
-      </div>
-      <div class="mode-desc" id="mode-desc">
-        Every signal the engine fires. Wider net, more setups to scan.
-      </div>
-
-      <div class="stats">
-        <div class="stat"><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Signals</div></div>
-        <div class="stat"><div class="stat-val accent" id="s-2x">—</div><div class="stat-lbl">≥ 2× winners</div></div>
-        <div class="stat"><div class="stat-val accent" id="s-5x">—</div><div class="stat-lbl">≥ 5× winners</div></div>
-        <div class="stat"><div class="stat-val accent" id="s-10x">—</div><div class="stat-lbl">≥ 10× MEGAs</div></div>
+        <h1 class="hero-title">
+          <span class="line">Agentic Trading</span>
+          <span class="line accent">on Solana.</span>
+        </h1>
       </div>
 
-      <div class="filters">
-        <div class="filter-group">
-          <span class="filter-label">Period</span>
-          <div class="filter-btns" id="period-btns">
-            <button class="filter-btn active" data-period="1">24H</button>
-            <button class="filter-btn" data-period="7">7D</button>
-            <button class="filter-btn" data-period="30">30D</button>
-            <button class="filter-btn" data-period="0">ALL</button>
-          </div>
+      <div class="hero-right-bg">
+        <div class="blob-wrap">
+          <div class="blob"></div>
+          <div class="blob blob-2"></div>
         </div>
       </div>
 
-      <div class="delay-banner">
-        <div class="delay-text"><strong>Free preview:</strong> alerts are delayed by 1 hour. Members get them live, the moment the engine fires.</div>
-        <a href="start.html" class="delay-cta">Get live access →</a>
+      <div class="hero-tag-cell">
+        <div class="hero-tag">Built for the future of trading</div>
       </div>
-
-      <div class="table-wrap">
-        <table class="signals">
-          <thead>
-            <tr>
-              <th>Token</th>
-              <th class="hide-sm">Date</th>
-              <th class="right">Alert MC</th>
-              <th class="right hide-sm">Peak MC</th>
-              <th class="right">Peak</th>
-            </tr>
-          </thead>
-          <tbody id="rows">
-            <tr><td colspan="5" class="empty">Loading…</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="bottom-cta">
-        <div class="bottom-cta-eye">SCG Alpha · Members</div>
-        <div class="bottom-cta-title">Stop watching from an hour behind.</div>
-        <div class="bottom-cta-sub">Live alerts the moment the engine fires. Same data. No 1-hour delay. $49/mo, cancel anytime.</div>
-        <a href="start.html" class="bottom-cta-btn">Get live access →</a>
-      </div>
-
-      <p style="text-align:center; color: rgba(255,255,255,0.32); font-size: 11px; letter-spacing: 1px; margin-top: 48px;">
-        <a href="terms.html" style="color: rgba(255,255,255,0.55); text-decoration: underline;">Terms</a>
-      </p>
 
     </div>
-  </div>
+  </section>
 
-  <!-- ── detail modal ── -->
-  <div class="modal" id="modal">
-    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
-    <div class="modal-card">
-      <div class="modal-corners">
-        <img src="scg-alpha-title-tr.png" alt="SCG Alpha" class="modal-brand-img">
-        <div class="modal-tok-corner">
-          <div class="modal-tok-corner-info">
-            <div class="modal-tok-corner-name" id="m-name">—</div>
-            <div class="modal-tok-corner-mint" id="m-mint" title="Click to copy">—</div>
+  <!-- ════ FEATURES (3-column) ════ -->
+  <div class="divider"></div>
+  <section class="features">
+    <div class="features-inner">
+
+      <div class="feature reveal">
+        <div class="feature-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle class="ch-ring-outer" cx="24" cy="24" r="20"/>
+            <circle class="ch-ring-mid" cx="24" cy="24" r="13"/>
+            <circle class="ch-ring-inner" cx="24" cy="24" r="6"/>
+            <circle class="ch-dot" cx="24" cy="24" r="2" fill="currentColor" stroke="none"/>
+            <line x1="24" y1="2" x2="24" y2="8"/>
+            <line x1="24" y1="40" x2="24" y2="46"/>
+            <line x1="2" y1="24" x2="8" y2="24"/>
+            <line x1="40" y1="24" x2="46" y2="24"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Systematic, around the clock.</h3>
+        <p class="feature-body">AI agents built to assist algorithmic and systematic trading. No complex infrastructure to maintain, no charts to babysit.</p>
+        <a href="#agents" class="feature-link">See the agents <span class="arrow">→</span></a>
+      </div>
+
+      <div class="feature reveal" data-delay="1">
+        <div class="feature-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M27 21l9-9a6 6 0 0 0-8.5-8.5l-9 9"/>
+            <path d="M21 27l-9 9a6 6 0 0 0 8.5 8.5l9-9"/>
+            <line x1="19" y1="29" x2="29" y2="19"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Public, verifiable proof.</h3>
+        <p class="feature-body">Every agent comes with a transparent track record. See how it's performed before you follow it.</p>
+        <a href="/apply.html#faq" class="feature-link">How it works <span class="arrow">→</span></a>
+      </div>
+
+      <div class="feature reveal" data-delay="2">
+        <div class="feature-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M24 4 L40 12 V24 C40 32 32 40 24 44 C16 40 8 32 8 24 V12 Z"/>
+            <polyline points="16 24 22 30 32 18"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Curated by design.</h3>
+        <p class="feature-body">Only proven agents launch here. Every applicant passes a private review before going live on the platform.</p>
+        <a href="/apply.html" class="feature-link">Apply to launch <span class="arrow">→</span></a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ════ AGENTS GRID ════ -->
+  <section class="agents-section" id="agents">
+    <div class="agents-head reveal">
+      <div class="agents-head-left">
+        <div class="lab-eyebrow">The Lab</div>
+        <h2>Live agents.</h2>
+      </div>
+      <div class="agents-meta"><span id="agent-count">1</span> Active</div>
+    </div>
+
+    <div class="agents-grid">
+      <a href="https://scgalpha.com" target="_blank" rel="noopener" class="agent-card reveal" data-delay="1">
+        <div class="agent-card-head">
+          <img src="/scg-alpha-title-tr.png" alt="SCG Alpha" class="agent-card-logo">
+          <span class="agent-card-status"><span class="dot"></span>Live</span>
+        </div>
+        <div class="agent-card-label">The Vault</div>
+        <div class="agent-card-tagline">A trading agent for Solana. Hunts smart-money plays with strict clean-token filters, the engine behind your setups, running 24/7.</div>
+
+        <div class="agent-card-stats">
+          <div>
+            <div class="agent-stat-val" id="sa-winrate">—</div>
+            <div class="agent-stat-lbl">Winrate</div>
           </div>
-          <img id="m-logo" src="" alt="">
+          <div>
+            <div class="agent-stat-val" id="sa-avgroi">—</div>
+            <div class="agent-stat-lbl">Avg ROI</div>
+          </div>
+          <div>
+            <div class="agent-stat-val" id="sa-best">—</div>
+            <div class="agent-stat-lbl">Best</div>
+          </div>
         </div>
-      </div>
 
-      <div class="modal-date" id="m-date">—</div>
-
-      <div class="modal-pill" id="m-pill">
-        <span class="modal-pill-num" id="m-pct">—</span>
-        <span class="modal-pill-mult" id="m-mult">—</span>
-      </div>
-
-      <div class="modal-rows">
-        <div class="modal-row">
-          <span class="modal-row-lbl">Alert MC</span>
-          <span class="modal-row-val" id="m-alert-mc">—</span>
+        <div class="agent-card-foot">
+          <span>View agent</span>
+          <span class="arrow">→</span>
         </div>
-        <div class="modal-row">
-          <span class="modal-row-lbl">Peak MC</span>
-          <span class="modal-row-val accent" id="m-ath-mc">—</span>
-        </div>
-      </div>
+      </a>
 
-      <div class="modal-bottom">
-        <div class="modal-bottom-brand">
-          <img src="scg-logo.png" alt="">
-          <a href="https://scgalpha.com" target="_blank" rel="noopener">scgalpha.com</a>
+      <div class="agent-card ghost reveal" data-delay="2">
+        <div class="agent-card-head">
+          <div class="ghost-logo-placeholder"></div>
+          <span class="agent-card-status ghost-status"><span class="dot"></span>Pending</span>
         </div>
-        <div class="modal-bottom-handle">@scg_alpha</div>
+        <div class="agent-card-label">████ · ██████</div>
+        <div class="agent-card-tagline">████████ ███████ ██████ ███ ██████. ████-██████ █████████ + █████-██████ ███████. ███████ ███ ████ ██████ ███ ██████ ███ ██████ █████.</div>
+
+        <div class="agent-card-stats">
+          <div>
+            <div class="agent-stat-val">———</div>
+            <div class="agent-stat-lbl">Winrate</div>
+          </div>
+          <div>
+            <div class="agent-stat-val">———</div>
+            <div class="agent-stat-lbl">Avg ROI</div>
+          </div>
+          <div>
+            <div class="agent-stat-val">———</div>
+            <div class="agent-stat-lbl">Best</div>
+          </div>
+        </div>
+
+        <div class="agent-card-foot">
+          <span>In review</span>
+          <span class="arrow">→</span>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>scg alpha · 2026</div>
+      <div class="footer-links">
+        <a href="/company.html">Company</a>
+        <a href="https://x.com/scg_alpha" target="_blank" rel="noopener">X</a>
+        <a href="/apply.html">Apply</a>
+      </div>
+    </div>
+  </footer>
 
   <script>
-    /* ── starfield ──────────────────────────────────────────────── */
+    /* ── starfield ── */
     (function() {
       const canvas = document.getElementById('starfield');
       const ctx = canvas.getContext('2d');
@@ -798,296 +775,127 @@
       tick();
     })();
 
-    /* ── helpers ─────────────────────────────────────────────────── */
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
+    /* ── live stats from SCG Alpha API ── */
+    const API_URL = 'https://api.scgalpha.com/api/feed?limit=10000';
 
-    function fmtMcap(n) {
-      if (n == null || isNaN(n)) return '—';
-      if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
-      if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-      if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
-      return '$' + Math.round(n);
+    function fmtMult(m) {
+      if (m == null || !isFinite(m)) return '—';
+      if (m >= 100) return Math.round(m) + '×';
+      return m.toFixed(1) + '×';
     }
-
-    function fmtDate(ts) {
-      if (!ts) return '—';
-      const d = new Date(ts * 1000);
-      const m = d.toLocaleString('en-US', { month: 'short' });
-      return `${m} ${d.getDate()}, ${d.getFullYear() % 100}`;
+    function fmtPct(p) {
+      if (p == null || !isFinite(p)) return '—';
+      const sign = p >= 0 ? '+' : '−';
+      const abs = Math.abs(p);
+      if (abs >= 1000) return sign + Math.round(abs).toLocaleString() + '%';
+      if (abs >= 100) return sign + Math.round(abs) + '%';
+      return sign + abs.toFixed(1) + '%';
     }
-
+    function fmtPctInt(p) {
+      if (p == null || !isFinite(p)) return '—';
+      return Math.round(p) + '%';
+    }
     function multiplier(a) {
       if (!a.alert_mcap || a.alert_mcap <= 0) return 1;
       return (a.max_mcap || a.alert_mcap) / a.alert_mcap;
     }
 
-    function shortMint(mint) {
-      if (!mint || mint.length < 10) return mint || '';
-      return mint.slice(0, 6) + '…' + mint.slice(-4);
+    /* ── count-up animation ── */
+    function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+
+    function animateValue(el, target, duration, formatFn) {
+      const startTime = performance.now();
+      function tick(now) {
+        const t = Math.min(1, (now - startTime) / duration);
+        const eased = easeOutQuart(t);
+        el.textContent = formatFn(target * eased);
+        if (t < 1) requestAnimationFrame(tick);
+        else el.textContent = formatFn(target);
+      }
+      requestAnimationFrame(tick);
     }
 
-    function tokenLogo(a) {
-      const scan = a.scan_raw_at_alert || {};
-      // Live API shape nests it; older snapshot has it top-level.
-      return scan.logo || a.logo || '';
+    let statsTargets = null;     // { winrate, avgRoi, best } once API resolves
+    let statsRevealed = false;   // becomes true when the agent card scrolls into view
+    let statsAnimated = false;   // run the count-up exactly once
+    let hasScrolled = false;     // gate: only animate after the user has actually scrolled
+
+    // Listen for direct user-input scroll gestures only. Avoids triggering on
+    // browser scroll restoration (which fires a `scroll` event without user intent).
+    const onScrollIntent = () => {
+      hasScrolled = true;
+      tryAnimateStats();
+    };
+    window.addEventListener('wheel',     onScrollIntent, { passive: true, once: true });
+    window.addEventListener('touchmove', onScrollIntent, { passive: true, once: true });
+    window.addEventListener('keydown', e => {
+      if (['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' '].includes(e.key)) onScrollIntent();
+    }, { passive: true, once: true });
+
+    function tryAnimateStats() {
+      if (!statsTargets || !statsRevealed || !hasScrolled || statsAnimated) return;
+      statsAnimated = true;
+      const { winrate, avgRoi, best } = statsTargets;
+      animateValue(document.getElementById('sa-winrate'), winrate, 1400, fmtPctInt);
+      animateValue(document.getElementById('sa-avgroi'), avgRoi,  1500, fmtPct);
+      animateValue(document.getElementById('sa-best'),    best,   1600, fmtMult);
     }
 
-    function tokenName(a) {
-      const scan = a.scan_raw_at_alert || {};
-      return a.name || scan.symbol || scan.name || 'Unknown';
-    }
-
-    /* ── data fetch (public homepage — uses dev key for now, swap for free-tier endpoint when backend ready) ── */
-    const API_URL = 'https://api.scgalpha.com/api/feed?limit=10000';   // public, 1hr delayed, full history
-    const FREE_DELAY_SECS = 3600;                                       // safety belt — server already enforces
-
-    /* ── data ────────────────────────────────────────────────────── */
-    let allAlerts = [];
-    let periodDays = 1;     // 24H default
-    let sortBy = 'time';    // 'time' (newest first) or 'performance' (highest mult first)
-    let mode = 'vault';     // 'vault' (all) | 'smart' (smart-wallet whitelist) | 'safe' (clean tokens)
-
-    /* Safe filter — replicates the bot's stricter scam thresholds.
-       Falls through (returns true) if a field is missing so older snapshot
-       entries without scan_raw_at_alert details aren't unfairly excluded. */
-    function passesSafeFilter(a) {
-      // Use server-computed is_safe field from /api/feed (matches /data page)
-      if (typeof a.is_safe === 'boolean') return a.is_safe;
-      // Legacy fallback (older snapshot records)
-      const s = a.scan_raw_at_alert || {};
-      if (s.bundler_rate !== undefined && s.bundler_rate > 0.20) return false;
-      if (s.dev_team_hold_rate !== undefined && s.dev_team_hold_rate > 0.10) return false;
-      if (s.top_10_holder_rate !== undefined && s.top_10_holder_rate > 0.25) return false;
-      if (s.initial_liquidity !== undefined && s.initial_liquidity > 0 && s.initial_liquidity < 5000) return false;
-      const platform = (s.launchpad_platform || '').toLowerCase();
-      if (platform.includes('meteora')) return false;
-      return true;
-    }
-
-    async function fetchAlerts() {
+    async function loadStats() {
       try {
         const res = await fetch(API_URL);
         if (!res.ok) return;
         const data = await res.json();
-        allAlerts = data.alerts || [];
-        render();
-      } catch (e) { /* keep showing last good state */ }
+        const alerts = data.alerts || [];
+        if (alerts.length === 0) return;
+
+        let wins = 0, sumReturn = 0, best = 0;
+        for (const a of alerts) {
+          const m = multiplier(a);
+          if (m >= 1.5) wins++;
+          sumReturn += (m - 1);
+          if (m > best) best = m;
+        }
+        const winrate = (wins / alerts.length) * 100;
+        const avgRoi  = (sumReturn / alerts.length) * 100;
+
+        if (!statsAnimated) {
+          statsTargets = { winrate, avgRoi, best };
+          tryAnimateStats();
+        } else {
+          // After the initial count-up, refresh values silently on poll
+          document.getElementById('sa-winrate').textContent = fmtPctInt(winrate);
+          document.getElementById('sa-avgroi').textContent = fmtPct(avgRoi);
+          document.getElementById('sa-best').textContent   = fmtMult(best);
+        }
+      } catch (e) {}
     }
+    loadStats();
+    setInterval(loadStats, 60000);
 
-    // Kick off fetch + 30s poll on load (no gate on this page).
-    fetchAlerts();
-    setInterval(fetchAlerts, 30000);
-
-    function getFiltered() {
-      let out = allAlerts;
-
-      // Free-tier delay: hide anything fired less than 1 hour ago.
-      const nowSec = Date.now() / 1000;
-      out = out.filter(a => (nowSec - (a.alert_time || 0)) >= FREE_DELAY_SECS);
-
-      // Period filter
-      if (periodDays > 0) {
-        const cutoff = nowSec - (periodDays * 86400);
-        out = out.filter(a => (a.alert_time || 0) >= cutoff);
-      }
-
-      // Mode filter — Vault (no filter) | Smart (smart-wallet whitelist) | Safe (clean tokens)
-      if (mode === 'safe') {
-        out = out.filter(passesSafeFilter);
-      } else if (mode === 'smart') {
-        out = out.filter(a => a.is_smart === true);
-      }
-
-      return out;
-    }
-
-    function renderStats(filtered) {
-      const total = filtered.length;
-      let n2 = 0, n5 = 0, n10 = 0;
-      for (const a of filtered) {
-        const m = multiplier(a);
-        if (m >= 2) n2++;
-        if (m >= 5) n5++;
-        if (m >= 10) n10++;
-      }
-      document.getElementById('s-total').textContent = total;
-      document.getElementById('s-2x').textContent = n2;
-      document.getElementById('s-5x').textContent = n5;
-      document.getElementById('s-10x').textContent = n10;
-    }
-
-    const TOP_N = 5;       // how many real rows to show on the public homepage
-    const GHOST_N = 2;      // how many faded "preview of more" rows to show beneath
-
-    function rowHTML(a, ghost) {
-      const mult = multiplier(a);
-      const peakClass = mult >= 1 ? 'peak-pos' : 'peak-neg';
-      const logo = tokenLogo(a);
-      const name = tokenName(a);
-      const cls = ghost ? 'ghost' : 'row';
-      const dataAttr = ghost ? '' : `data-mint="${esc(a.mint)}"`;
-      return `
-        <tr class="${cls}" ${dataAttr}>
-          <td>
-            <div class="tok">
-              ${logo ? `<img src="${esc(logo)}" alt="" onerror="this.style.visibility='hidden'">` : `<img alt="" style="visibility:hidden">`}
-              <span class="tok-name">${esc(name)}</span>
-            </div>
-          </td>
-          <td class="hide-sm">${esc(fmtDate(a.alert_time))}</td>
-          <td class="right">${esc(fmtMcap(a.alert_mcap))}</td>
-          <td class="right hide-sm">${esc(fmtMcap(a.max_mcap))}</td>
-          <td class="right ${peakClass}">${mult.toFixed(1)}×</td>
-        </tr>
-      `;
-    }
-
-    function renderRows(filtered) {
-      const tbody = document.getElementById('rows');
-      if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty">No signals match these filters</td></tr>';
+    /* ── scroll reveals + stats count-up trigger ── */
+    (function() {
+      const els = document.querySelectorAll('.reveal');
+      if (!els.length || !('IntersectionObserver' in window)) {
+        els.forEach(el => el.classList.add('in-view'));
+        statsRevealed = true;
+        tryAnimateStats();
         return;
       }
-      // Public homepage: always sort by performance desc, show top 5 + ghost teaser
-      const sorted = filtered.slice().sort((a, b) => multiplier(b) - multiplier(a));
-      const top = sorted.slice(0, TOP_N);
-      const ghosts = sorted.slice(TOP_N, TOP_N + GHOST_N);
-      const remaining = sorted.length - TOP_N;
-
-      let html = top.map(a => rowHTML(a, false)).join('');
-      html += ghosts.map(a => rowHTML(a, true)).join('');
-
-      if (remaining > 0) {
-        html += `
-          <tr class="locked-row">
-            <td colspan="5">
-              <div class="locked-text"><strong>+ ${remaining} more signal${remaining === 1 ? '' : 's'}</strong> in this view — members see them all, live.</div>
-              <a href="start.html" class="locked-cta">Get live access →</a>
-            </td>
-          </tr>
-        `;
-      }
-
-      tbody.innerHTML = html;
-
-      // Wire clicks only for the visible top rows (ghosts are non-interactive via CSS)
-      tbody.querySelectorAll('tr.row').forEach(tr => {
-        tr.addEventListener('click', () => {
-          const mint = tr.dataset.mint;
-          const a = allAlerts.find(x => x.mint === mint);
-          if (a) openModal(a);
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            if (entry.target.classList.contains('agent-card') && !entry.target.classList.contains('ghost')) {
+              statsRevealed = true;
+              tryAnimateStats();
+            }
+            io.unobserve(entry.target);
+          }
         });
-      });
-    }
-
-    function render() {
-      const filtered = getFiltered();
-      renderStats(filtered);
-      renderRows(filtered);
-    }
-
-    /* ── filter wiring ──────────────────────────────────────────── */
-    document.querySelectorAll('#period-btns .filter-btn').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('#period-btns .filter-btn').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        periodDays = parseInt(b.dataset.period, 10) || 0;
-        render();
-      });
-    });
-    // (Sort toggle removed on public homepage — always sorted by performance desc.)
-
-    // Mode toggle (Vault / Smart / Safe)
-    const MODE_DESCRIPTIONS = {
-      vault: 'Every signal the engine fires. Wider net, more setups to scan.',
-      smart: 'Tokens where smart-money wallets are already in the top holders. Same filter our bot trades on.',
-      safe:  'Tokens where 2+ smart-money wallets are already in the top holders. Higher conviction.'
-    };
-    const modeDescEl = document.getElementById('mode-desc');
-    document.querySelectorAll('#mode-btns .mode-btn').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('#mode-btns .mode-btn').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        mode = b.dataset.mode || 'vault';
-        modeDescEl.textContent = MODE_DESCRIPTIONS[mode];
-        render();
-      });
-    });
-
-    /* ── modal ──────────────────────────────────────────────────── */
-    const modalEl = document.getElementById('modal');
-
-    function pnlEmoji(mult) {
-      if (mult >= 10) return '🚀';
-      if (mult >= 5)  return '🔥';
-      if (mult >= 2)  return '📈';
-      if (mult >= 1)  return '↑';
-      return '📉';
-    }
-
-    function fmtFullDate(ts) {
-      if (!ts) return '—';
-      const d = new Date(ts * 1000);
-      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    }
-
-    function fmtPct(pct) {
-      const sign = pct >= 0 ? '+' : '−';
-      const abs = Math.abs(pct);
-      // Always include thousands separators for impact
-      return sign + abs.toLocaleString(undefined, {
-        minimumFractionDigits: abs >= 100 ? 0 : 1,
-        maximumFractionDigits: abs >= 100 ? 0 : 1
-      }) + '%';
-    }
-
-    function openModal(a) {
-      const mult = multiplier(a);
-      const pct = (mult - 1) * 100;
-      const isNeg = mult < 1;
-
-      // Logo
-      const logo = tokenLogo(a);
-      const mLogo = document.getElementById('m-logo');
-      mLogo.src = logo || '';
-      mLogo.style.visibility = logo ? 'visible' : 'hidden';
-      mLogo.onerror = () => { mLogo.style.visibility = 'hidden'; };
-
-      // Token name + abbreviated CA in top-right corner
-      document.getElementById('m-name').textContent = tokenName(a);
-      const mintEl = document.getElementById('m-mint');
-      mintEl.textContent = shortMint(a.mint);
-      mintEl.onclick = () => {
-        if (!a.mint) return;
-        navigator.clipboard.writeText(a.mint);
-        const orig = mintEl.textContent;
-        mintEl.textContent = 'copied!';
-        setTimeout(() => { mintEl.textContent = orig; }, 1200);
-      };
-
-      // Big date
-      document.getElementById('m-date').textContent = fmtFullDate(a.alert_time);
-
-      // Hero pill
-      const pillEl = document.getElementById('m-pill');
-      pillEl.classList.toggle('neg', isNeg);
-      const emojiEl = document.getElementById('m-emoji');
-      if (emojiEl) emojiEl.textContent = pnlEmoji(mult);
-      document.getElementById('m-pct').textContent = fmtPct(pct);
-      document.getElementById('m-mult').textContent = mult.toFixed(1) + '×';
-
-      // Stat rows
-      document.getElementById('m-alert-mc').textContent = fmtMcap(a.alert_mcap);
-      document.getElementById('m-ath-mc').textContent = fmtMcap(a.max_mcap);
-
-      modalEl.classList.add('open');
-    }
-    function closeModal() { modalEl.classList.remove('open'); }
-    document.getElementById('modal-close').addEventListener('click', closeModal);
-    modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+      }, { threshold: 0.2, rootMargin: '0px 0px -40px 0px' });
+      els.forEach(el => io.observe(el));
+    })();
   </script>
 </body>
 </html>

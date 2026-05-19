@@ -4,16 +4,26 @@
   "cleanUrls": true,
   "headers": [
     {
-      "source": "/data",
+      "source": "/scgagent/data",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, must-revalidate" }
       ]
     },
     {
-      "source": "/data.html",
+      "source": "/scgagent/data.html",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, must-revalidate" }
       ]
     }
+  ],
+  "redirects": [
+    { "source": "/data", "destination": "/scgagent/data", "permanent": false },
+    { "source": "/start", "destination": "/scgagent/start", "permanent": false },
+    { "source": "/welcome", "destination": "/scgagent/welcome", "permanent": false },
+    { "source": "/terms", "destination": "/scgagent/terms", "permanent": false },
+    { "source": "/algo", "destination": "/scgagent/algo", "permanent": false },
+    { "source": "/icm", "destination": "/scgagent/icm", "permanent": false },
+    { "source": "/marketplace", "destination": "/", "permanent": true },
+    { "source": "/marketplace/(.*)", "destination": "/$1", "permanent": true }
   ]
 }
