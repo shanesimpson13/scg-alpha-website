@@ -15,7 +15,7 @@
       --line: rgba(255, 255, 255, 0.08);
       --dim: rgba(255, 255, 255, 0.55);
       --dimmer: rgba(255, 255, 255, 0.32);
-      --green: #7cffa0;
+      --green: #e8c547;
     }
 
     body {
@@ -131,7 +131,7 @@
     }
     .filter-btn:hover { color: #fff; }
     .filter-btn.active {
-      background: rgba(124, 255, 160, 0.1);
+      background: rgba(232, 197, 71, 0.1);
       color: var(--green);
       border: 1px solid var(--green);
       margin: -1px;
@@ -161,7 +161,7 @@
     }
     table.signals td.right { text-align: right; }
     table.signals tr.row { cursor: pointer; transition: background 0.15s; }
-    table.signals tr.row:hover { background: rgba(124, 255, 160, 0.04); }
+    table.signals tr.row:hover { background: rgba(232, 197, 71, 0.04); }
     table.signals tr:last-child td { border-bottom: none; }
     .tok {
       display: flex; align-items: center; gap: 10px;
@@ -192,8 +192,8 @@
     table.signals tr.locked-row td {
       padding: 22px 18px;
       text-align: center;
-      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(124, 255, 160, 0.06) 100%);
-      border-top: 1px solid rgba(124, 255, 160, 0.25);
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(232, 197, 71, 0.06) 100%);
+      border-top: 1px solid rgba(232, 197, 71, 0.25);
     }
     .locked-text {
       font-size: 12px;
@@ -206,7 +206,7 @@
       display: inline-block;
       padding: 12px 22px;
       border: 1px solid var(--green);
-      background: rgba(124, 255, 160, 0.10);
+      background: rgba(232, 197, 71, 0.10);
       color: var(--green);
       font-family: inherit;
       font-size: 11px; letter-spacing: 2.5px;
@@ -215,8 +215,8 @@
       transition: all 0.2s;
     }
     .locked-cta:hover {
-      background: rgba(124, 255, 160, 0.22);
-      box-shadow: 0 0 20px rgba(124, 255, 160, 0.3);
+      background: rgba(232, 197, 71, 0.22);
+      box-shadow: 0 0 20px rgba(232, 197, 71, 0.3);
     }
 
     /* ── modal card (GMGN-style) ── */
@@ -234,8 +234,8 @@
     .modal-card {
       max-width: 540px; width: 100%;
       background: #0a0a0a;
-      border: 1px solid rgba(124, 255, 160, 0.35);
-      box-shadow: 0 0 100px rgba(124, 255, 160, 0.15);
+      border: 1px solid rgba(232, 197, 71, 0.35);
+      box-shadow: 0 0 100px rgba(232, 197, 71, 0.15);
       position: relative;
       overflow: hidden;
       padding: 26px 28px 22px;
@@ -244,7 +244,7 @@
       content: '';
       position: absolute; top: 0; right: 0;
       width: 70%; height: 100%;
-      background: radial-gradient(ellipse at top right, rgba(124, 255, 160, 0.18) 0%, rgba(124, 255, 160, 0) 60%);
+      background: radial-gradient(ellipse at top right, rgba(232, 197, 71, 0.18) 0%, rgba(232, 197, 71, 0) 60%);
       pointer-events: none;
     }
     .modal-close {
@@ -397,9 +397,9 @@
     .gate-card {
       max-width: 440px; width: 100%;
       padding: 44px 36px;
-      border: 1px solid rgba(124, 255, 160, 0.4);
+      border: 1px solid rgba(232, 197, 71, 0.4);
       background: #000;
-      box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
+      box-shadow: 0 0 60px rgba(232, 197, 71, 0.12);
       text-align: center;
     }
     .gate-mark {
@@ -427,18 +427,18 @@
       margin-bottom: 12px;
       transition: border-color 0.2s;
     }
-    .gate-input:focus { outline: none; border-color: rgba(124, 255, 160, 0.6); }
+    .gate-input:focus { outline: none; border-color: rgba(232, 197, 71, 0.6); }
     .gate-btn {
       width: 100%; padding: 14px 24px;
       border: 2px solid var(--green);
-      background: rgba(124, 255, 160, 0.08);
+      background: rgba(232, 197, 71, 0.08);
       color: var(--green);
       font-family: inherit;
       font-size: 12px; font-weight: 500;
       letter-spacing: 3px; text-transform: uppercase;
       cursor: pointer; transition: all 0.2s;
     }
-    .gate-btn:hover { background: rgba(124, 255, 160, 0.16); }
+    .gate-btn:hover { background: rgba(232, 197, 71, 0.16); }
     .gate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .gate-error {
       font-size: 11px; color: #ff6b6b;
@@ -451,7 +451,7 @@
     }
     .gate-foot a {
       color: var(--green); text-decoration: none;
-      border-bottom: 1px solid rgba(124, 255, 160, 0.4);
+      border-bottom: 1px solid rgba(232, 197, 71, 0.4);
     }
 
     /* ── homepage hero ── */
@@ -507,7 +507,7 @@
     }
     .mode-btn:hover { color: #fff; }
     .mode-btn.active {
-      background: rgba(124, 255, 160, 0.12);
+      background: rgba(232, 197, 71, 0.12);
       color: var(--green);
       border: 1px solid var(--green);
       margin: -1px;
@@ -525,10 +525,10 @@
       display: flex; align-items: center; justify-content: space-between;
       gap: 16px; flex-wrap: wrap;
       padding: 14px 18px;
-      border: 1px solid rgba(124, 255, 160, 0.35);
+      border: 1px solid rgba(232, 197, 71, 0.35);
       background:
-        linear-gradient(90deg, rgba(124, 255, 160, 0.06) 0%, rgba(124, 255, 160, 0) 60%),
-        rgba(124, 255, 160, 0.015);
+        linear-gradient(90deg, rgba(232, 197, 71, 0.06) 0%, rgba(232, 197, 71, 0) 60%),
+        rgba(232, 197, 71, 0.015);
       margin-bottom: 22px;
     }
     .delay-text {
@@ -540,7 +540,7 @@
       flex-shrink: 0;
       padding: 10px 18px;
       border: 1px solid var(--green);
-      background: rgba(124, 255, 160, 0.08);
+      background: rgba(232, 197, 71, 0.08);
       color: var(--green);
       font-family: inherit;
       font-size: 11px; letter-spacing: 2px;
@@ -549,7 +549,7 @@
       transition: all 0.18s;
     }
     .delay-cta:hover {
-      background: rgba(124, 255, 160, 0.18);
+      background: rgba(232, 197, 71, 0.18);
     }
 
     /* ── big bottom CTA ── */
@@ -557,11 +557,11 @@
       margin-top: 60px;
       padding: 48px 32px;
       text-align: center;
-      border: 1px solid rgba(124, 255, 160, 0.45);
+      border: 1px solid rgba(232, 197, 71, 0.45);
       background:
-        radial-gradient(ellipse at center, rgba(124, 255, 160, 0.08) 0%, rgba(124, 255, 160, 0) 70%),
-        rgba(124, 255, 160, 0.02);
-      box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
+        radial-gradient(ellipse at center, rgba(232, 197, 71, 0.08) 0%, rgba(232, 197, 71, 0) 70%),
+        rgba(232, 197, 71, 0.02);
+      box-shadow: 0 0 60px rgba(232, 197, 71, 0.12);
     }
     .bottom-cta-eye {
       font-size: 11px; letter-spacing: 4px;
@@ -583,19 +583,19 @@
       display: inline-block;
       padding: 22px 50px;
       border: 2px solid var(--green);
-      background: rgba(124, 255, 160, 0.06);
+      background: rgba(232, 197, 71, 0.06);
       color: var(--green);
       font-family: inherit;
       font-size: 15px; font-weight: 500;
       letter-spacing: 3px;
       text-decoration: none;
       text-transform: uppercase;
-      box-shadow: 0 0 24px rgba(124, 255, 160, 0.18);
+      box-shadow: 0 0 24px rgba(232, 197, 71, 0.18);
       transition: all 0.25s ease;
     }
     .bottom-cta-btn:hover {
-      background: rgba(124, 255, 160, 0.18);
-      box-shadow: 0 0 36px rgba(124, 255, 160, 0.4);
+      background: rgba(232, 197, 71, 0.18);
+      box-shadow: 0 0 36px rgba(232, 197, 71, 0.4);
       transform: translateY(-2px);
     }
 
