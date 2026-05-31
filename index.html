@@ -39,11 +39,19 @@
 
     .title-logo {
       display: block;
-      margin: 0 auto 32px;
-      width: 275px;
+      margin: 0 auto 18px;
+      width: 245px;
       height: auto;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
+    }
+
+    .title-divider {
+      width: 232px;
+      height: 1px;
+      background: #c9a24c;
+      border: 0;
+      margin: 0 auto 32px;
     }
 
     .body-wrapper {
@@ -74,17 +82,18 @@
     .vault-link {
       display: inline-block;
       padding: 14px 36px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      color: #fff;
+      border: 1px solid rgba(201, 162, 76, 0.5);
+      color: #c9a24c;
       text-decoration: none;
       font-size: 13px;
       letter-spacing: 1.5px;
-      transition: border-color 0.3s, background 0.3s;
+      transition: border-color 0.3s, background 0.3s, color 0.3s;
     }
 
     .vault-link:hover {
-      border-color: #fff;
-      background: rgba(255, 255, 255, 0.08);
+      border-color: #c9a24c;
+      color: #d8b766;
+      background: rgba(201, 162, 76, 0.1);
     }
 
     .social-links {
@@ -96,15 +105,6 @@
       align-items: center;
     }
 
-    .social-label {
-      font-size: 11px;
-      letter-spacing: 1px;
-      color: rgba(255, 255, 255, 0.3);
-      margin-right: 4px;
-      position: relative;
-      top: -1px;
-    }
-
     .social-links a {
       opacity: 0.4;
       transition: opacity 0.3s;
@@ -114,9 +114,14 @@
       opacity: 1;
     }
 
+    .social-links a:hover svg {
+      fill: #c9a24c;
+    }
+
     .social-links svg {
       width: 24px;
       height: 24px;
+      transition: fill 0.3s;
     }
 
     .social-links svg.x-icon {
@@ -149,10 +154,6 @@
         right: 20px;
       }
 
-      .social-label {
-        display: none;
-      }
-
       .social-links svg {
         width: 20px;
         height: 20px;
@@ -169,7 +170,6 @@
   <canvas id="starfield"></canvas>
   <div class="content">
     <div class="social-links">
-      <span class="social-label">Follow live strategies on X &amp; TG &rarr;</span>
       <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
         <svg class="x-icon" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -183,7 +183,8 @@
     </div>
     <div class="body-wrapper">
       <div class="body-text-wrapper">
-        <img src="scg-alpha-title.png" alt="SCG Alpha" class="title-logo">
+        <img src="scg-alpha-title-centered.png" alt="SCG Alpha" class="title-logo">
+        <hr class="title-divider">
         <p class="body-text">
           A quantitative technology firm for onchain markets.
         </p>
@@ -280,21 +281,26 @@
         const tailY = ss.y - Math.sin(ss.angle) * ss.length;
 
         const grad = ctx.createLinearGradient(tailX, tailY, ss.x, ss.y);
-        grad.addColorStop(0, `rgba(255, 255, 255, 0)`);
-        grad.addColorStop(1, `rgba(255, 255, 255, ${ss.life * 0.9})`);
+        grad.addColorStop(0, `rgba(224, 190, 110, 0)`);
+        grad.addColorStop(1, `rgba(224, 190, 110, ${ss.life})`);
+
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = `rgba(201, 162, 76, ${ss.life})`;
 
         ctx.beginPath();
         ctx.moveTo(tailX, tailY);
         ctx.lineTo(ss.x, ss.y);
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.stroke();
 
         // Bright head
         ctx.beginPath();
-        ctx.arc(ss.x, ss.y, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${ss.life})`;
+        ctx.arc(ss.x, ss.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 236, 190, ${ss.life})`;
         ctx.fill();
+        ctx.restore();
       }
 
       requestAnimationFrame(animate);
