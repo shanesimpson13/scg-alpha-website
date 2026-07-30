@@ -16,23 +16,10 @@
       ]
     }
   ],
-  "rewrites": [
-    { "source": "/system", "destination": "/scgagent" }
-  ],
   "redirects": [
-    {
-      "source": "/",
-      "has": [{ "type": "host", "value": "edgelvl.app" }],
-      "destination": "/system",
-      "permanent": false
-    },
-    {
-      "source": "/",
-      "has": [{ "type": "host", "value": "www.edgelvl.app" }],
-      "destination": "https://edgelvl.app/system",
-      "permanent": false
-    },
-    { "source": "/start", "destination": "/scgagent/start", "permanent": false },
+    { "source": "/system", "destination": "/", "permanent": false },
+    { "source": "/scgagent", "destination": "/", "permanent": false },
+    { "source": "/scgagent/start", "destination": "/start", "permanent": false },
     { "source": "/welcome", "destination": "/scgagent/welcome", "permanent": false },
     { "source": "/terms", "destination": "/scgagent/terms", "permanent": false },
     { "source": "/algo", "destination": "/scgagent/algo", "permanent": false },

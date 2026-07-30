@@ -3,318 +3,1245 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCG Alpha</title>
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Build the system. Trade your edge.</title>
+  <link rel="icon" type="image/png" href="/favicon.png?v=2">
+  <link rel="icon" href="/favicon.ico?v=2" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #000;
+      --line: rgba(255, 255, 255, 0.08);
+      --dim: rgba(255, 255, 255, 0.55);
+      --dimmer: rgba(255, 255, 255, 0.32);
+      --green: #7cffa0;
     }
 
     body {
-      background: #000;
+      background: var(--bg);
       color: #fff;
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
       min-height: 100vh;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     canvas#starfield {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
       z-index: 0;
     }
 
-    .content {
-      position: relative;
-      z-index: 1;
-      min-height: 100vh;
+    .content { position: relative; z-index: 1; min-height: 100vh; }
+
+    /* ── top-right scg mark + social ── */
+    .top-bar {
+      position: fixed; top: 28px; right: 32px;
+      display: flex; gap: 20px; align-items: center; z-index: 10;
+    }
+    .top-bar a { opacity: 0.45; transition: opacity 0.3s; line-height: 0; }
+    .top-bar a:hover { opacity: 1; }
+    .top-bar svg { width: 22px; height: 22px; }
+    .top-bar svg.x-icon { width: 18px; height: 18px; }
+
+    .home-link {
+      position: fixed; top: 28px; left: 32px;
+      font-size: 11px; letter-spacing: 2px;
+      color: var(--dimmer); text-decoration: none;
+      z-index: 10; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .home-link:hover { color: #fff; }
+
+    /* ── page wrap ── */
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 110px 32px 60px;
     }
 
+    /* ── header ── */
     .title-logo {
       display: block;
+      width: 360px; height: auto;
       margin: 0 auto 18px;
-      width: 245px;
-      height: auto;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
     }
-
-    .title-divider {
-      width: 232px;
-      height: 1px;
-      background: #c9a24c;
-      border: 0;
-      margin: 0 auto 32px;
+    .page-title {
+      font-size: 28px; font-weight: 500;
+      letter-spacing: -0.3px; margin-bottom: 6px;
+    }
+    .page-sub {
+      font-size: 13px; color: var(--dim);
+      letter-spacing: 0.3px; margin-bottom: 36px;
     }
 
-    .body-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 0 24px 14vh;
-    }
-
-    .body-text-wrapper {
-      max-width: 700px;
-      text-align: center;
-    }
-
-    .body-text {
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 2;
-      letter-spacing: 0.3px;
+    /* ── stats grid ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--line);
       margin-bottom: 28px;
     }
-
-    .body-text:last-of-type {
-      margin-bottom: 35px;
+    .stat {
+      padding: 22px 24px;
+      border-right: 1px solid var(--line);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-val {
+      font-size: 30px; font-weight: 500;
+      letter-spacing: -0.3px;
+      line-height: 1.1;
+    }
+    .stat-val.accent { color: var(--green); }
+    .stat-lbl {
+      margin-top: 8px;
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--dimmer); text-transform: uppercase;
     }
 
-    .vault-link {
-      display: inline-block;
-      padding: 14px 36px;
-      border: 1px solid rgba(201, 162, 76, 0.5);
-      color: #c9a24c;
-      text-decoration: none;
-      font-size: 13px;
-      letter-spacing: 1.5px;
-      transition: border-color 0.3s, background 0.3s, color 0.3s;
-    }
-
-    .vault-link:hover {
-      border-color: #c9a24c;
-      color: #d8b766;
-      background: rgba(201, 162, 76, 0.1);
-    }
-
-    .social-links {
-      position: fixed;
-      bottom: 28px;
-      right: 32px;
-      display: flex;
-      gap: 16px;
+    /* ── filters ── */
+    .filters {
+      display: flex; flex-wrap: wrap;
+      gap: 28px;
+      margin-bottom: 22px;
       align-items: center;
     }
-
-    .social-links a {
-      opacity: 0.4;
-      transition: opacity 0.3s;
+    .filter-group {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .filter-label {
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--dimmer); text-transform: uppercase;
+    }
+    .filter-btns {
+      display: flex; gap: 4px;
+      border: 1px solid var(--line);
+    }
+    .filter-btn {
+      padding: 8px 14px;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      font-family: inherit;
+      font-size: 11px; letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { color: #fff; }
+    .filter-btn.active {
+      background: rgba(124, 255, 160, 0.1);
+      color: var(--green);
+      border: 1px solid var(--green);
+      margin: -1px;
     }
 
-    .social-links a:hover {
-      opacity: 1;
+    /* ── signals table ── */
+    .table-wrap { border: 1px solid var(--line); }
+    table.signals {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    table.signals th {
+      text-align: left;
+      padding: 14px 18px;
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--dimmer); text-transform: uppercase;
+      font-weight: 500;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.015);
+    }
+    table.signals th.right { text-align: right; }
+    table.signals td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    table.signals td.right { text-align: right; }
+    table.signals tr.row { cursor: pointer; transition: background 0.15s; }
+    table.signals tr.row:hover { background: rgba(124, 255, 160, 0.04); }
+    table.signals tr:last-child td { border-bottom: none; }
+    .tok {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .tok img {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      object-fit: cover; flex-shrink: 0;
+    }
+    .tok-name { font-weight: 500; }
+    .peak-pos { color: var(--green); font-weight: 500; }
+    .peak-neg { color: rgba(255, 110, 110, 0.85); }
+
+    .empty {
+      padding: 40px 18px; text-align: center;
+      font-size: 12px; color: var(--dimmer);
+      letter-spacing: 1.5px; text-transform: uppercase;
     }
 
-    .social-links a:hover svg {
-      fill: #c9a24c;
+    /* ── ghost rows (faded preview of more signals) ── */
+    table.signals tr.ghost { pointer-events: none; }
+    table.signals tr.ghost td {
+      filter: blur(3.5px);
+      opacity: 0.35;
     }
 
-    .social-links svg {
-      width: 24px;
-      height: 24px;
-      transition: fill 0.3s;
+    /* ── locked teaser row (the "more behind paywall" CTA) ── */
+    table.signals tr.locked-row td {
+      padding: 22px 18px;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(124, 255, 160, 0.06) 100%);
+      border-top: 1px solid rgba(124, 255, 160, 0.25);
+    }
+    .locked-text {
+      font-size: 12px;
+      color: var(--dim);
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .locked-text strong { color: #fff; font-weight: 600; }
+    .locked-cta {
+      display: inline-block;
+      padding: 12px 22px;
+      border: 1px solid var(--green);
+      background: rgba(124, 255, 160, 0.10);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 11px; letter-spacing: 2.5px;
+      text-transform: uppercase; font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .locked-cta:hover {
+      background: rgba(124, 255, 160, 0.22);
+      box-shadow: 0 0 20px rgba(124, 255, 160, 0.3);
     }
 
-    .social-links svg.x-icon {
-      width: 20px;
-      height: 20px;
+    /* ── modal card (GMGN-style) ── */
+    .modal {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+    .modal.open { display: flex; }
+    .modal-card {
+      max-width: 540px; width: 100%;
+      background: #0a0a0a;
+      border: 1px solid rgba(124, 255, 160, 0.35);
+      box-shadow: 0 0 100px rgba(124, 255, 160, 0.15);
+      position: relative;
+      overflow: hidden;
+      padding: 26px 28px 22px;
+    }
+    .modal-card::before {
+      content: '';
+      position: absolute; top: 0; right: 0;
+      width: 70%; height: 100%;
+      background: radial-gradient(ellipse at top right, rgba(124, 255, 160, 0.18) 0%, rgba(124, 255, 160, 0) 60%);
+      pointer-events: none;
+    }
+    .modal-close {
+      position: absolute; top: 28px; right: 32px;
+      background: transparent; border: none;
+      color: rgba(255, 255, 255, 0.55);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 30px; line-height: 1;
+      padding: 8px 12px;
+      transition: color 0.15s, transform 0.15s;
+      z-index: 60;
+    }
+    .modal-close:hover { color: #fff; transform: scale(1.1); }
+
+    /* corners */
+    .modal-corners {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 28px;
+      position: relative; z-index: 2;
+    }
+    .modal-brand-img {
+      height: 28px; width: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .modal-tok-corner {
+      display: flex; align-items: center; gap: 10px;
+      max-width: 60%;
+    }
+    .modal-tok-corner img {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06); object-fit: cover;
+      flex-shrink: 0;
+    }
+    .modal-tok-corner-info { min-width: 0; text-align: right; }
+    .modal-tok-corner-name {
+      font-size: 16px; font-weight: 600;
+      letter-spacing: 0.2px; line-height: 1.1;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .modal-tok-corner-mint {
+      margin-top: 2px;
+      font-size: 10px; color: var(--dimmer);
+      letter-spacing: 0.5px;
+      cursor: pointer; transition: color 0.15s;
+    }
+    .modal-tok-corner-mint:hover { color: var(--dim); }
+
+    /* big date */
+    .modal-date {
+      font-size: 32px; font-weight: 600;
+      letter-spacing: -0.8px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      color: #fff;
+      position: relative; z-index: 2;
     }
 
-    @media (max-width: 600px) {
-      .title-logo {
-        width: 200px;
-        margin-bottom: 24px;
-      }
+    /* hero pill */
+    .modal-pill {
+      display: flex; align-items: center;
+      gap: 18px;
+      padding: 22px 26px;
+      background: #1ce783;
+      border-radius: 10px;
+      margin-bottom: 22px;
+      box-shadow: 0 8px 40px rgba(28, 231, 131, 0.25);
+      position: relative; z-index: 2;
+    }
+    .modal-pill.neg {
+      background: #ff6b6b;
+      box-shadow: 0 8px 40px rgba(255, 107, 107, 0.25);
+    }
+    .modal-pill-emoji {
+      font-size: 36px; line-height: 1;
+      flex-shrink: 0;
+    }
+    .modal-pill-num {
+      font-size: 44px; font-weight: 800;
+      letter-spacing: -2px; line-height: 1;
+      color: #000;
+      flex: 1;
+    }
+    .modal-pill-mult {
+      font-size: 18px; font-weight: 700;
+      color: rgba(0, 0, 0, 0.7);
+      letter-spacing: -0.3px;
+      flex-shrink: 0;
+      padding-left: 14px;
+      border-left: 1.5px solid rgba(0, 0, 0, 0.18);
+    }
 
-      .body-text {
-        font-size: 13px;
-        line-height: 1.9;
-      }
+    /* stat rows */
+    .modal-rows {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
+      position: relative; z-index: 2;
+    }
+    .modal-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 2px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .modal-row:last-child { border-bottom: none; }
+    .modal-row-lbl { color: var(--dim); }
+    .modal-row-val { color: #fff; font-weight: 600; }
+    .modal-row-val.accent { color: var(--green); }
 
-      .body-wrapper {
-        padding: 60px 20px 80px;
-      }
+    /* bottom bar */
+    .modal-bottom {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px;
+      position: relative; z-index: 2;
+    }
+    .modal-bottom-brand {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--dim);
+      letter-spacing: 0.3px;
+    }
+    .modal-bottom-brand img {
+      height: 14px; width: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      opacity: 0.8;
+      mix-blend-mode: screen;
+    }
+    .modal-bottom-brand a {
+      color: var(--green); text-decoration: none;
+      font-weight: 600;
+    }
+    .modal-bottom-handle {
+      font-size: 12px; color: var(--dimmer);
+      letter-spacing: 0.3px;
+    }
 
-      .vault-link {
-        padding: 12px 28px;
-        font-size: 12px;
-      }
+    /* ── member gate ── */
+    .gate {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .gate-card {
+      max-width: 440px; width: 100%;
+      padding: 44px 36px;
+      border: 1px solid rgba(124, 255, 160, 0.4);
+      background: #000;
+      box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
+      text-align: center;
+    }
+    .gate-mark {
+      font-size: 11px; letter-spacing: 5px;
+      color: var(--green); text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .gate-title {
+      font-size: 22px; font-weight: 500;
+      letter-spacing: -0.3px; line-height: 1.3;
+      margin-bottom: 12px;
+    }
+    .gate-sub {
+      font-size: 13px; color: var(--dim);
+      line-height: 1.6; margin-bottom: 28px;
+    }
+    .gate-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-family: inherit; font-size: 13px;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .gate-input:focus { outline: none; border-color: rgba(124, 255, 160, 0.6); }
+    .gate-btn {
+      width: 100%; padding: 14px 24px;
+      border: 2px solid var(--green);
+      background: rgba(124, 255, 160, 0.08);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 12px; font-weight: 500;
+      letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .gate-btn:hover { background: rgba(124, 255, 160, 0.16); }
+    .gate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .gate-error {
+      font-size: 11px; color: #ff6b6b;
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-top: 14px; min-height: 14px;
+    }
+    .gate-foot {
+      margin-top: 22px;
+      font-size: 11px; color: var(--dimmer);
+    }
+    .gate-foot a {
+      color: var(--green); text-decoration: none;
+      border-bottom: 1px solid rgba(124, 255, 160, 0.4);
+    }
 
-      .social-links {
-        bottom: 20px;
-        right: 20px;
-      }
+    /* ── homepage hero ── */
+    .hero {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .hero-eyebrow {
+      font-size: 11px; letter-spacing: 3px;
+      color: var(--green); text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .hero-eyebrow .dot {
+      display: inline-block; width: 6px; height: 6px;
+      background: var(--green); border-radius: 50%;
+      margin-right: 8px;
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .hero-title {
+      font-size: 30px; font-weight: 500;
+      letter-spacing: -0.5px; line-height: 1.2;
+      max-width: 700px; margin: 0 auto 14px;
+    }
+    .hero-title .accent { color: var(--green); }
+    .hero-title.big {
+      font-size: 52px; letter-spacing: -1.5px;
+      margin: 26px auto 18px;
+    }
+    @media (max-width: 600px) { .hero-title.big { font-size: 36px; } }
+    .hero-sub {
+      font-size: 14px; color: var(--dim);
+      letter-spacing: 0.3px; line-height: 1.6;
+      max-width: 520px; margin: 0 auto 28px;
+    }
 
-      .social-links svg {
-        width: 20px;
-        height: 20px;
-      }
+    /* ── funnel: how the system works ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      margin-bottom: 64px;
+    }
+    .step {
+      padding: 28px 26px;
+      border-right: 1px solid var(--line);
+    }
+    .step:last-child { border-right: none; }
+    .step-num {
+      font-size: 11px; letter-spacing: 2.5px;
+      color: var(--green); margin-bottom: 14px;
+    }
+    .step-title {
+      font-size: 15px; font-weight: 600;
+      margin-bottom: 10px; letter-spacing: 0.2px;
+    }
+    .step-body {
+      font-size: 12.5px; color: var(--dim);
+      line-height: 1.7;
+    }
+    .step-body strong { color: #fff; font-weight: 600; }
 
-      .social-links svg.x-icon {
-        width: 17px;
-        height: 17px;
-      }
+    /* ── funnel: section headers ── */
+    .sec-head {
+      text-align: center;
+      font-size: 11px; letter-spacing: 3px;
+      color: var(--green); text-transform: uppercase;
+      margin: 0 0 14px;
+    }
+    .sec-title {
+      text-align: center;
+      font-size: 24px; font-weight: 500;
+      letter-spacing: -0.3px; line-height: 1.3;
+      max-width: 640px; margin: 0 auto 12px;
+    }
+    .sec-sub {
+      text-align: center;
+      font-size: 12.5px; color: var(--dim);
+      line-height: 1.7; letter-spacing: 0.3px;
+      max-width: 580px; margin: 0 auto 30px;
+    }
+
+    /* ── funnel: the stack ── */
+    .stack {
+      border: 1px solid var(--line);
+      margin-bottom: 64px;
+    }
+    .stack-row {
+      display: flex; align-items: baseline; gap: 18px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .stack-row:last-child { border-bottom: none; }
+    .stack-name {
+      flex: 0 0 220px;
+      font-size: 13px; font-weight: 600;
+    }
+    .stack-name.gold { color: var(--green); }
+    .stack-note {
+      font-size: 12px; color: var(--dim); line-height: 1.6;
+    }
+
+    /* ── funnel: what's included ── */
+    .inc-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      border: 1px solid var(--line);
+      margin-bottom: 64px;
+    }
+    .inc {
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .inc:nth-child(2n) { border-right: none; }
+    .inc:nth-last-child(-n+2) { border-bottom: none; }
+    .inc-title {
+      font-size: 13px; font-weight: 600; margin-bottom: 8px;
+    }
+    .inc-title .tick { color: var(--green); margin-right: 8px; }
+    .inc-body { font-size: 12px; color: var(--dim); line-height: 1.65; }
+
+    .honesty-foot {
+      text-align: center;
+      font-size: 11px; color: var(--dimmer);
+      line-height: 1.7; max-width: 560px;
+      margin: 26px auto 0;
+    }
+    .honesty-foot a { color: var(--dim); }
+
+    @media (max-width: 760px) {
+      .steps { grid-template-columns: 1fr; }
+      .step { border-right: none; border-bottom: 1px solid var(--line); }
+      .step:last-child { border-bottom: none; }
+      .stack-row { flex-direction: column; gap: 6px; }
+      .stack-name { flex: none; }
+      .inc-grid { grid-template-columns: 1fr; }
+      .inc { border-right: none; }
+      .inc:nth-last-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .inc:last-child { border-bottom: none; }
+    }
+
+    /* ── mode toggle (Safe / Normal) ── */
+    .mode-toggle {
+      display: flex; justify-content: center;
+      margin-bottom: 14px;
+    }
+    .mode-btns {
+      display: flex; gap: 4px;
+      border: 1px solid var(--line);
+      padding: 4px;
+      background: rgba(255, 255, 255, 0.015);
+    }
+    .mode-btn {
+      padding: 12px 24px;
+      background: transparent; border: none;
+      color: var(--dim);
+      font-family: inherit;
+      font-size: 12px; letter-spacing: 2px;
+      text-transform: uppercase; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .mode-btn:hover { color: #fff; }
+    .mode-btn.active {
+      background: rgba(124, 255, 160, 0.12);
+      color: var(--green);
+      border: 1px solid var(--green);
+      margin: -1px;
+    }
+    .mode-desc {
+      text-align: center;
+      font-size: 12px; color: var(--dimmer);
+      letter-spacing: 0.5px; line-height: 1.6;
+      max-width: 520px; margin: 0 auto 28px;
+      min-height: 18px;
+    }
+
+    /* ── delay banner ── */
+    .delay-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap;
+      padding: 14px 18px;
+      border: 1px solid rgba(124, 255, 160, 0.35);
+      background:
+        linear-gradient(90deg, rgba(124, 255, 160, 0.06) 0%, rgba(124, 255, 160, 0) 60%),
+        rgba(124, 255, 160, 0.015);
+      margin-bottom: 22px;
+    }
+    .delay-text {
+      font-size: 12px; color: var(--dim);
+      letter-spacing: 0.3px; line-height: 1.5;
+    }
+    .delay-text strong { color: #fff; font-weight: 600; }
+    .delay-cta {
+      flex-shrink: 0;
+      padding: 10px 18px;
+      border: 1px solid var(--green);
+      background: rgba(124, 255, 160, 0.08);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 11px; letter-spacing: 2px;
+      text-transform: uppercase; font-weight: 600;
+      text-decoration: none;
+      transition: all 0.18s;
+    }
+    .delay-cta:hover {
+      background: rgba(124, 255, 160, 0.18);
+    }
+
+    /* ── big bottom CTA ── */
+    .bottom-cta {
+      margin-top: 60px;
+      padding: 48px 32px;
+      text-align: center;
+      border: 1px solid rgba(124, 255, 160, 0.45);
+      background:
+        radial-gradient(ellipse at center, rgba(124, 255, 160, 0.08) 0%, rgba(124, 255, 160, 0) 70%),
+        rgba(124, 255, 160, 0.02);
+      box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
+    }
+    .bottom-cta-eye {
+      font-size: 11px; letter-spacing: 4px;
+      color: var(--green); text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .bottom-cta-title {
+      font-size: 24px; font-weight: 500;
+      letter-spacing: -0.3px; line-height: 1.3;
+      margin-bottom: 14px;
+      max-width: 560px; margin-left: auto; margin-right: auto;
+    }
+    .bottom-cta-sub {
+      font-size: 13px; color: var(--dim);
+      max-width: 460px; margin: 0 auto 28px;
+      line-height: 1.6;
+    }
+    .bottom-cta-btn {
+      display: inline-block;
+      padding: 22px 50px;
+      border: 2px solid var(--green);
+      background: rgba(124, 255, 160, 0.06);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 15px; font-weight: 500;
+      letter-spacing: 3px;
+      text-decoration: none;
+      text-transform: uppercase;
+      box-shadow: 0 0 24px rgba(124, 255, 160, 0.18);
+      transition: all 0.25s ease;
+    }
+    .bottom-cta-btn:hover {
+      background: rgba(124, 255, 160, 0.18);
+      box-shadow: 0 0 36px rgba(124, 255, 160, 0.4);
+      transform: translateY(-2px);
+    }
+
+    /* ── responsive ── */
+    @media (max-width: 720px) {
+      .wrap { padding: 90px 18px 60px; }
+      .home-link { top: 20px; left: 20px; }
+      .top-bar { top: 20px; right: 20px; }
+      .page-title { font-size: 22px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .stat { border-right: none; border-bottom: 1px solid var(--line); }
+      .stat:nth-child(2) { border-right: none; }
+      .stat:nth-child(odd) { border-right: 1px solid var(--line); }
+      .stat:nth-last-child(-n+2) { border-bottom: none; }
+      .filters { gap: 16px; }
+      .filter-btn { padding: 7px 10px; font-size: 10px; }
+      table.signals th, table.signals td { padding: 12px 10px; }
+      table.signals th.hide-sm, table.signals td.hide-sm { display: none; }
+      .modal-mult { font-size: 18px; padding: 6px 10px; }
+      .hero-title { font-size: 22px; }
+      .hero-sub { font-size: 13px; }
+      .mode-btn { padding: 10px 14px; font-size: 11px; letter-spacing: 1.5px; }
+      .delay-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .delay-cta { width: 100%; text-align: center; }
+      .bottom-cta { padding: 36px 22px; margin-top: 48px; }
+      .bottom-cta-title { font-size: 18px; }
+      .bottom-cta-btn { padding: 18px 32px; font-size: 13px; letter-spacing: 2px; }
     }
   </style>
 </head>
 <body>
   <canvas id="starfield"></canvas>
+
+  <a href="/data" class="home-link">Members →</a>
+
+  <div class="top-bar">
+    <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
+      <svg class="x-icon" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+    </a>
+    <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
+      <svg viewBox="0 0 24 24" fill="#fff"><path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/></svg>
+    </a>
+  </div>
+
   <div class="content">
-    <div class="social-links">
-      <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
-        <svg class="x-icon" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-        </svg>
-      </a>
-      <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
-        <svg viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/>
-        </svg>
-      </a>
+    <div class="wrap">
+
+      <div class="hero">
+        <div class="hero-eyebrow"><span class="dot"></span>Semi-automated Solana trading</div>
+        <h1 class="hero-title big">Build the system.<br><span class="accent">Trade your edge.</span></h1>
+        <p class="hero-sub">A signal engine that finds momentum coins early. A bot that trades them with discipline. You approve every trade.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-title">📡 Signals</div>
+          <div class="step-body">The engine watches every new Solana coin and alerts you the moment one starts trending — volume, momentum, holders.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-title"><span style="color:var(--green)">⌖</span> Your call</div>
+          <div class="step-body">Like the setup? Tap once and the bot takes it. Skip it and nothing happens. <strong>Every trade needs your approval.</strong></div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-title">📈 Execution</div>
+          <div class="step-body">The bot waits for the dip, buys the recovery, and sells at a preset take-profit. No chasing, no panic, no bag-holding.</div>
+        </div>
+      </div>
+
+      <div class="sec-head">Track record</div>
+      <h2 class="sec-title">Every signal, timestamped.</h2>
+      <p class="sec-sub">Peak is the highest price after each alert — the move that was on the table. What you capture depends on when you enter and exit.</p>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Signals</div></div>
+        <div class="stat"><div class="stat-val accent" id="s-2x">—</div><div class="stat-lbl">≥ 2× winners</div></div>
+        <div class="stat"><div class="stat-val accent" id="s-5x">—</div><div class="stat-lbl">≥ 5× winners</div></div>
+        <div class="stat"><div class="stat-val accent" id="s-10x">—</div><div class="stat-lbl">≥ 10× MEGAs</div></div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <span class="filter-label">Period</span>
+          <div class="filter-btns" id="period-btns">
+            <button class="filter-btn active" data-period="1">24H</button>
+            <button class="filter-btn" data-period="7">7D</button>
+            <button class="filter-btn" data-period="30">30D</button>
+            <button class="filter-btn" data-period="0">ALL</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="delay-banner">
+        <div class="delay-text"><strong>Free preview:</strong> this table runs an hour behind. Members see signals live.</div>
+        <a href="/start" class="delay-cta">Get access →</a>
+      </div>
+
+      <div class="table-wrap">
+        <table class="signals">
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th class="hide-sm">Date</th>
+              <th class="right">Alert MC</th>
+              <th class="right hide-sm">Peak MC</th>
+              <th class="right">Peak</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="5" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec-head" style="margin-top:64px">Setup</div>
+      <h2 class="sec-title">You don't need to know how to code.</h2>
+      <p class="sec-sub">The playbook contains the full system — every code block written and tested. You paste it into an AI coding agent and it builds everything for you, in about an hour.</p>
+
+      <div class="stack">
+        <div class="stack-row">
+          <div class="stack-name">🤖 An AI coding agent</div>
+          <div class="stack-note">Claude Code, Codex, or Cursor. It does the technical work.</div>
+        </div>
+        <div class="stack-row">
+          <div class="stack-name">📡 Telegram</div>
+          <div class="stack-note">Where signals arrive and where you approve trades.</div>
+        </div>
+        <div class="stack-row">
+          <div class="stack-name">🔑 Your own wallet</div>
+          <div class="stack-note">The bot runs on your computer and signs with your wallet. Your money never touches us.</div>
+        </div>
+        <div class="stack-row">
+          <div class="stack-name">⚡ Jupiter + a free RPC</div>
+          <div class="stack-note">Trades route through Jupiter for the best price on any venue.</div>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(124,255,160,0.35); background:rgba(124,255,160,0.05); padding:20px 24px; margin:-40px 0 64px; text-align:center;">
+        <div style="font-size:12px; letter-spacing:2px; color:var(--green); text-transform:uppercase; margin-bottom:8px;">🔒 Self-custody</div>
+        <div style="font-size:12.5px; color:var(--dim); line-height:1.7; max-width:520px; margin:0 auto;">The system is software running on your computer, signing with your wallet. We never hold your funds and never see your keys. There is nothing to deposit.</div>
+      </div>
+
+      <div class="sec-head">What you get</div>
+      <h2 class="sec-title">What <span style="color:var(--green)">$29/month</span> gets you.</h2>
+
+      <div class="inc-grid" style="margin-top:30px">
+        <div class="inc">
+          <div class="inc-title">📡 The signal feed</div>
+          <div class="inc-body">Your personal API key. Live alerts the moment the engine fires.</div>
+        </div>
+        <div class="inc">
+          <div class="inc-title">📖 The playbook</div>
+          <div class="inc-body">The complete system as one document — code included, tested, maintained. Your agent builds from it.</div>
+        </div>
+        <div class="inc">
+          <div class="inc-title">💬 Members chat</div>
+          <div class="inc-body">Ask questions, compare configs, see what other members run.</div>
+        </div>
+        <div class="inc">
+          <div class="inc-title">🔁 Updates</div>
+          <div class="inc-body">The system improves, the playbook updates, your agent applies them.</div>
+        </div>
+      </div>
+
+      <div class="bottom-cta">
+        <div class="bottom-cta-eye">The System</div>
+        <div class="bottom-cta-title">Trade with a system.</div>
+        <div class="bottom-cta-sub">$29/month. Cancel anytime. Set up in about an hour.</div>
+        <a href="/start" class="bottom-cta-btn">Get access →</a>
+      </div>
+
+      <p class="honesty-foot">
+        Software and signals — not financial advice. The record shows signal windows, not returns. Memecoins are high-risk; most participants lose. <a href="/scgagent/terms">Terms</a>
+      </p>
+
     </div>
-    <div class="body-wrapper">
-      <div class="body-text-wrapper">
-        <img src="scg-alpha-title-centered.png" alt="SCG Alpha" class="title-logo">
-        <hr class="title-divider">
-        <p class="body-text">
-          A quantitative technology firm for onchain markets.
-        </p>
-        <p class="body-text">
-          SCG Alpha builds trading systems and data infrastructure at the intersection of AI and Solana.
-        </p>
-        <a href="vault.html" class="vault-link">Enter The Vault &rarr;</a>
+  </div>
+
+  <!-- ── detail modal ── -->
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+    <div class="modal-card">
+      <div class="modal-corners">
+        <img src="/edge-mark.png" alt="EDGE" class="modal-brand-img" style="height:16px;width:auto;image-rendering:pixelated;">
+        <div class="modal-tok-corner">
+          <div class="modal-tok-corner-info">
+            <div class="modal-tok-corner-name" id="m-name">—</div>
+            <div class="modal-tok-corner-mint" id="m-mint" title="Click to copy">—</div>
+          </div>
+          <img id="m-logo" src="" alt="">
+        </div>
+      </div>
+
+      <div class="modal-date" id="m-date">—</div>
+
+      <div class="modal-pill" id="m-pill">
+        <span class="modal-pill-num" id="m-pct">—</span>
+        <span class="modal-pill-mult" id="m-mult">—</span>
+      </div>
+
+      <div class="modal-rows">
+        <div class="modal-row">
+          <span class="modal-row-lbl">Alert MC</span>
+          <span class="modal-row-val" id="m-alert-mc">—</span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-row-lbl">Peak MC</span>
+          <span class="modal-row-val accent" id="m-ath-mc">—</span>
+        </div>
+      </div>
+
+      <div class="modal-bottom">
+        <div class="modal-bottom-brand">
+          <a href="/" rel="noopener">the record</a>
+        </div>
+        <div class="modal-bottom-handle"></div>
       </div>
     </div>
   </div>
 
   <script>
-    // ── Starfield + Shooting Stars ──────────────────────────────────
-    const canvas = document.getElementById('starfield');
-    const ctx = canvas.getContext('2d');
-    let W, H;
-
-    function resize() {
-      W = canvas.width = window.innerWidth;
-      H = canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Sparse, subtle stars
-    const NUM_STARS = 120;
-    const stars = [];
-    for (let i = 0; i < NUM_STARS; i++) {
-      stars.push({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        r: Math.random() * 1.1 + 0.3,
-        baseAlpha: Math.random() * 0.35 + 0.15,
-        twinkleSpeed: Math.random() * 0.005 + 0.001,
-        twinkleOffset: Math.random() * Math.PI * 2,
-      });
-    }
-
-    // Shooting stars
-    const shootingStars = [];
-
-    function spawnShootingStar() {
-      // Start from bottom-left region, travel toward top-right
-      const startX = Math.random() * W * 0.5;
-      const startY = H * 0.5 + Math.random() * H * 0.5;
-      const angle = -(Math.PI / 6 + Math.random() * Math.PI / 6); // -30 to -60 degrees (upward-right)
-      shootingStars.push({
-        x: startX,
-        y: startY,
-        angle: angle,
-        speed: 8 + Math.random() * 10,
-        length: 60 + Math.random() * 100,
-        life: 1.0,
-        decay: 0.008 + Math.random() * 0.012,
-      });
-    }
-
-    let lastShootingStarTime = 0;
-
-    function animate(time) {
-      ctx.clearRect(0, 0, W, H);
-
-      // Draw stars with twinkle
-      for (const s of stars) {
-        const alpha = s.baseAlpha + Math.sin(time * s.twinkleSpeed + s.twinkleOffset) * 0.2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.05, Math.min(1, alpha))})`;
-        ctx.fill();
+    /* ── starfield ──────────────────────────────────────────────── */
+    (function() {
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let W, H, stars = [];
+      function resize() {
+        W = canvas.width = innerWidth;
+        H = canvas.height = innerHeight;
       }
-
-      // Spawn shooting stars sporadically (every 2-5 seconds)
-      if (time - lastShootingStarTime > 2000 + Math.random() * 3000) {
-        spawnShootingStar();
-        lastShootingStarTime = time;
-      }
-
-      // Draw shooting stars
-      for (let i = shootingStars.length - 1; i >= 0; i--) {
-        const ss = shootingStars[i];
-
-        // Move
-        ss.x += Math.cos(ss.angle) * ss.speed;
-        ss.y += Math.sin(ss.angle) * ss.speed;
-        ss.life -= ss.decay;
-
-        if (ss.life <= 0 || ss.x > W + 100 || ss.x < -100 || ss.y < -100 || ss.y > H + 100) {
-          shootingStars.splice(i, 1);
-          continue;
+      function build() {
+        stars = [];
+        const n = Math.floor((W * H) / 12000);
+        for (let i = 0; i < n; i++) {
+          stars.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.2,
+            a: Math.random() * 0.7 + 0.1,
+            d: (Math.random() - 0.5) * 0.05
+          });
         }
-
-        // Draw trail
-        const tailX = ss.x - Math.cos(ss.angle) * ss.length;
-        const tailY = ss.y - Math.sin(ss.angle) * ss.length;
-
-        const grad = ctx.createLinearGradient(tailX, tailY, ss.x, ss.y);
-        grad.addColorStop(0, `rgba(224, 190, 110, 0)`);
-        grad.addColorStop(1, `rgba(224, 190, 110, ${ss.life})`);
-
-        ctx.save();
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = `rgba(201, 162, 76, ${ss.life})`;
-
-        ctx.beginPath();
-        ctx.moveTo(tailX, tailY);
-        ctx.lineTo(ss.x, ss.y);
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Bright head
-        ctx.beginPath();
-        ctx.arc(ss.x, ss.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 236, 190, ${ss.life})`;
-        ctx.fill();
-        ctx.restore();
       }
+      function tick() {
+        ctx.clearRect(0, 0, W, H);
+        for (const s of stars) {
+          s.a += s.d;
+          if (s.a < 0.1 || s.a > 0.9) s.d = -s.d;
+          ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        requestAnimationFrame(tick);
+      }
+      resize(); build();
+      addEventListener('resize', () => { resize(); build(); });
+      tick();
+    })();
 
-      requestAnimationFrame(animate);
+    /* ── helpers ─────────────────────────────────────────────────── */
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+
+    function fmtMcap(n) {
+      if (n == null || isNaN(n)) return '—';
+      if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+      return '$' + Math.round(n);
     }
 
-    requestAnimationFrame(animate);
+    function fmtDate(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts * 1000);
+      const m = d.toLocaleString('en-US', { month: 'short' });
+      return `${m} ${d.getDate()}, ${d.getFullYear() % 100}`;
+    }
 
-    // Re-scatter stars on resize
-    window.addEventListener('resize', () => {
-      for (const s of stars) {
-        s.x = Math.random() * W;
-        s.y = Math.random() * H;
+    function multiplier(a) {
+      if (!a.alert_mcap || a.alert_mcap <= 0) return 1;
+      return (a.max_mcap || a.alert_mcap) / a.alert_mcap;
+    }
+
+    function shortMint(mint) {
+      if (!mint || mint.length < 10) return mint || '';
+      return mint.slice(0, 6) + '…' + mint.slice(-4);
+    }
+
+    function tokenLogo(a) {
+      const scan = a.scan_raw_at_alert || {};
+      // Live API shape nests it; older snapshot has it top-level.
+      return scan.logo || a.logo || '';
+    }
+
+    function tokenName(a) {
+      const scan = a.scan_raw_at_alert || {};
+      return a.name || scan.symbol || scan.name || 'Unknown';
+    }
+
+    /* ── data fetch (public homepage — uses dev key for now, swap for free-tier endpoint when backend ready) ── */
+    const API_URL = 'https://api.scgalpha.com/api/feed?limit=10000';   // public, 1hr delayed, full history
+    const FREE_DELAY_SECS = 3600;                                       // safety belt — server already enforces
+
+    /* ── data ────────────────────────────────────────────────────── */
+    let allAlerts = [];
+    let periodDays = 1;     // 24H default
+    let sortBy = 'time';    // 'time' (newest first) or 'performance' (highest mult first)
+    let mode = 'vault';     // 'vault' (all) | 'smart' (smart-wallet whitelist) | 'safe' (clean tokens)
+
+    /* Safe filter — replicates the bot's stricter scam thresholds.
+       Falls through (returns true) if a field is missing so older snapshot
+       entries without scan_raw_at_alert details aren't unfairly excluded. */
+    function passesSafeFilter(a) {
+      // Use server-computed is_safe field from /api/feed (matches /data page)
+      if (typeof a.is_safe === 'boolean') return a.is_safe;
+      // Legacy fallback (older snapshot records)
+      const s = a.scan_raw_at_alert || {};
+      if (s.bundler_rate !== undefined && s.bundler_rate > 0.20) return false;
+      if (s.dev_team_hold_rate !== undefined && s.dev_team_hold_rate > 0.10) return false;
+      if (s.top_10_holder_rate !== undefined && s.top_10_holder_rate > 0.25) return false;
+      if (s.initial_liquidity !== undefined && s.initial_liquidity > 0 && s.initial_liquidity < 5000) return false;
+      const platform = (s.launchpad_platform || '').toLowerCase();
+      if (platform.includes('meteora')) return false;
+      return true;
+    }
+
+    async function fetchAlerts() {
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) return;
+        const data = await res.json();
+        allAlerts = data.alerts || [];
+        render();
+      } catch (e) { /* keep showing last good state */ }
+    }
+
+    // Kick off fetch + 30s poll on load (no gate on this page).
+    fetchAlerts();
+    setInterval(fetchAlerts, 30000);
+
+    function getFiltered() {
+      let out = allAlerts;
+
+      // Free-tier delay: hide anything fired less than 1 hour ago.
+      const nowSec = Date.now() / 1000;
+      out = out.filter(a => (nowSec - (a.alert_time || 0)) >= FREE_DELAY_SECS);
+
+      // Period filter
+      if (periodDays > 0) {
+        const cutoff = nowSec - (periodDays * 86400);
+        out = out.filter(a => (a.alert_time || 0) >= cutoff);
       }
+
+      // Mode filter — Vault (no filter) | Smart (smart-wallet whitelist) | Safe (clean tokens)
+      if (mode === 'safe') {
+        out = out.filter(passesSafeFilter);
+      } else if (mode === 'smart') {
+        out = out.filter(a => a.is_smart === true);
+      }
+
+      return out;
+    }
+
+    function renderStats(filtered) {
+      const total = filtered.length;
+      let n2 = 0, n5 = 0, n10 = 0;
+      for (const a of filtered) {
+        const m = multiplier(a);
+        if (m >= 2) n2++;
+        if (m >= 5) n5++;
+        if (m >= 10) n10++;
+      }
+      document.getElementById('s-total').textContent = total;
+      document.getElementById('s-2x').textContent = n2;
+      document.getElementById('s-5x').textContent = n5;
+      document.getElementById('s-10x').textContent = n10;
+    }
+
+    const TOP_N = 5;       // how many real rows to show on the public homepage
+    const GHOST_N = 2;      // how many faded "preview of more" rows to show beneath
+
+    function rowHTML(a, ghost) {
+      const mult = multiplier(a);
+      const peakClass = mult >= 1 ? 'peak-pos' : 'peak-neg';
+      const logo = tokenLogo(a);
+      const name = tokenName(a);
+      const cls = ghost ? 'ghost' : 'row';
+      const dataAttr = ghost ? '' : `data-mint="${esc(a.mint)}"`;
+      return `
+        <tr class="${cls}" ${dataAttr}>
+          <td>
+            <div class="tok">
+              ${logo ? `<img src="${esc(logo)}" alt="" onerror="this.style.visibility='hidden'">` : `<img alt="" style="visibility:hidden">`}
+              <span class="tok-name">${esc(name)}</span>
+            </div>
+          </td>
+          <td class="hide-sm">${esc(fmtDate(a.alert_time))}</td>
+          <td class="right">${esc(fmtMcap(a.alert_mcap))}</td>
+          <td class="right hide-sm">${esc(fmtMcap(a.max_mcap))}</td>
+          <td class="right ${peakClass}">${mult.toFixed(1)}×</td>
+        </tr>
+      `;
+    }
+
+    function renderRows(filtered) {
+      const tbody = document.getElementById('rows');
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">No signals match these filters</td></tr>';
+        return;
+      }
+      // Public homepage: always sort by performance desc, show top 5 + ghost teaser
+      const sorted = filtered.slice().sort((a, b) => multiplier(b) - multiplier(a));
+      const top = sorted.slice(0, TOP_N);
+      const ghosts = sorted.slice(TOP_N, TOP_N + GHOST_N);
+      const remaining = sorted.length - TOP_N;
+
+      let html = top.map(a => rowHTML(a, false)).join('');
+      html += ghosts.map(a => rowHTML(a, true)).join('');
+
+      if (remaining > 0) {
+        html += `
+          <tr class="locked-row">
+            <td colspan="5">
+              <div class="locked-text"><strong>+ ${remaining} more signal${remaining === 1 ? '' : 's'}</strong> in this view. Members see everything.</div>
+              <a href="/start" class="locked-cta">Get access →</a>
+            </td>
+          </tr>
+        `;
+      }
+
+      tbody.innerHTML = html;
+
+      // Wire clicks only for the visible top rows (ghosts are non-interactive via CSS)
+      tbody.querySelectorAll('tr.row').forEach(tr => {
+        tr.addEventListener('click', () => {
+          const mint = tr.dataset.mint;
+          const a = allAlerts.find(x => x.mint === mint);
+          if (a) openModal(a);
+        });
+      });
+    }
+
+    function render() {
+      const filtered = getFiltered();
+      renderStats(filtered);
+      renderRows(filtered);
+    }
+
+    /* ── filter wiring ──────────────────────────────────────────── */
+    document.querySelectorAll('#period-btns .filter-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#period-btns .filter-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        periodDays = parseInt(b.dataset.period, 10) || 0;
+        render();
+      });
     });
+    // (Sort toggle removed on public homepage — always sorted by performance desc.)
+
+    /* ── modal ──────────────────────────────────────────────────── */
+    const modalEl = document.getElementById('modal');
+
+    function pnlEmoji(mult) {
+      if (mult >= 10) return '🚀';
+      if (mult >= 5)  return '🔥';
+      if (mult >= 2)  return '📈';
+      if (mult >= 1)  return '↑';
+      return '📉';
+    }
+
+    function fmtFullDate(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts * 1000);
+      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+
+    function fmtPct(pct) {
+      const sign = pct >= 0 ? '+' : '−';
+      const abs = Math.abs(pct);
+      // Always include thousands separators for impact
+      return sign + abs.toLocaleString(undefined, {
+        minimumFractionDigits: abs >= 100 ? 0 : 1,
+        maximumFractionDigits: abs >= 100 ? 0 : 1
+      }) + '%';
+    }
+
+    function openModal(a) {
+      const mult = multiplier(a);
+      const pct = (mult - 1) * 100;
+      const isNeg = mult < 1;
+
+      // Logo
+      const logo = tokenLogo(a);
+      const mLogo = document.getElementById('m-logo');
+      mLogo.src = logo || '';
+      mLogo.style.visibility = logo ? 'visible' : 'hidden';
+      mLogo.onerror = () => { mLogo.style.visibility = 'hidden'; };
+
+      // Token name + abbreviated CA in top-right corner
+      document.getElementById('m-name').textContent = tokenName(a);
+      const mintEl = document.getElementById('m-mint');
+      mintEl.textContent = shortMint(a.mint);
+      mintEl.onclick = () => {
+        if (!a.mint) return;
+        navigator.clipboard.writeText(a.mint);
+        const orig = mintEl.textContent;
+        mintEl.textContent = 'copied!';
+        setTimeout(() => { mintEl.textContent = orig; }, 1200);
+      };
+
+      // Big date
+      document.getElementById('m-date').textContent = fmtFullDate(a.alert_time);
+
+      // Hero pill
+      const pillEl = document.getElementById('m-pill');
+      pillEl.classList.toggle('neg', isNeg);
+      const emojiEl = document.getElementById('m-emoji');
+      if (emojiEl) emojiEl.textContent = pnlEmoji(mult);
+      document.getElementById('m-pct').textContent = fmtPct(pct);
+      document.getElementById('m-mult').textContent = mult.toFixed(1) + '×';
+
+      // Stat rows
+      document.getElementById('m-alert-mc').textContent = fmtMcap(a.alert_mcap);
+      document.getElementById('m-ath-mc').textContent = fmtMcap(a.max_mcap);
+
+      modalEl.classList.add('open');
+    }
+    function closeModal() { modalEl.classList.remove('open'); }
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   </script>
 </body>
 </html>
