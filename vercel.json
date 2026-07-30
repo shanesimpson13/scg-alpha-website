@@ -17,7 +17,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/system", "destination": "/scgagent/index.html" }
+    { "source": "/system", "destination": "/scgagent" }
   ],
   "redirects": [
     {
