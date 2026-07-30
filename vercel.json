@@ -16,6 +16,18 @@
       ]
     }
   ],
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "edgelvl.app" }],
+      "destination": "/scgagent/index.html"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "www.edgelvl.app" }],
+      "destination": "/scgagent/index.html"
+    }
+  ],
   "redirects": [
     { "source": "/start", "destination": "/scgagent/start", "permanent": false },
     { "source": "/welcome", "destination": "/scgagent/welcome", "permanent": false },
