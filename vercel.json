@@ -17,18 +17,21 @@
     }
   ],
   "rewrites": [
+    { "source": "/system", "destination": "/scgagent/index.html" }
+  ],
+  "redirects": [
     {
       "source": "/",
       "has": [{ "type": "host", "value": "edgelvl.app" }],
-      "destination": "/scgagent/index.html"
+      "destination": "/system",
+      "permanent": false
     },
     {
       "source": "/",
       "has": [{ "type": "host", "value": "www.edgelvl.app" }],
-      "destination": "/scgagent/index.html"
-    }
-  ],
-  "redirects": [
+      "destination": "https://edgelvl.app/system",
+      "permanent": false
+    },
     { "source": "/start", "destination": "/scgagent/start", "permanent": false },
     { "source": "/welcome", "destination": "/scgagent/welcome", "permanent": false },
     { "source": "/terms", "destination": "/scgagent/terms", "permanent": false },
