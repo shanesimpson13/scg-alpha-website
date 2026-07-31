@@ -578,7 +578,12 @@ document.querySelectorAll('thead th.sortable').forEach(th => th.onclick = () => 
 });
 
 /* ── detail ── */
-function openDetail(mint) { openMint = mint; renderDetail(); window.scrollTo(0, 0); }
+function openDetail(mint) {
+  openMint = mint;
+  renderDetail();
+  refreshActivity();          // don't wait up to 10s to learn what the bot is doing
+  window.scrollTo(0, 0);
+}
 function closeDetail() {
   openMint = null;
   const el = document.getElementById('detail');
