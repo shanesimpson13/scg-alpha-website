@@ -222,7 +222,12 @@ const API = 'https://api.scgalpha.com';
 let KEY = localStorage.getItem('edgelvl_key') || '';
 let coins = [], openMint = null, timer = null;
 let sortKey = 'vol_5m', minVol = 5000;
-const sent = new Set();
+// mint -> when it was queued. A confirmation, not a lock: the bot arms within
+// 5s, and after that you may well want to greenlight the same coin again (it
+// may have timed out, or you're re-entering). Re-arming an active coin is
+// already handled by the bot, which just replies that it's on it.
+const sent = new Map();
+const SENT_SHOW_MS = 20000;
 
 const money = v => {
   v = Number(v) || 0;
@@ -398,7 +403,7 @@ function renderDetail() {
     <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
     <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Everything after that lands in your Telegram.</div>
   `;
-  if (sent.has(c.mint)) markSent();
+  if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
   else document.getElementById('glbtn').onclick = () => greenlight(c);
 }
 
@@ -418,13 +423,27 @@ function updateDetail(c) {
   set('age', age(c.age_secs));
 }
 
-function markSent() {
+function markSent(c) {
   const btn = document.getElementById('glbtn'), note = document.getElementById('glnote');
   if (!btn) return;
   btn.disabled = true;
   btn.textContent = '✓ QUEUED FOR YOUR BOT';
   note.className = 'glnote';
   note.innerHTML = 'Your bot picks this up within 5 seconds.<br><b>The rest lands in your Telegram.</b>';
+
+  // Hand the button back so the coin can be greenlit again later.
+  const left = SENT_SHOW_MS - (Date.now() - (sent.get(c.mint) || 0));
+  setTimeout(() => {
+    if (openMint !== c.mint) return;               // you navigated away
+    const b = document.getElementById('glbtn');
+    if (!b) return;
+    b.disabled = false;
+    b.textContent = '🟢 GREENLIGHT';
+    b.onclick = () => greenlight(c);
+    const n = document.getElementById('glnote');
+    n.className = 'glnote';
+    n.innerHTML = 'Already handed to your bot. Greenlight again only if you want to re-arm it.';
+  }, Math.max(0, left));
 }
 
 async function greenlight(c) {
@@ -432,8 +451,8 @@ async function greenlight(c) {
   btn.disabled = true; btn.textContent = 'Sending…';
   try {
     await api('/api/greenlight', { method: 'POST', body: JSON.stringify({ mint: c.mint }) });
-    sent.add(c.mint);
-    markSent();
+    sent.set(c.mint, Date.now());
+    markSent(c);
   } catch (e) {
     btn.disabled = false; btn.textContent = '🟢 GREENLIGHT';
     note.className = 'glnote warn';
