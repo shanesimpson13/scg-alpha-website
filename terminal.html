@@ -13,16 +13,36 @@
     :root {
       --bg: #000;
       --panel: #0a0a0a;
+      --fg: #fff;
       --line: rgba(255, 255, 255, 0.08);
+      --hair: rgba(255, 255, 255, 0.045);
       --dim: rgba(255, 255, 255, 0.55);
       --dimmer: rgba(255, 255, 255, 0.32);
+      --field: rgba(255, 255, 255, 0.04);
+      --hover: rgba(255, 255, 255, 0.028);
       --green: #7cffa0;
       --amber: #ffc46b;
       --red: #ff6b6b;
     }
+    /* Light theme. Same hierarchy, inverted surfaces — the accents darken so
+       they still read against white. */
+    :root[data-theme="light"] {
+      --bg: #fbfbfa;
+      --panel: #f2f2f0;
+      --fg: #14140f;
+      --line: rgba(0, 0, 0, 0.11);
+      --hair: rgba(0, 0, 0, 0.06);
+      --dim: rgba(0, 0, 0, 0.58);
+      --dimmer: rgba(0, 0, 0, 0.38);
+      --field: rgba(0, 0, 0, 0.03);
+      --hover: rgba(0, 0, 0, 0.028);
+      --green: #12924b;
+      --amber: #a86a00;
+      --red: #c0362c;
+    }
 
     body {
-      background: var(--bg); color: #fff;
+      background: var(--bg); color: var(--fg);
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
       min-height: 100vh; -webkit-font-smoothing: antialiased;
     }
@@ -42,14 +62,16 @@
     .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
     .status a { color: var(--dimmer); }
+    #themetoggle { text-decoration: none; font-size: 14px; }
+    #themetoggle:hover { color: var(--fg); }
 
     /* ── gate ── */
     #gate { max-width: 420px; margin: 12vh auto; text-align: center; }
     #gate h1 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
     #gate p { font-size: 12.5px; color: var(--dim); line-height: 1.65; margin-bottom: 22px; }
     #gate input {
-      width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--line);
-      color: #fff; padding: 13px 14px; font-family: inherit; font-size: 13px;
+      width: 100%; background: var(--field); border: 1px solid var(--line);
+      color: var(--fg); padding: 13px 14px; font-family: inherit; font-size: 13px;
       border-radius: 7px; text-align: center;
     }
     #gate input:focus { outline: none; border-color: rgba(124,255,160,.45); }
@@ -91,12 +113,12 @@
 
     tbody tr { border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
     tbody tr:last-child { border-bottom: 0; }
-    tbody tr:hover { background: rgba(255,255,255,.028); }
+    tbody tr:hover { background: var(--hover); }
     tbody td { padding: 11px 14px; text-align: right; font-size: 12.5px; white-space: nowrap; }
     tbody td:first-child { text-align: left; }
 
     .tok { display: flex; align-items: center; gap: 10px; }
-    .tok img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; background: rgba(255,255,255,.06); flex-shrink: 0; }
+    .tok img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; background: var(--field); flex-shrink: 0; }
     .tok .nm { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .tok .s { font-weight: 600; font-size: 13px; }
     .tok .n { font-size: 10px; color: var(--dimmer); overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
@@ -105,7 +127,13 @@
 
     .up { color: var(--green); }
     .down { color: var(--red); }
-    .vol { font-weight: 600; color: var(--green); }
+    /* Volume heat — the number you're scanning for. Over $100K is where the
+       real moves live; $25K is the floor for being worth a look at all. */
+    .vol      { font-weight: 600; color: var(--dim); }
+    .vol.warm { font-weight: 600; color: var(--amber); }
+    .vol.hot  { font-weight: 700; color: var(--green); }
+    .sk { color: var(--dim); }
+    .sk span { color: var(--dimmer); }
     .txs { font-size: 10.5px; color: var(--dimmer); }
     .txs b { color: var(--green); font-weight: 400; }
     .txs i { color: var(--red); font-style: normal; }
@@ -122,13 +150,13 @@
     }
     .actrow {
       display: flex; align-items: center; gap: 13px; padding: 12px 15px;
-      border-bottom: 1px solid rgba(255,255,255,.045); font-size: 12.5px;
+      border-bottom: 1px solid var(--hair); font-size: 12.5px;
     }
     .actrow:last-child { border-bottom: 0; }
     .actdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .actdot.watching { background: var(--amber); animation: pulse 2s infinite; }
     .actdot.bought   { background: var(--green); animation: pulse 2s infinite; }
-    .actdot.closed   { background: rgba(255,255,255,.25); }
+    .actdot.closed   { background: var(--dimmer); }
     .actname { font-weight: 600; min-width: 82px; }
     .actwhat { color: var(--dim); flex: 1; }
     .actwhen { color: var(--dimmer); font-size: 11px; white-space: nowrap; }
@@ -145,19 +173,25 @@
     #detail { display: none; }
     .back { background: none; border: 0; color: var(--dim); font-family: inherit;
             font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 16px; }
-    .back:hover { color: #fff; }
+    .back:hover { color: var(--fg); }
     .dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
     .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: center; gap: 11px; }
     .dhead h2 img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
     .dvol { text-align: right; }
     .dvol .v { font-size: 26px; font-weight: 600; color: var(--green); }
     .dvol .l { font-size: 10px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; }
-    .chart { width: 100%; height: 400px; border: 1px solid var(--line); border-radius: 10px;
-             margin-bottom: 14px; background: rgba(255,255,255,.015); }
+    /* The chart is the point of opening a coin — give it room and let it fill
+       the frame instead of floating in padding. */
+    .chartwrap {
+      position: relative; width: 100%; height: 62vh; min-height: 420px; max-height: 760px;
+      border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+      margin-bottom: 16px; background: var(--panel);
+    }
+    .chartwrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(122px, 1fr));
              gap: 1px; background: var(--line); border: 1px solid var(--line);
              border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
-    .stat { background: #000; padding: 12px 14px; }
+    .stat { background: var(--bg); padding: 12px 14px; }
     .stat .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
     .stat .v { font-size: 14px; font-weight: 500; }
     .mintline { font-size: 11px; color: var(--dimmer); margin-bottom: 16px;
@@ -168,7 +202,7 @@
       font-family: inherit; font-size: 10.5px; padding: 4px 9px; border-radius: 5px;
       cursor: pointer; text-decoration: none;
     }
-    .mintline button:hover, .mintline a:hover { color: #fff; border-color: rgba(255,255,255,.25); }
+    .mintline button:hover, .mintline a:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
     .glbtn { width: 100%; background: var(--green); color: #000; border: 0; padding: 16px;
              font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 9px;
              cursor: pointer; letter-spacing: .04em; }
@@ -191,7 +225,7 @@
     .setrow {
       display: grid; grid-template-columns: 1fr 116px; gap: 18px;
       align-items: center; padding: 13px 2px;
-      border-bottom: 1px solid rgba(255,255,255,.045);
+      border-bottom: 1px solid var(--hair);
     }
     .setrow:last-child { border-bottom: 0; }
     .setrow.off { opacity: .38; }
@@ -199,8 +233,8 @@
     .setrow .hint { font-size: 11px; color: var(--dimmer); line-height: 1.5; margin-top: 3px; }
     .setfield { position: relative; }
     .setfield input {
-      width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--line);
-      color: #fff; padding: 9px 34px 9px 11px; font-family: inherit; font-size: 13px;
+      width: 100%; background: var(--field); border: 1px solid var(--line);
+      color: var(--fg); padding: 9px 34px 9px 11px; font-family: inherit; font-size: 13px;
       border-radius: 6px; text-align: right;
     }
     .setfield input:focus { outline: none; border-color: rgba(124,255,160,.45); }
@@ -215,7 +249,7 @@
     .tgl { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
     .tgl input { display: none; }
     .tgl .box {
-      width: 15px; height: 15px; border-radius: 4px; border: 1px solid rgba(255,255,255,.22);
+      width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--line);
       display: grid; place-items: center; font-size: 10px; color: #000; flex-shrink: 0;
     }
     .tgl input:checked + .box { background: var(--green); border-color: var(--green); }
@@ -228,7 +262,7 @@
       font-family: inherit; font-size: 12.5px; padding: 13px 20px;
       border-radius: 9px; cursor: pointer;
     }
-    .ghost:hover { color: #fff; border-color: rgba(255,255,255,.25); }
+    .ghost:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
     #setmsg { font-size: 12px; }
     footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
@@ -256,6 +290,7 @@
     <div class="status">
       <div class="live" id="livewrap"><div class="dot"></div><span id="livetxt">live</span></div>
       <span id="updated"></span>
+      <a href="#" id="themetoggle" title="Light / dark">◐</a>
       <a href="#" id="opensettings">settings</a>
       <a href="#" id="signout">sign out</a>
     </div>
@@ -267,8 +302,8 @@
       <span style="letter-spacing:.1em">TRENDING · 5M</span>
       <div class="spacer"></div>
       <button class="tab" data-minvol="0">All</button>
-      <button class="tab on" data-minvol="5000">&gt;$5K vol</button>
-      <button class="tab" data-minvol="25000">&gt;$25K vol</button>
+      <button class="tab on" data-minvol="25000">&gt;$25K vol</button>
+      <button class="tab" data-minvol="100000">&gt;$100K vol</button>
     </div>
 
     <div class="tbl-wrap">
@@ -281,11 +316,12 @@
             <th class="sortable" data-sort="liq">Liq</th>
             <th class="sortable on" data-sort="vol_5m">5m Vol</th>
             <th class="sortable" data-sort="swaps_5m">5m TXs</th>
-            <th class="sortable" data-sort="volr">volR</th>
+            <th class="sortable" data-sort="smart">Smart / KOL</th>
+            <th class="sortable" data-sort="volr" title="Buy volume ÷ sell volume over the last 5 minutes">B/S</th>
             <th class="sortable" data-sort="pc5">5m</th>
           </tr>
         </thead>
-        <tbody id="rows"><tr><td colspan="8"><div class="empty">Loading the board…</div></td></tr></tbody>
+        <tbody id="rows"><tr><td colspan="9"><div class="empty">Loading the board…</div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -308,8 +344,9 @@
   </div>
 
   <footer>
-    5m volume, transactions and volR are GMGN's own trailing-5-minute figures, refreshed every 15 seconds.
-    <b>volR</b> is buy volume ÷ sell volume over that window — above 1 means more was bought than sold.
+    Volume, transactions, Smart/KOL and B/S are GMGN's own trailing-5-minute figures, refreshed every 15 seconds.
+    <b>B/S</b> is buy volume ÷ sell volume over that window — above 1 means more was bought than sold.
+    Showing coins over $25K 5m volume and $50K market cap, under 60 days old.
     Greenlighting queues the coin for <b>your</b> bot; your keys and wallet never leave your machine.
   </footer>
 </div>
@@ -318,7 +355,7 @@
 const API = 'https://api.scgalpha.com';
 let KEY = localStorage.getItem('edgelvl_key') || '';
 let coins = [], openMint = null, timer = null;
-let sortKey = 'vol_5m', minVol = 5000;
+let sortKey = 'vol_5m', minVol = 25000;
 // mint -> when it was queued. A confirmation, not a lock: the bot arms within
 // 5s, and after that you may well want to greenlight the same coin again (it
 // may have timed out, or you're re-entering). Re-arming an active coin is
@@ -345,6 +382,25 @@ const age = s => {
 };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+
+/* Volume heat thresholds. Under $25K a coin isn't worth the slot; over $100K
+   is where the moves that matter happen. */
+const VOL_WARM = 25000, VOL_HOT = 100000;
+const volClass = v => 'vol' + ((v || 0) >= VOL_HOT ? ' hot' : (v || 0) >= VOL_WARM ? ' warm' : '');
+
+/* ── theme ──────────────────────────────────────────────────────────────── */
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('edgelvl_theme', t);
+  const b = document.getElementById('themetoggle');
+  if (b) b.textContent = t === 'light' ? '☾' : '◐';
+}
+applyTheme(localStorage.getItem('edgelvl_theme') || 'dark');
+document.getElementById('themetoggle').onclick = e => {
+  e.preventDefault();
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+};
 
 async function api(path, opts = {}) {
   const r = await fetch(API + path, {
@@ -411,8 +467,9 @@ function rowHTML(c) {
     <td>${money(c.mcap)}</td>
     <td>${money(c.ath_mcap)}</td>
     <td>${money(c.liq)}</td>
-    <td class="vol">${money(c.vol_5m)}</td>
+    <td class="${volClass(c.vol_5m)}">${money(c.vol_5m)}</td>
     <td class="txs">${(c.swaps_5m || 0).toLocaleString()}<br><b>${c.buys_5m || 0}</b>/<i>${c.sells_5m || 0}</i></td>
+    <td class="sk">${c.smart || 0}<span>/${c.kol || 0}</span></td>
     <td class="volr ${volrCls}">${c.volr === null || c.volr === undefined ? '—' : c.volr.toFixed(2)}</td>
     <td>${pct(c.pc5)}</td>
   </tr>`;
@@ -422,7 +479,7 @@ function renderBoard() {
   const tb = document.getElementById('rows');
   const list = sorted();
   if (!list.length) {
-    tb.innerHTML = `<tr><td colspan="8"><div class="empty">Nothing above that volume right now.<br>
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty">Nothing above that volume right now.<br>
       Try the All tab — or wait, the board refreshes every 15 seconds.</div></td></tr>`;
   } else {
     tb.innerHTML = list.map(rowHTML).join('');
@@ -434,7 +491,7 @@ function renderBoard() {
 
 async function refresh() {
   try {
-    const d = await api(`/api/trending?limit=30&min_vol=${minVol}`);
+    const d = await api(`/api/trending?limit=30&min_vol=${minVol}`);   // mc + age defaults come from the server
     coins = d.coins || [];
     document.getElementById('livewrap').classList.toggle('stale', !!d.stale);
     document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
@@ -487,17 +544,21 @@ function renderDetail() {
       <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}</h2>
       <div class="dvol"><div class="v" data-f="vol">${money(c.vol_5m)}</div><div class="l">5m volume</div></div>
     </div>
-    <iframe class="chart" src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
+    <div class="chartwrap">
+      <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
+    </div>
     <div class="stats">
       <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.mcap)}</div></div>
       <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
       <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
       <div class="stat"><div class="k">5m TXs</div><div class="v" data-f="txs">${(c.swaps_5m || 0).toLocaleString()}</div></div>
       <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs"><span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span></div></div>
-      <div class="stat"><div class="k">volR</div><div class="v" data-f="volr">${c.volr == null ? '—' : c.volr.toFixed(2)}</div></div>
+      <div class="stat"><div class="k">B/S</div><div class="v" data-f="volr">${c.volr == null ? '—' : c.volr.toFixed(2)}</div></div>
       <div class="stat"><div class="k">5m</div><div class="v" data-f="pc5">${pct(c.pc5)}</div></div>
       <div class="stat"><div class="k">1h</div><div class="v" data-f="pc1h">${pct(c.pc1h)}</div></div>
       <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}</div></div>
+      <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart || 0} / ${c.kol || 0}</div></div>
+      <div class="stat"><div class="k">Top 10</div><div class="v" data-f="top10">${c.top10_pct ? c.top10_pct + '%' : '—'}</div></div>
       <div class="stat"><div class="k">Age</div><div class="v" data-f="age">${age(c.age_secs)}</div></div>
     </div>
     <div class="mintline">
@@ -525,6 +586,8 @@ function updateDetail(c) {
   set('pc5', pct(c.pc5));
   set('pc1h', pct(c.pc1h));
   set('holders', (c.holders || 0).toLocaleString());
+  set('sk', `${c.smart || 0} / ${c.kol || 0}`);
+  set('top10', c.top10_pct ? c.top10_pct + '%' : '—');
   set('age', age(c.age_secs));
 }
 
