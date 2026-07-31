@@ -592,7 +592,7 @@ function setMsg(t, color) {
   m.style.color = color || 'var(--dimmer)';
 }
 
-function rowHTML(f, vals) {
+function settingRowHTML(f, vals) {
   const [key, label, hint, , unit] = f;
   const v = vals[key];
   const val = v === undefined ? '' : toView(f)(v);
@@ -613,7 +613,7 @@ function rowHTML(f, vals) {
 function renderSettings(vals) {
   useTp2 = vals.use_tp2 === undefined ? true : !!Number(vals.use_tp2);
   document.getElementById('setbody').innerHTML = SECTIONS.map(([title, rows]) =>
-    `<div class="setsec"><h3>${title}</h3>${rows.map(f => rowHTML(f, vals)).join('')}</div>`
+    `<div class="setsec"><h3>${title}</h3>${rows.map(f => settingRowHTML(f, vals)).join('')}</div>`
   ).join('');
   document.getElementById('set_use_tp2').onchange = e => {
     useTp2 = e.target.checked;
