@@ -766,10 +766,12 @@ function stateLine(r) {
   if (r.state === 'bought' && r.mc) return `In position — entered at <b>${esc(r.mc)}</b> MC`;
 
   if (r.state === 'tp1' || r.state === 'tp2' || r.state === 'tp') {
-    const mult = r.mult ? `<b>${r.mult}x</b>` : '';
+    // "hit 1.5x" only reads right when we know which rung and what multiple.
+    // Older rows carry neither, so don't force the sentence.
+    const head = r.mult ? `${label} hit <b>${r.mult}x</b>` : label;
     const open = r.open_pct ? ` · ${Math.round(r.open_pct)}% still riding` : '';
     const banked = r.pnl != null ? ` · ${pnl(r.pnl)} banked` : '';
-    return `${label} hit ${mult}${open}${banked}`;
+    return `${head}${open}${banked}`;
   }
   if (r.state === 'stopped') return `Stopped out${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
   return label;
