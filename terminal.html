@@ -179,6 +179,8 @@
       border-bottom: 1px solid var(--hair); font-size: 12.5px;
     }
     .actrow:last-child { border-bottom: 0; }
+    .actrow[data-open] { cursor: pointer; }
+    .actrow[data-open]:hover { background: var(--hover); }
     .actdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .actdot.watching { background: var(--amber); animation: pulse 2s infinite; }
     .actdot.bought   { background: var(--green); animation: pulse 2s infinite; }
@@ -603,8 +605,16 @@ document.querySelectorAll('thead th.sortable').forEach(th => th.onclick = () => 
 });
 
 /* ── detail ── */
-function openDetail(mint) {
+async function openDetail(mint) {
   openMint = mint;
+  // The coin may have dropped off the filtered board while the bot still works
+  // it — resolve it from the last 30 minutes rather than refusing to open it.
+  if (!coins.find(c => c.mint === mint)) {
+    try {
+      const d = await api(`/api/coin/${mint}`);
+      if (d.coin) coins = [...coins, d.coin];
+    } catch (e) { /* fall through; renderDetail will bail cleanly */ }
+  }
   renderDetail();
   refreshActivity();          // don't wait up to 10s to learn what the bot is doing
   window.scrollTo(0, 0);
@@ -808,7 +818,7 @@ async function refreshActivity() {
     </div>` + rows.slice(0, 6).map(r => {
     const [dot, , canUnarm] = STATE_UI[r.state] || ["closed", r.state, false];
     const what = stateLine(r);
-    return `<div class="actrow">
+    return `<div class="actrow" data-open="${esc(r.mint)}">
       <div class="actdot ${dot}"></div>
       <div class="actname">${esc(r.name || r.mint.slice(0, 6))}</div>
       <div class="actwhat">${what}</div>
@@ -817,6 +827,7 @@ async function refreshActivity() {
     </div>`;
   }).join('');
 
+  el.querySelectorAll('[data-open]').forEach(row => row.onclick = () => openDetail(row.dataset.open));
   el.querySelectorAll('[data-unarm]').forEach(b => b.onclick = async ev => {
     ev.stopPropagation();
     b.disabled = true;
