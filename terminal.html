@@ -420,6 +420,14 @@ const age = s => {
   if (s < 86400) return (s / 3600).toFixed(0) + 'h';
   return (s / 86400).toFixed(0) + 'd';
 };
+/* Socials, so the narrative check doesn't mean leaving the page.
+   rel="noopener noreferrer" — these are links the coin's own creator set. */
+const LINK_LABEL = { twitter: 'X', website: 'Site', telegram: 'Telegram', discord: 'Discord' };
+const links = c => Object.entries(c.links || {})
+  .filter(([, u]) => /^https?:\/\//i.test(u || ''))
+  .map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${LINK_LABEL[k] || k} ↗</a>`)
+  .join('');
+
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -631,6 +639,7 @@ function renderDetail() {
       <code>${esc(c.mint)}</code>
       <button onclick="navigator.clipboard.writeText('${esc(c.mint)}');this.textContent='copied'">copy</button>
       <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank" rel="noopener">GMGN ↗</a>
+      ${links(c)}
     </div>
     <div id="dstatus"></div>
     <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
