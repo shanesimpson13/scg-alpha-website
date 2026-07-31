@@ -96,17 +96,32 @@
       font-family: inherit; font-size: 11px;
     }
     .bar .tab.on { color: #000; background: var(--green); border-color: var(--green); font-weight: 600; }
-    .flt {
-      display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
-      color: var(--dimmer); border: 1px solid var(--line); border-radius: 6px;
-      padding: 4px 9px;
+    /* One control, divided — reads as a single filter rather than three
+       floating boxes that never line up. */
+    .fltgroup {
+      display: inline-flex; align-items: stretch;
+      border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
     }
-    .flt input {
-      width: 62px; background: none; border: 0; color: var(--fg);
-      font-family: inherit; font-size: 11.5px; text-align: right; padding: 0;
+    .fltgroup label {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 11px; border-right: 1px solid var(--line);
     }
-    .flt input:focus { outline: none; }
-    .flt span { color: var(--dimmer); }
+    .fltgroup .fk { font-size: 10px; color: var(--dimmer); letter-spacing: .06em; white-space: nowrap; }
+    .fltgroup .fu { font-size: 10px; color: var(--dimmer); }
+    .fltgroup input {
+      width: 58px; background: none; border: 0; color: var(--fg);
+      font-family: inherit; font-size: 12px; text-align: right; padding: 0;
+      -moz-appearance: textfield;
+    }
+    .fltgroup input::-webkit-outer-spin-button,
+    .fltgroup input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .fltgroup input:focus { outline: none; }
+    .fltgroup label:focus-within { background: var(--field); }
+    .fltgroup button {
+      background: none; border: 0; color: var(--dimmer); font-family: inherit;
+      font-size: 11px; padding: 6px 12px; cursor: pointer;
+    }
+    .fltgroup button:hover { color: var(--fg); background: var(--field); }
     .bar .spacer { flex: 1; }
 
     /* ── table ── */
@@ -334,10 +349,12 @@
     <div class="bar">
       <span style="letter-spacing:.1em">TRENDING · 5M</span>
       <div class="spacer"></div>
-      <label class="flt">5m vol &gt; <input id="f_vol" type="number" step="1000"><span>$</span></label>
-      <label class="flt">MC &gt; <input id="f_mc" type="number" step="1000"><span>$</span></label>
-      <label class="flt">age &lt; <input id="f_age" type="number" step="1"><span>d</span></label>
-      <button class="tab" id="f_reset">reset</button>
+      <div class="fltgroup">
+        <label><span class="fk">5m vol</span><input id="f_vol" type="number" step="1000"><span class="fu">$</span></label>
+        <label><span class="fk">min MC</span><input id="f_mc" type="number" step="1000"><span class="fu">$</span></label>
+        <label><span class="fk">max age</span><input id="f_age" type="number" step="1"><span class="fu">d</span></label>
+        <button id="f_reset" title="Back to defaults">reset</button>
+      </div>
     </div>
 
     <div class="tbl-wrap">
@@ -656,8 +673,18 @@ function renderDetailStatus() {
   const r = botStatus[openMint];
   if (!r) { el.innerHTML = ''; return; }
   const [dot] = STATE_UI[r.state] || ['closed'];
+  const canUnarm = r.state === 'watching';
   el.innerHTML = `<div class="actdot ${dot}"></div><div>${stateLine(r)}</div>` +
-                 `<div class="when">${ago(r.ts)}</div>`;
+                 `<div class="when">${ago(r.ts)}</div>` +
+                 (canUnarm ? `<button class="unarmbtn" id="d_unarm">Unarm</button>` : '');
+  const b = document.getElementById('d_unarm');
+  if (b) b.onclick = async () => {
+    b.disabled = true; b.textContent = 'Dropping…';
+    try {
+      await api('/api/unarm', { method: 'POST', body: JSON.stringify({ mint: openMint }) });
+      b.textContent = 'Dropped';
+    } catch (e) { b.disabled = false; b.textContent = 'Unarm'; }
+  };
 }
 
 function updateDetail(c) {
@@ -821,7 +848,7 @@ const SECTIONS = [
   ]],
   ["Filters", [
     ["min_vol_5m", "Min 5m volume", "Below this a coin isn't worth the slot.", 1, "$"],
-    ["volr_min", "volR floor", "Buy volume ÷ sell volume over 5 minutes.", 1],
+    ["volr_min", "B/S floor", "Buy volume ÷ sell volume over 5 minutes. Under 1 means more was sold than bought.", 1],
   ]],
   ["Timing", [
     ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
