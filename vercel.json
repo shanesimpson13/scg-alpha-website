@@ -6,29 +6,92 @@
     {
       "source": "/data",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
       ]
     },
     {
       "source": "/data.html",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
       ]
     }
   ],
   "redirects": [
-    { "source": "/system", "destination": "/", "permanent": false },
-    { "source": "/scgagent", "destination": "/", "permanent": false },
-    { "source": "/scgagent/start", "destination": "/start", "permanent": false },
-    { "source": "/welcome", "destination": "/scgagent/welcome", "permanent": false },
-    { "source": "/terms", "destination": "/scgagent/terms", "permanent": false },
-    { "source": "/algo", "destination": "/scgagent/algo", "permanent": false },
-    { "source": "/icm", "destination": "/scgagent/icm", "permanent": false },
-    { "source": "/marketplace", "destination": "/", "permanent": true },
-    { "source": "/marketplace/(.*)", "destination": "/$1", "permanent": true },
-    { "source": "/apply", "destination": "/", "permanent": true },
-    { "source": "/apply.html", "destination": "/", "permanent": true },
-    { "source": "/company", "destination": "/", "permanent": true },
-    { "source": "/company.html", "destination": "/", "permanent": true }
+    {
+      "source": "/terminal",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/system",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/scgagent",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/scgagent/start",
+      "destination": "/start",
+      "permanent": false
+    },
+    {
+      "source": "/welcome",
+      "destination": "/scgagent/welcome",
+      "permanent": false
+    },
+    {
+      "source": "/terms",
+      "destination": "/scgagent/terms",
+      "permanent": false
+    },
+    {
+      "source": "/algo",
+      "destination": "/scgagent/algo",
+      "permanent": false
+    },
+    {
+      "source": "/icm",
+      "destination": "/scgagent/icm",
+      "permanent": false
+    },
+    {
+      "source": "/marketplace",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/marketplace/(.*)",
+      "destination": "/$1",
+      "permanent": true
+    },
+    {
+      "source": "/apply",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/apply.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/company",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/company.html",
+      "destination": "/",
+      "permanent": true
+    }
   ]
 }
