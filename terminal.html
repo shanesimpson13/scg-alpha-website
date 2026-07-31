@@ -244,6 +244,16 @@
       cursor: pointer; text-decoration: none;
     }
     .mintline button:hover, .mintline a:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    #dband:empty { display: none; }
+    #dband {
+      margin-bottom: 12px; padding: 12px 15px; border: 1px solid var(--line);
+      border-radius: 9px; font-size: 12px; color: var(--dim); line-height: 1.75;
+    }
+    #dband b { color: var(--fg); font-weight: 600; }
+    #dband .bk { color: var(--dimmer); font-size: 10px; letter-spacing: .1em;
+                 text-transform: uppercase; display: block; margin-bottom: 5px; }
+    #dband .step { display: inline-block; margin-right: 16px; }
+
     #dstatus:empty { display: none; }
     #dstatus {
       display: flex; align-items: center; gap: 11px; margin-bottom: 12px;
@@ -687,6 +697,7 @@ function renderDetail() {
       <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart || 0} / ${c.kol || 0}</div></div>
     </div>
     <div id="dstatus"></div>
+    <div id="dband"></div>
     <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
     <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Everything after that lands in your Telegram.</div>
   `;
@@ -715,6 +726,41 @@ function renderDetailStatus() {
   };
 }
 
+/** What would actually trigger a buy, in market cap.
+ *
+ *  While the bot is watching it publishes its real band — the high it's
+ *  measuring from, the dip it needs, and the reclaim that fires. Before you
+ *  greenlight there's no session, so show the same shape computed from the
+ *  current market cap, clearly marked as a projection.
+ */
+function renderBand(c) {
+  const el = document.getElementById('dband');
+  if (!el) return;
+  const r = botStatus[openMint];
+  const b = r && r.band;
+
+  if (b && r.state === 'watching') {
+    const steps = [`<span class="step">high <b>${esc(b.hi || '—')}</b></span>`,
+                   `<span class="step">needs a dip below <b>${esc(b.dip || '—')}</b></span>`];
+    if (b.reclaim) steps.push(`<span class="step">then a reclaim above <b>${esc(b.reclaim)}</b></span>`);
+    else steps.push(`<span class="step">then a reclaim off that low</span>`);
+    const warm = b.warmup_left > 0 ? ` · ${b.warmup_left}s of warmup left` : '';
+    el.innerHTML = `<span class="bk">What triggers a buy${warm}</span>${steps.join('')}`;
+    return;
+  }
+
+  // no live session — project from where it is now
+  const mc = Number(c.mcap) || 0;
+  if (!mc) { el.innerHTML = ''; return; }
+  const dip = mc * (1 - SET.dip), reclaim = dip * SET.bounce;
+  el.innerHTML = `<span class="bk">What would trigger a buy</span>` +
+    `<span class="step">from <b>${money(mc)}</b></span>` +
+    `<span class="step">a dip below <b>${money(dip)}</b></span>` +
+    `<span class="step">then a reclaim above <b>${money(reclaim)}</b></span>` +
+    `<div style="color:var(--dimmer);font-size:11px;margin-top:4px">` +
+    `Projected from the current market cap. Once you greenlight, the bot measures from the high it sees.</div>`;
+}
+
 function updateDetail(c) {
   const el = document.getElementById('detail');
   const set = (f, html) => { const n = el.querySelector(`[data-f="${f}"]`); if (n) n.innerHTML = html; };
@@ -728,6 +774,7 @@ function updateDetail(c) {
   set('pc1h', pct(c.pc1h));
   set('holders', (c.holders || 0).toLocaleString());
   set('sk', `${c.smart || 0} / ${c.kol || 0}`);
+  renderBand(c);
   set('age', age(c.age_secs));
 }
 
@@ -813,6 +860,7 @@ const ago = ts => {
 };
 
 let botStatus = {};      // mint -> the bot's last word on that coin
+let SET = { dip: 0.15, bounce: 1.04 };   // your thresholds, for the projection
 
 async function refreshActivity() {
   let rows = [];
@@ -903,6 +951,7 @@ async function openSettings() {
   try {
     const d = await api('/api/settings');
     bounds = d.bounds || {};
+    SET = { dip: d.settings.dip ?? SET.dip, bounce: d.settings.bounce ?? SET.bounce };
     renderSettings(d.settings || {});
   } catch (e) {
     setMsg("Couldn't load your settings.", 'var(--red)');
@@ -1024,6 +1073,11 @@ document.getElementById('resetsettings').onclick = async () => {
 };
 
 function start() {
+  // the buy-trigger projection uses YOUR dip and reclaim, so fetch them up
+  // front rather than only when the settings page is opened
+  api('/api/settings').then(d => {
+    if (d && d.settings) SET = { dip: d.settings.dip ?? SET.dip, bounce: d.settings.bounce ?? SET.bounce };
+  }).catch(() => {});
   refresh();
   clearInterval(timer);
   timer = setInterval(refresh, 10000);
