@@ -175,7 +175,9 @@
             font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 16px; }
     .back:hover { color: var(--fg); }
     .dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
-    .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: center; gap: 11px; }
+    .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: baseline; gap: 11px; }
+    .dhead h2 img { align-self: center; }
+    .dage { font-size: 12px; font-weight: 400; color: var(--dimmer); }
     .dhead h2 img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
     .dvol { text-align: right; }
     .dvol .v { font-size: 26px; font-weight: 600; color: var(--green); }
@@ -551,7 +553,8 @@ function renderDetail() {
   el.innerHTML = `
     <button class="back" onclick="closeDetail()">← back to board</button>
     <div class="dhead">
-      <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}</h2>
+      <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}
+        <span class="dage" data-f="age">${age(c.age_secs)}</span></h2>
       <div class="dvol"><div class="v" data-f="vol">${money(c.vol_5m)}</div><div class="l">5m volume</div></div>
     </div>
     <div class="chartwrap">
@@ -561,7 +564,6 @@ function renderDetail() {
       <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.mcap)}</div></div>
       <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
       <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
-      <div class="stat"><div class="k">5m TXs</div><div class="v" data-f="txs">${(c.swaps_5m || 0).toLocaleString()}</div></div>
       <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs"><span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span></div></div>
       <div class="stat"><div class="k">B/S</div><div class="v" data-f="volr">${c.volr == null ? '—' : c.volr.toFixed(2)}</div></div>
       <div class="stat"><div class="k">5m</div><div class="v" data-f="pc5">${pct(c.pc5)}</div></div>
@@ -569,7 +571,6 @@ function renderDetail() {
       <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}</div></div>
       <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart || 0} / ${c.kol || 0}</div></div>
       <div class="stat"><div class="k">Top 10</div><div class="v" data-f="top10">${c.top10_pct ? c.top10_pct + '%' : '—'}</div></div>
-      <div class="stat"><div class="k">Age</div><div class="v" data-f="age">${age(c.age_secs)}</div></div>
     </div>
     <div class="mintline">
       <code>${esc(c.mint)}</code>
@@ -590,7 +591,6 @@ function updateDetail(c) {
   set('mcap', money(c.mcap));
   set('ath', money(c.ath_mcap));
   set('liq', money(c.liq));
-  set('txs', (c.swaps_5m || 0).toLocaleString());
   set('bs', `<span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span>`);
   set('volr', c.volr == null ? '—' : c.volr.toFixed(2));
   set('pc5', pct(c.pc5));
