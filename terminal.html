@@ -655,14 +655,8 @@ function renderDetailStatus() {
   if (!el) return;
   const r = botStatus[openMint];
   if (!r) { el.innerHTML = ''; return; }
-  const [dot, label] = STATE_UI[r.state] || ['closed', r.state];
-  let what = label;
-  if (r.state === 'bought' && r.mc) what = `In position — entered at <b>${esc(r.mc)}</b> MC`;
-  else if ((r.state === 'tp' || r.state === 'stopped') && r.pnl != null) {
-    const p = r.pnl * 100;
-    what = `${label} · <span class="${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
-  }
-  el.innerHTML = `<div class="actdot ${dot}"></div><div>${what}</div>` +
+  const [dot] = STATE_UI[r.state] || ['closed'];
+  el.innerHTML = `<div class="actdot ${dot}"></div><div>${stateLine(r)}</div>` +
                  `<div class="when">${ago(r.ts)}</div>`;
 }
 
@@ -725,13 +719,34 @@ async function greenlight(c) {
 // Mirrored from the bot. It owns positions and P&L; this only displays what it
 // reported, so the two can never disagree about what's actually held.
 const STATE_UI = {
-  watching:     ["watching", "Waiting for a dip and a reclaim", "watching", true],
-  bought:       ["bought",   "In position",                     "bought",   false],
-  tp:           ["closed",   "Took profit",                     "closed",   false],
-  stopped:      ["closed",   "Stopped out",                     "closed",   false],
-  "stood down": ["closed",   "No setup appeared",               "closed",   false],
-  unarmed:      ["closed",   "You dropped it",                  "closed",   false],
+  watching:     ["watching", "Waiting for a dip and a reclaim", true],
+  bought:       ["bought",   "In position",                     false],
+  tp:           ["closed",   "Took profit",                     false],   // legacy rows
+  tp1:          ["bought",   "TP1",                             false],
+  tp2:          ["closed",   "TP2",                             false],
+  stopped:      ["closed",   "Stopped out",                     false],
+  "stood down": ["closed",   "No setup appeared",               false],
+  unarmed:      ["closed",   "You dropped it",                  false],
 };
+
+/** What actually happened, in the terms you set the strategy in.
+ *  A take-profit is the multiple it hit — not the realised P&L, which after
+ *  selling 70% at 1.5x is only about +5% and reads like a bad trade. */
+function stateLine(r) {
+  const [, label] = STATE_UI[r.state] || ['closed', r.state];
+  const pnl = p => `<span class="${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '+' : ''}${(p * 100).toFixed(0)}%</span>`;
+
+  if (r.state === 'bought' && r.mc) return `In position — entered at <b>${esc(r.mc)}</b> MC`;
+
+  if (r.state === 'tp1' || r.state === 'tp2' || r.state === 'tp') {
+    const mult = r.mult ? `<b>${r.mult}x</b>` : '';
+    const open = r.open_pct ? ` · ${Math.round(r.open_pct)}% still riding` : '';
+    const banked = r.pnl != null ? ` · ${pnl(r.pnl)} banked` : '';
+    return `${label} hit ${mult}${open}${banked}`;
+  }
+  if (r.state === 'stopped') return `Stopped out${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
+  return label;
+}
 
 const ago = ts => {
   const s = Math.max(0, Date.now() / 1000 - ts);
@@ -756,19 +771,14 @@ async function refreshActivity() {
   const el = document.getElementById('activity');
   if (!rows.length) { el.innerHTML = ''; return; }
 
-  const live = rows.filter(r => r.state === 'watching' || r.state === 'bought').length;
+  const live = rows.filter(r => ['watching', 'bought', 'tp1'].includes(r.state)).length;
   el.innerHTML = `
     <div class="acthead">
       <span>Your bot${live ? ` · ${live} active` : ''}</span>
       <span>${rows.some(r => r.dry_run) ? 'dry run' : ''}</span>
     </div>` + rows.slice(0, 6).map(r => {
-    const [dot, label, , canUnarm] = STATE_UI[r.state] || ["closed", r.state, "closed", false];
-    let what = label;
-    if (r.state === 'bought' && r.mc) what = `In position — entered at ${esc(r.mc)} MC`;
-    else if ((r.state === 'tp' || r.state === 'stopped') && r.pnl != null) {
-      const p = (r.pnl * 100);
-      what = `${label} · <span class="${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
-    }
+    const [dot, , canUnarm] = STATE_UI[r.state] || ["closed", r.state, false];
+    const what = stateLine(r);
     return `<div class="actrow">
       <div class="actdot ${dot}"></div>
       <div class="actname">${esc(r.name || r.mint.slice(0, 6))}</div>
