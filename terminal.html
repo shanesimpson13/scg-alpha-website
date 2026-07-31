@@ -112,6 +112,33 @@
     .volr.good { color: var(--green); }
     .volr.bad { color: var(--red); }
 
+    /* ── what your bot is doing ── */
+    #activity:empty { display: none; }
+    #activity { margin-bottom: 16px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .acthead {
+      font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dimmer);
+      padding: 10px 15px; border-bottom: 1px solid var(--line); background: var(--panel);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .actrow {
+      display: flex; align-items: center; gap: 13px; padding: 12px 15px;
+      border-bottom: 1px solid rgba(255,255,255,.045); font-size: 12.5px;
+    }
+    .actrow:last-child { border-bottom: 0; }
+    .actdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .actdot.watching { background: var(--amber); animation: pulse 2s infinite; }
+    .actdot.bought   { background: var(--green); animation: pulse 2s infinite; }
+    .actdot.closed   { background: rgba(255,255,255,.25); }
+    .actname { font-weight: 600; min-width: 82px; }
+    .actwhat { color: var(--dim); flex: 1; }
+    .actwhen { color: var(--dimmer); font-size: 11px; white-space: nowrap; }
+    .unarmbtn {
+      background: none; border: 1px solid var(--line); color: var(--dim);
+      font-family: inherit; font-size: 10.5px; padding: 5px 11px; border-radius: 6px; cursor: pointer;
+    }
+    .unarmbtn:hover { color: var(--red); border-color: rgba(255,107,107,.4); }
+    .unarmbtn:disabled { opacity: .4; cursor: not-allowed; }
+
     .empty { text-align: center; padding: 50px 20px; color: var(--dimmer); font-size: 12.5px; line-height: 1.7; }
 
     /* ── detail ── */
@@ -235,6 +262,7 @@
   </header>
 
   <div id="board">
+    <div id="activity"></div>
     <div class="bar">
       <span style="letter-spacing:.1em">TRENDING · 5M</span>
       <div class="spacer"></div>
@@ -412,6 +440,7 @@ async function refresh() {
     document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
     document.getElementById('updated').textContent = `${Math.round(d.age_secs)}s ago`;
     if (openMint) renderDetail(); else renderBoard();
+    refreshActivity();
   } catch (e) {
     if (e.message === 'bad-key') { localStorage.removeItem('edgelvl_key'); location.reload(); return; }
     document.getElementById('livetxt').textContent = 'reconnecting';
@@ -536,6 +565,72 @@ async function greenlight(c) {
   }
 }
 
+
+
+/* ── what your bot is doing ─────────────────────────────────────────────── */
+// Mirrored from the bot. It owns positions and P&L; this only displays what it
+// reported, so the two can never disagree about what's actually held.
+const STATE_UI = {
+  watching:     ["watching", "Waiting for a dip and a reclaim", "watching", true],
+  bought:       ["bought",   "In position",                     "bought",   false],
+  tp:           ["closed",   "Took profit",                     "closed",   false],
+  stopped:      ["closed",   "Stopped out",                     "closed",   false],
+  "stood down": ["closed",   "No setup appeared",               "closed",   false],
+  unarmed:      ["closed",   "You dropped it",                  "closed",   false],
+};
+
+const ago = ts => {
+  const s = Math.max(0, Date.now() / 1000 - ts);
+  if (s < 60) return `${Math.round(s)}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  return `${(s / 3600).toFixed(1)}h ago`;
+};
+
+async function refreshActivity() {
+  let rows = [];
+  try {
+    rows = (await api('/api/status')).positions || [];
+  } catch (e) {
+    return;                       // never let this break the board
+  }
+  const el = document.getElementById('activity');
+  if (!rows.length) { el.innerHTML = ''; return; }
+
+  const live = rows.filter(r => r.state === 'watching' || r.state === 'bought').length;
+  el.innerHTML = `
+    <div class="acthead">
+      <span>Your bot${live ? ` · ${live} active` : ''}</span>
+      <span>${rows.some(r => r.dry_run) ? 'dry run' : ''}</span>
+    </div>` + rows.slice(0, 6).map(r => {
+    const [dot, label, , canUnarm] = STATE_UI[r.state] || ["closed", r.state, "closed", false];
+    let what = label;
+    if (r.state === 'bought' && r.mc) what = `In position — entered at ${esc(r.mc)} MC`;
+    else if ((r.state === 'tp' || r.state === 'stopped') && r.pnl != null) {
+      const p = (r.pnl * 100);
+      what = `${label} · <span class="${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
+    }
+    return `<div class="actrow">
+      <div class="actdot ${dot}"></div>
+      <div class="actname">${esc(r.name || r.mint.slice(0, 6))}</div>
+      <div class="actwhat">${what}</div>
+      <div class="actwhen">${ago(r.ts)}</div>
+      ${canUnarm ? `<button class="unarmbtn" data-unarm="${esc(r.mint)}">Unarm</button>` : ''}
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('[data-unarm]').forEach(b => b.onclick = async ev => {
+    ev.stopPropagation();
+    b.disabled = true;
+    b.textContent = 'Dropping…';
+    try {
+      await api('/api/unarm', { method: 'POST', body: JSON.stringify({ mint: b.dataset.unarm }) });
+      b.textContent = 'Dropped';
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = 'Unarm';
+    }
+  });
+}
 
 /* ── settings ───────────────────────────────────────────────────────────── */
 // [key, label, hint, multiplier, unit, offset]
