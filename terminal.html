@@ -96,6 +96,17 @@
       font-family: inherit; font-size: 11px;
     }
     .bar .tab.on { color: #000; background: var(--green); border-color: var(--green); font-weight: 600; }
+    .flt {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
+      color: var(--dimmer); border: 1px solid var(--line); border-radius: 6px;
+      padding: 4px 9px;
+    }
+    .flt input {
+      width: 62px; background: none; border: 0; color: var(--fg);
+      font-family: inherit; font-size: 11.5px; text-align: right; padding: 0;
+    }
+    .flt input:focus { outline: none; }
+    .flt span { color: var(--dimmer); }
     .bar .spacer { flex: 1; }
 
     /* ── table ── */
@@ -215,6 +226,16 @@
       cursor: pointer; text-decoration: none;
     }
     .mintline button:hover, .mintline a:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    #dstatus:empty { display: none; }
+    #dstatus {
+      display: flex; align-items: center; gap: 11px; margin-bottom: 12px;
+      padding: 12px 15px; border: 1px solid var(--line); border-radius: 9px;
+      font-size: 12.5px;
+    }
+    #dstatus .actdot { width: 8px; height: 8px; }
+    #dstatus b { font-weight: 600; }
+    #dstatus .when { margin-left: auto; color: var(--dimmer); font-size: 11px; }
+
     .glbtn { width: 100%; background: var(--green); color: #000; border: 0; padding: 16px;
              font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 9px;
              cursor: pointer; letter-spacing: .04em; }
@@ -313,9 +334,10 @@
     <div class="bar">
       <span style="letter-spacing:.1em">TRENDING · 5M</span>
       <div class="spacer"></div>
-      <button class="tab" data-minvol="0">All</button>
-      <button class="tab on" data-minvol="25000">&gt;$25K vol</button>
-      <button class="tab" data-minvol="100000">&gt;$100K vol</button>
+      <label class="flt">5m vol &gt; <input id="f_vol" type="number" step="1000"><span>$</span></label>
+      <label class="flt">MC &gt; <input id="f_mc" type="number" step="1000"><span>$</span></label>
+      <label class="flt">age &lt; <input id="f_age" type="number" step="1"><span>d</span></label>
+      <button class="tab" id="f_reset">reset</button>
     </div>
 
     <div class="tbl-wrap">
@@ -367,7 +389,13 @@
 const API = 'https://api.scgalpha.com';
 let KEY = localStorage.getItem('edgelvl_key') || '';
 let coins = [], openMint = null, timer = null;
-let sortKey = 'vol_5m', minVol = 25000;
+let sortKey = 'vol_5m';
+
+// Your filters, kept in this browser. Defaults match what the server would
+// apply anyway, so an untouched terminal behaves exactly as documented.
+const FILTER_DEFAULTS = { vol: 25000, mc: 50000, age: 60 };
+let filters = { ...FILTER_DEFAULTS };
+try { filters = { ...filters, ...JSON.parse(localStorage.getItem('edgelvl_filters') || '{}') }; } catch (e) {}
 // mint -> when it was queued. A confirmation, not a lock: the bot arms within
 // 5s, and after that you may well want to greenlight the same coin again (it
 // may have timed out, or you're re-entering). Re-arming an active coin is
@@ -503,7 +531,8 @@ function renderBoard() {
 
 async function refresh() {
   try {
-    const d = await api(`/api/trending?limit=30&min_vol=${minVol}`);   // mc + age defaults come from the server
+    const d = await api(`/api/trending?limit=50&min_vol=${filters.vol}` +
+                        `&min_mc=${filters.mc}&max_age_days=${filters.age}`);
     coins = d.coins || [];
     document.getElementById('livewrap').classList.toggle('stale', !!d.stale);
     document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
@@ -516,12 +545,34 @@ async function refresh() {
   }
 }
 
-document.querySelectorAll('.bar .tab').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.bar .tab').forEach(x => x.classList.remove('on'));
-  b.classList.add('on');
-  minVol = Number(b.dataset.minvol);
+/* ── filters ────────────────────────────────────────────────────────────── */
+function paintFilters() {
+  f_vol.value = filters.vol;
+  f_mc.value = filters.mc;
+  f_age.value = filters.age;
+}
+let fltTimer = null;
+function onFilterEdit() {
+  clearTimeout(fltTimer);
+  // debounce: typing "25000" shouldn't fire five requests
+  fltTimer = setTimeout(() => {
+    filters = {
+      vol: Math.max(0, Number(f_vol.value) || 0),
+      mc: Math.max(0, Number(f_mc.value) || 0),
+      age: Math.max(0, Number(f_age.value) || 0),
+    };
+    localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
+    refresh();
+  }, 450);
+}
+['f_vol', 'f_mc', 'f_age'].forEach(id => { document.getElementById(id).oninput = onFilterEdit; });
+document.getElementById('f_reset').onclick = () => {
+  filters = { ...FILTER_DEFAULTS };
+  localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
+  paintFilters();
   refresh();
-});
+};
+paintFilters();
 document.querySelectorAll('thead th.sortable').forEach(th => th.onclick = () => {
   sortKey = th.dataset.sort; renderBoard();
 });
@@ -576,11 +627,29 @@ function renderDetail() {
       <button onclick="navigator.clipboard.writeText('${esc(c.mint)}');this.textContent='copied'">copy</button>
       <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank" rel="noopener">GMGN ↗</a>
     </div>
+    <div id="dstatus"></div>
     <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
     <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Everything after that lands in your Telegram.</div>
   `;
   if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
   else document.getElementById('glbtn').onclick = () => greenlight(c);
+}
+
+/** The bot's state for the coin you're looking at, above the greenlight. */
+function renderDetailStatus() {
+  const el = document.getElementById('dstatus');
+  if (!el) return;
+  const r = botStatus[openMint];
+  if (!r) { el.innerHTML = ''; return; }
+  const [dot, label] = STATE_UI[r.state] || ['closed', r.state];
+  let what = label;
+  if (r.state === 'bought' && r.mc) what = `In position — entered at <b>${esc(r.mc)}</b> MC`;
+  else if ((r.state === 'tp' || r.state === 'stopped') && r.pnl != null) {
+    const p = r.pnl * 100;
+    what = `${label} · <span class="${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
+  }
+  el.innerHTML = `<div class="actdot ${dot}"></div><div>${what}</div>` +
+                 `<div class="when">${ago(r.ts)}</div>`;
 }
 
 function updateDetail(c) {
@@ -657,6 +726,8 @@ const ago = ts => {
   return `${(s / 3600).toFixed(1)}h ago`;
 };
 
+let botStatus = {};      // mint -> the bot's last word on that coin
+
 async function refreshActivity() {
   let rows = [];
   try {
@@ -664,6 +735,10 @@ async function refreshActivity() {
   } catch (e) {
     return;                       // never let this break the board
   }
+  botStatus = {};
+  rows.forEach(r => { botStatus[r.mint] = r; });
+  if (openMint) renderDetailStatus();
+
   const el = document.getElementById('activity');
   if (!rows.length) { el.innerHTML = ''; return; }
 
