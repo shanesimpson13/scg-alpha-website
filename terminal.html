@@ -336,7 +336,10 @@ function openDetail(mint) { openMint = mint; renderDetail(); window.scrollTo(0, 
 
 function closeDetail() {
   openMint = null;
-  document.getElementById('detail').style.display = 'none';
+  const el = document.getElementById('detail');
+  el.style.display = 'none';
+  el.dataset.mint = '';          // force a fresh build (and a fresh chart) next time
+  el.innerHTML = '';             // stop the iframe loading in the background
   document.getElementById('board').style.display = 'block';
   renderBoard();
 }
@@ -348,6 +351,12 @@ function renderDetail() {
   document.getElementById('board').style.display = 'none';
   const el = document.getElementById('detail');
   el.style.display = 'block';
+
+  // Already built for this coin? Patch the numbers and leave the DOM alone.
+  // Rebuilding innerHTML on every refresh restarts the chart iframe before it
+  // can finish loading, wipes the greenlight confirmation, and resets scroll.
+  if (el.dataset.mint === c.mint) { updateDetail(c); return; }
+  el.dataset.mint = c.mint;
 
   const dead = c.state === 'dead';
   const cooling = c.state === 'cooling';
@@ -365,25 +374,25 @@ function renderDetail() {
     <div class="dhead">
       <h2>${esc(c.name || c.mint.slice(0, 8))} <span class="tag ${c.state}">${c.state}</span></h2>
       <div class="dvol">
-        <div class="v">${money(c.vol_now)}</div>
-        <div class="l">5m volume · ${staleTxt}</div>
+        <div class="v" data-f="vol">${money(c.vol_now)}</div>
+        <div class="l">5m volume · <span data-f="stale">${staleTxt}</span></div>
       </div>
     </div>
 
     <iframe class="chart" src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}"
-            title="chart" loading="lazy"></iframe>
+            title="chart" referrerpolicy="no-referrer"></iframe>
 
     <div class="stats">
-      <div class="stat"><div class="k">Market cap</div><div class="v">${money(c.current_mcap)}</div></div>
+      <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.current_mcap)}</div></div>
       <div class="stat"><div class="k">At alert</div><div class="v">${money(c.alert_mcap)}</div></div>
-      <div class="stat"><div class="k">ATH</div><div class="v">${money(c.max_mcap)}</div></div>
-      <div class="stat"><div class="k">Liquidity</div><div class="v">${money(c.liquidity)}</div></div>
-      <div class="stat"><div class="k">Holders</div><div class="v">${(c.holders || 0).toLocaleString()}${c.holder_growth_pct ? ' <span class="up">+' + Math.round(c.holder_growth_pct) + '%</span>' : ''}</div></div>
-      <div class="stat"><div class="k">Buys / sells</div><div class="v">${(c.buys || 0).toLocaleString()} / ${(c.sells || 0).toLocaleString()}</div></div>
-      <div class="stat"><div class="k">5m</div><div class="v">${pct(c.pc5)}</div></div>
-      <div class="stat"><div class="k">1h</div><div class="v">${pct(c.pc1h)}</div></div>
+      <div class="stat"><div class="k">ATH</div><div class="v" data-f="ath">${money(c.max_mcap)}</div></div>
+      <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liquidity)}</div></div>
+      <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}${c.holder_growth_pct ? ' <span class="up">+' + Math.round(c.holder_growth_pct) + '%</span>' : ''}</div></div>
+      <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs">${(c.buys || 0).toLocaleString()} / ${(c.sells || 0).toLocaleString()}</div></div>
+      <div class="stat"><div class="k">5m</div><div class="v" data-f="pc5">${pct(c.pc5)}</div></div>
+      <div class="stat"><div class="k">1h</div><div class="v" data-f="pc1h">${pct(c.pc1h)}</div></div>
       <div class="stat"><div class="k">Top 10</div><div class="v">${c.top10_pct ? Math.round(c.top10_pct) + '%' : '—'}</div></div>
-      <div class="stat"><div class="k">Alerted</div><div class="v">${ago(c.alert_age_mins)}</div></div>
+      <div class="stat"><div class="k">Alerted</div><div class="v" data-f="age">${ago(c.alert_age_mins)}</div></div>
     </div>
 
     <div class="mintline">
@@ -403,12 +412,44 @@ function renderDetail() {
   if (btn && !dead) btn.onclick = () => greenlight(c);
 }
 
+function updateDetail(c) {
+  const el = document.getElementById('detail');
+  const set = (f, html) => { const n = el.querySelector(`[data-f="${f}"]`); if (n) n.innerHTML = html; };
+
+  set('vol', money(c.vol_now));
+  set('stale', c.vol_age_secs === null ? 'no reading' : `${c.vol_age_secs}s ago`);
+  set('mcap', money(c.current_mcap));
+  set('ath', money(c.max_mcap));
+  set('liq', money(c.liquidity));
+  set('holders', (c.holders || 0).toLocaleString() +
+      (c.holder_growth_pct ? ` <span class="up">+${Math.round(c.holder_growth_pct)}%</span>` : ''));
+  set('bs', `${(c.buys || 0).toLocaleString()} / ${(c.sells || 0).toLocaleString()}`);
+  set('pc5', pct(c.pc5));
+  set('pc1h', pct(c.pc1h));
+  set('age', ago(c.alert_age_mins));
+
+  // Keep the state tag honest, and pull the greenlight if the move dies while
+  // you're looking at it. Never re-enable a button that's already been used.
+  const tag = el.querySelector('.dhead .tag');
+  if (tag) { tag.className = `tag ${c.state}`; tag.textContent = c.state; }
+
+  const btn = document.getElementById('glbtn');
+  if (btn && !btn.dataset.sent && c.state === 'dead' && !btn.disabled) {
+    btn.disabled = true;
+    btn.textContent = 'VOLUME GONE — CAN\'T GREENLIGHT';
+    const note = document.getElementById('glnote');
+    note.className = 'glnote warn';
+    note.textContent = 'Volume just died on this one. Its move is over.';
+  }
+}
+
 async function greenlight(c) {
   const btn = document.getElementById('glbtn'), note = document.getElementById('glnote');
   btn.disabled = true;
   btn.textContent = 'Sending…';
   try {
     await api('/api/greenlight', { method: 'POST', body: JSON.stringify({ mint: c.mint }) });
+    btn.dataset.sent = '1';        // never let a refresh re-arm this button
     btn.textContent = '✓ QUEUED FOR YOUR BOT';
     note.className = 'glnote';
     note.innerHTML = `Your bot picks this up within 5 seconds and arms it.<br>
