@@ -188,10 +188,20 @@
       margin-bottom: 16px; background: var(--panel);
     }
     .chartwrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(122px, 1fr));
-             gap: 1px; background: var(--line); border: 1px solid var(--line);
-             border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
-    .stat { background: var(--bg); padding: 12px 14px; }
+    /* Flex, not grid: a grid leaves empty cells on the last row and the gap
+       trick paints them as blank panels. Flex items grow to fill whatever row
+       they land on, so there's never dead space. Hairlines come from cell
+       borders, with the trailing edges clipped by the container. */
+    .stats {
+      display: flex; flex-wrap: wrap;
+      border: 1px solid var(--line); border-radius: 10px;
+      overflow: hidden; margin-bottom: 16px;
+    }
+    .stat {
+      flex: 1 1 120px; min-width: 120px; padding: 12px 14px;
+      border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      margin-right: -1px; margin-bottom: -1px;
+    }
     .stat .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
     .stat .v { font-size: 14px; font-weight: 500; }
     .mintline { font-size: 11px; color: var(--dimmer); margin-bottom: 16px;
