@@ -150,6 +150,16 @@
     .glnote { font-size: 11.5px; color: var(--dimmer); text-align: center; margin-top: 10px; line-height: 1.6; }
     .glnote.warn { color: var(--amber); }
 
+    .setgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+    .setrow { border: 1px solid var(--line); border-radius: 9px; padding: 13px 15px; }
+    .setrow label { display: block; font-size: 11px; color: var(--dim); margin-bottom: 3px; }
+    .setrow .hint { font-size: 10px; color: var(--dimmer); line-height: 1.5; margin-bottom: 8px; }
+    .setrow input {
+      width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--line);
+      color: #fff; padding: 8px 10px; font-family: inherit; font-size: 13px; border-radius: 6px;
+    }
+    .setrow input:focus { outline: none; border-color: rgba(124,255,160,.45); }
+    .setrow input.bad { border-color: var(--red); }
     footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
 
@@ -176,6 +186,7 @@
     <div class="status">
       <div class="live" id="livewrap"><div class="dot"></div><span id="livetxt">live</span></div>
       <span id="updated"></span>
+      <a href="#" id="opensettings">settings</a>
       <a href="#" id="signout">sign out</a>
     </div>
   </header>
@@ -209,6 +220,22 @@
   </div>
 
   <div id="detail"></div>
+
+  <div id="settings" style="display:none">
+    <button class="back" onclick="closeSettings()">← back to board</button>
+    <h2 style="font-size:19px;font-weight:600;margin-bottom:6px">Your strategy</h2>
+    <p style="font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:20px;max-width:640px">
+      These drive <b>your</b> bot. Changes apply to the next coin you greenlight —
+      never to a trade already open, because moving a stop on a position you're
+      holding is a decision you want to make deliberately, not by editing a box.
+    </p>
+    <div id="setgrid" class="setgrid"></div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:20px;flex-wrap:wrap">
+      <button class="glbtn" id="savesettings" style="width:auto;padding:14px 28px">Save</button>
+      <button class="tab" id="resetsettings">Reset to defaults</button>
+      <span id="setmsg" style="font-size:12px"></span>
+    </div>
+  </div>
 
   <footer>
     5m volume, transactions and volR are GMGN's own trailing-5-minute figures, refreshed every 15 seconds.
@@ -459,6 +486,124 @@ async function greenlight(c) {
     note.textContent = "Couldn't reach the server — try that again.";
   }
 }
+
+
+/* ── settings ───────────────────────────────────────────────────────────── */
+// label, hint, and how the number is shown/entered. Stored values are raw
+// (0.15), shown as percentages where that's how people actually think.
+const FIELDS = [
+  ["size_sol", "Size per trade (SOL)", "How much goes into each buy.", 1],
+  ["tp1", "Take profit 1 (x)", "First rung. Sells the fraction below.", 1],
+  ["frac1", "Sold at TP1", "The rest rides to TP2.", 100, "%"],
+  ["tp2", "Take profit 2 (x)", "Fully out here — no runner.", 1],
+  ["kill", "Trailing stop", "Off the position's PEAK, not your entry.", 100, "%"],
+  ["dip", "Dip required", "How far off the high before it looks to buy.", 100, "%"],
+  ["bounce", "Reclaim", "Rise off the dip low that triggers the buy.", 100, "%", 1],
+  ["min_vol_5m", "Min 5m volume ($)", "Below this a coin isn't worth the slot.", 1],
+  ["volr_min", "volR floor", "Buy vol ÷ sell vol. Under 1 means more sold than bought.", 1],
+  ["entry_timeout", "Give up after (min)", "Stands down if no setup appears.", 1 / 60],
+  ["max_hold", "Max hold (min)", "Force-exit a position after this.", 1 / 60],
+];
+
+let bounds = {};
+
+const toView = (f, v) => {
+  const [, , , mul, , sub] = f;
+  return +(((v - (sub || 0)) * mul).toFixed(6));
+};
+const toRaw = (f, v) => {
+  const [, , , mul, , sub] = f;
+  return +((v / mul) + (sub || 0)).toFixed(6);
+};
+
+async function openSettings() {
+  document.getElementById('board').style.display = 'none';
+  document.getElementById('detail').style.display = 'none';
+  document.getElementById('settings').style.display = 'block';
+  window.scrollTo(0, 0);
+  const msg = document.getElementById('setmsg');
+  msg.textContent = '';
+  try {
+    const d = await api('/api/settings');
+    bounds = d.bounds || {};
+    renderSettings(d.settings || {});
+  } catch (e) {
+    msg.className = ''; msg.style.color = 'var(--red)';
+    msg.textContent = "Couldn't load your settings.";
+  }
+}
+
+function renderSettings(vals) {
+  document.getElementById('setgrid').innerHTML = FIELDS.map(f => {
+    const [key, label, hint, , unit] = f;
+    const v = vals[key];
+    return `<div class="setrow">
+      <label>${label}${unit ? ` (${unit})` : ''}</label>
+      <div class="hint">${hint}</div>
+      <input id="set_${key}" type="number" step="any" value="${v === undefined ? '' : toView(f, v)}">
+    </div>`;
+  }).join('');
+}
+
+function closeSettings() {
+  document.getElementById('settings').style.display = 'none';
+  document.getElementById('board').style.display = 'block';
+  renderBoard();
+}
+
+document.getElementById('opensettings').onclick = e => { e.preventDefault(); openSettings(); };
+
+document.getElementById('savesettings').onclick = async () => {
+  const msg = document.getElementById('setmsg');
+  const body = {};
+  let bad = false;
+  for (const f of FIELDS) {
+    const [key] = f;
+    const el = document.getElementById('set_' + key);
+    el.classList.remove('bad');
+    if (el.value === '') continue;
+    const raw = toRaw(f, Number(el.value));
+    const b = bounds[key];
+    if (!isFinite(raw) || (b && (raw < b[0] || raw > b[1]))) {
+      el.classList.add('bad'); bad = true; continue;
+    }
+    body[key] = raw;
+  }
+  if (bad) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Some values are out of range — the red ones.';
+    return;
+  }
+  msg.style.color = 'var(--dimmer)';
+  msg.textContent = 'Saving…';
+  try {
+    const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(body) });
+    bounds = bounds; renderSettings(d.settings || {});
+    msg.style.color = 'var(--green)';
+    msg.textContent = '✓ Saved — applies to the next coin you greenlight.';
+  } catch (e) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Rejected — check the values and try again.';
+  }
+};
+
+document.getElementById('resetsettings').onclick = async () => {
+  const msg = document.getElementById('setmsg');
+  msg.style.color = 'var(--dimmer)';
+  msg.textContent = 'Resetting…';
+  const defaults = { size_sol: 0.05, tp1: 1.5, tp2: 2.0, frac1: 0.70, kill: 0.50,
+                     dip: 0.15, bounce: 1.04, min_vol_5m: 5000, volr_min: 1.0,
+                     entry_timeout: 3600, max_hold: 21600 };
+  try {
+    const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(defaults) });
+    renderSettings(d.settings || {});
+    msg.style.color = 'var(--green)';
+    msg.textContent = '✓ Back to the shipped defaults.';
+  } catch (e) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = "Couldn't reset.";
+  }
+};
 
 function start() {
   refresh();
