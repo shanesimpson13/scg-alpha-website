@@ -292,7 +292,7 @@ function rowHTML(c) {
   <tr data-mint="${esc(c.mint)}">
     <td>
       <div class="tok">
-        <img src="${esc(c.logo || '')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+        <img src="${esc(c.logo || '')}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">
         <div class="nm">
           <span class="s">${esc((c.symbol || c.mint.slice(0, 6)).slice(0, 14))}</span>
           <span class="n"><span class="age ${ageCls}">${age(c.age_secs)}</span> · ${esc((c.name || '').slice(0, 22))}</span>
@@ -374,7 +374,7 @@ function renderDetail() {
   el.innerHTML = `
     <button class="back" onclick="closeDetail()">← back to board</button>
     <div class="dhead">
-      <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}</h2>
+      <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}</h2>
       <div class="dvol"><div class="v" data-f="vol">${money(c.vol_5m)}</div><div class="l">5m volume</div></div>
     </div>
     <iframe class="chart" src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
