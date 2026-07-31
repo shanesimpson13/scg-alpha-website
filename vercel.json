@@ -24,11 +24,6 @@
   ],
   "redirects": [
     {
-      "source": "/terminal",
-      "destination": "/",
-      "permanent": false
-    },
-    {
       "source": "/system",
       "destination": "/",
       "permanent": false
