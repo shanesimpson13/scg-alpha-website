@@ -203,6 +203,7 @@
             font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 16px; }
     .back:hover { color: var(--fg); }
     .dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    .dtitle { min-width: 0; }
     .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: baseline; gap: 11px; }
     .dhead h2 img { align-self: center; }
     .dage { font-size: 12px; font-weight: 400; color: var(--dimmer); }
@@ -234,7 +235,7 @@
     }
     .stat .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
     .stat .v { font-size: 14px; font-weight: 500; }
-    .mintline { font-size: 11px; color: var(--dimmer); margin-bottom: 16px;
+    .mintline { font-size: 11px; color: var(--dimmer); margin-top: 9px;
                 display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
     .mintline code { color: var(--dim); word-break: break-all; }
     .mintline button, .mintline a {
@@ -659,8 +660,16 @@ function renderDetail() {
   el.innerHTML = `
     <button class="back" onclick="closeDetail()">← back to board</button>
     <div class="dhead">
-      <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}
-        <span class="dage" data-f="age">${age(c.age_secs)}</span></h2>
+      <div class="dtitle">
+        <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}
+          <span class="dage" data-f="age">${age(c.age_secs)}</span></h2>
+        <div class="mintline">
+          <code>${esc(c.mint)}</code>
+          <button onclick="navigator.clipboard.writeText('${esc(c.mint)}');this.textContent='copied'">copy</button>
+          <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank" rel="noopener">GMGN ↗</a>
+          ${links(c)}
+        </div>
+      </div>
       <div class="dvol"><div class="v" data-f="vol">${money(c.vol_5m)}</div><div class="l">5m volume</div></div>
     </div>
     <div class="chartwrap">
@@ -676,12 +685,6 @@ function renderDetail() {
       <div class="stat"><div class="k">1h</div><div class="v" data-f="pc1h">${pct(c.pc1h)}</div></div>
       <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}</div></div>
       <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart || 0} / ${c.kol || 0}</div></div>
-    </div>
-    <div class="mintline">
-      <code>${esc(c.mint)}</code>
-      <button onclick="navigator.clipboard.writeText('${esc(c.mint)}');this.textContent='copied'">copy</button>
-      <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank" rel="noopener">GMGN ↗</a>
-      ${links(c)}
     </div>
     <div id="dstatus"></div>
     <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
