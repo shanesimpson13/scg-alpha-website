@@ -12,6 +12,7 @@
 
     :root {
       --bg: #000;
+      --panel: #0a0a0a;
       --line: rgba(255, 255, 255, 0.08);
       --dim: rgba(255, 255, 255, 0.55);
       --dimmer: rgba(255, 255, 255, 0.32);
@@ -21,38 +22,35 @@
     }
 
     body {
-      background: var(--bg);
-      color: #fff;
+      background: var(--bg); color: #fff;
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
-      min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
     }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 70px; }
 
-    .wrap { max-width: 940px; margin: 0 auto; padding: 24px 20px 80px; }
-
-    /* ── header ─────────────────────────────────────────────── */
     header {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; padding-bottom: 18px; margin-bottom: 22px;
+      gap: 14px; padding-bottom: 14px; margin-bottom: 16px;
       border-bottom: 1px solid var(--line); flex-wrap: wrap;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand img { height: 22px; width: auto; display: block; }
-    .brand span { font-size: 12px; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; }
-
-    .status { display: flex; align-items: center; gap: 14px; font-size: 11px; color: var(--dimmer); }
+    .brand img { height: 20px; width: auto; display: block; }
+    .brand span { font-size: 11px; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; }
+    .status { display: flex; align-items: center; gap: 13px; font-size: 11px; color: var(--dimmer); }
     .live { display: flex; align-items: center; gap: 6px; color: var(--green); }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    .live.stale { color: var(--amber); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+    .status a { color: var(--dimmer); }
 
-    /* ── gate ───────────────────────────────────────────────── */
+    /* ── gate ── */
     #gate { max-width: 420px; margin: 12vh auto; text-align: center; }
     #gate h1 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
     #gate p { font-size: 12.5px; color: var(--dim); line-height: 1.65; margin-bottom: 22px; }
     #gate input {
       width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--line);
       color: #fff; padding: 13px 14px; font-family: inherit; font-size: 13px;
-      border-radius: 7px; text-align: center; letter-spacing: .04em;
+      border-radius: 7px; text-align: center;
     }
     #gate input:focus { outline: none; border-color: rgba(124,255,160,.45); }
     #gate button {
@@ -65,79 +63,78 @@
     .gate-foot { margin-top: 20px; font-size: 11.5px; color: var(--dimmer); }
     .gate-foot a { color: var(--dim); }
 
-    /* ── board ──────────────────────────────────────────────── */
-    .board-head {
-      display: flex; justify-content: space-between; align-items: baseline;
-      margin-bottom: 14px; font-size: 11px; color: var(--dimmer);
-      letter-spacing: .1em; text-transform: uppercase;
+    /* ── controls ── */
+    .bar {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+      font-size: 11px; color: var(--dimmer);
     }
-
-    .row {
-      border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px;
-      margin-bottom: 10px; cursor: pointer; transition: border-color .15s, background .15s;
-      display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center;
+    .bar .tab {
+      padding: 5px 11px; border-radius: 6px; cursor: pointer;
+      border: 1px solid var(--line); color: var(--dim); background: none;
+      font-family: inherit; font-size: 11px;
     }
-    .row:hover { border-color: rgba(124,255,160,.32); background: rgba(255,255,255,.02); }
-    .row.dead { opacity: .42; }
+    .bar .tab.on { color: #000; background: var(--green); border-color: var(--green); font-weight: 600; }
+    .bar .spacer { flex: 1; }
 
-    .rname { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-    .tag {
-      font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase;
-      padding: 2.5px 7px; border-radius: 20px; font-weight: 600;
+    /* ── table ── */
+    .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; min-width: 860px; }
+    thead th {
+      text-align: right; font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--dimmer); font-weight: 500; padding: 11px 14px;
+      border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--panel);
     }
-    .tag.hot     { color: var(--green); background: rgba(124,255,160,.11); }
-    .tag.cooling { color: var(--amber); background: rgba(255,196,107,.11); }
-    .tag.dead    { color: var(--dimmer); background: rgba(255,255,255,.05); }
+    thead th:first-child { text-align: left; }
+    thead th.sortable { cursor: pointer; }
+    thead th.sortable:hover { color: var(--dim); }
+    thead th.on { color: var(--green); }
 
-    /* Copycat launches share names constantly — two different "Milho" coins can
-       sit on the board at once. Show a mint fragment so they're never confused. */
-    .mintchip { font-size: 10px; color: var(--dimmer); font-weight: 400; letter-spacing: .04em; }
+    tbody tr { border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
+    tbody tr:last-child { border-bottom: 0; }
+    tbody tr:hover { background: rgba(255,255,255,.028); }
+    tbody td { padding: 11px 14px; text-align: right; font-size: 12.5px; white-space: nowrap; }
+    tbody td:first-child { text-align: left; }
 
-    .rmeta { font-size: 11.5px; color: var(--dim); margin-top: 7px; line-height: 1.7; }
-    .rmeta b { color: rgba(255,255,255,.82); font-weight: 500; }
+    .tok { display: flex; align-items: center; gap: 10px; }
+    .tok img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; background: rgba(255,255,255,.06); flex-shrink: 0; }
+    .tok .nm { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .tok .s { font-weight: 600; font-size: 13px; }
+    .tok .n { font-size: 10px; color: var(--dimmer); overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+    .age { color: var(--green); }
+    .age.old { color: var(--dimmer); }
+
     .up { color: var(--green); }
-    .late { color: var(--amber); }
     .down { color: var(--red); }
+    .vol { font-weight: 600; color: var(--green); }
+    .txs { font-size: 10.5px; color: var(--dimmer); }
+    .txs b { color: var(--green); font-weight: 400; }
+    .txs i { color: var(--red); font-style: normal; }
+    .volr.good { color: var(--green); }
+    .volr.bad { color: var(--red); }
 
-    /* the move since alert is the decision — make it the loudest thing here */
-    .rvol { text-align: right; }
-    .rvol .v { font-size: 21px; font-weight: 600; letter-spacing: -.02em; }
-    .rvol .l { font-size: 9.5px; color: var(--dimmer); letter-spacing: .12em; text-transform: uppercase; margin-top: 3px; }
+    .empty { text-align: center; padding: 50px 20px; color: var(--dimmer); font-size: 12.5px; line-height: 1.7; }
 
-    .empty { text-align: center; padding: 60px 20px; color: var(--dimmer); font-size: 12.5px; line-height: 1.7; }
-
-    /* ── detail ─────────────────────────────────────────────── */
+    /* ── detail ── */
     #detail { display: none; }
-    .back {
-      background: none; border: 0; color: var(--dim); font-family: inherit;
-      font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 18px;
-    }
+    .back { background: none; border: 0; color: var(--dim); font-family: inherit;
+            font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 16px; }
     .back:hover { color: #fff; }
-
-    .dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 18px; }
-    .dhead h2 { font-size: 24px; font-weight: 600; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: center; gap: 11px; }
+    .dhead h2 img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
     .dvol { text-align: right; }
-    .dvol .v { font-size: 27px; font-weight: 600; letter-spacing: -.02em; }
-    .dvol .l { font-size: 10px; color: var(--dimmer); letter-spacing: .12em; text-transform: uppercase; }
-
-    .chart {
-      width: 100%; height: 400px; border: 1px solid var(--line); border-radius: 10px;
-      margin-bottom: 16px; background: rgba(255,255,255,.015);
-    }
-
-    .stats {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-      gap: 1px; background: var(--line); border: 1px solid var(--line);
-      border-radius: 10px; overflow: hidden; margin-bottom: 20px;
-    }
-    .stat { background: #000; padding: 13px 15px; }
-    .stat .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 5px; }
+    .dvol .v { font-size: 26px; font-weight: 600; color: var(--green); }
+    .dvol .l { font-size: 10px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; }
+    .chart { width: 100%; height: 400px; border: 1px solid var(--line); border-radius: 10px;
+             margin-bottom: 14px; background: rgba(255,255,255,.015); }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(122px, 1fr));
+             gap: 1px; background: var(--line); border: 1px solid var(--line);
+             border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+    .stat { background: #000; padding: 12px 14px; }
+    .stat .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
     .stat .v { font-size: 14px; font-weight: 500; }
-
-    .mintline {
-      font-size: 11px; color: var(--dimmer); margin-bottom: 20px;
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    }
+    .mintline { font-size: 11px; color: var(--dimmer); margin-bottom: 16px;
+                display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
     .mintline code { color: var(--dim); word-break: break-all; }
     .mintline button, .mintline a {
       background: none; border: 1px solid var(--line); color: var(--dim);
@@ -145,72 +142,78 @@
       cursor: pointer; text-decoration: none;
     }
     .mintline button:hover, .mintline a:hover { color: #fff; border-color: rgba(255,255,255,.25); }
-
-    .glbtn {
-      width: 100%; background: var(--green); color: #000; border: 0;
-      padding: 17px; font-family: inherit; font-size: 14px; font-weight: 700;
-      border-radius: 9px; cursor: pointer; letter-spacing: .04em;
-    }
+    .glbtn { width: 100%; background: var(--green); color: #000; border: 0; padding: 16px;
+             font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 9px;
+             cursor: pointer; letter-spacing: .04em; }
     .glbtn:hover:not(:disabled) { opacity: .88; }
     .glbtn:disabled { background: rgba(255,255,255,.07); color: var(--dimmer); cursor: not-allowed; }
-    .glnote { font-size: 11.5px; color: var(--dimmer); text-align: center; margin-top: 11px; line-height: 1.65; }
+    .glnote { font-size: 11.5px; color: var(--dimmer); text-align: center; margin-top: 10px; line-height: 1.6; }
     .glnote.warn { color: var(--amber); }
 
-    footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 11px; color: var(--dimmer); line-height: 1.7; }
-    footer a { color: var(--dim); }
+    footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
+             font-size: 11px; color: var(--dimmer); line-height: 1.7; }
 
-    @media (max-width: 600px) {
-      .row { grid-template-columns: 1fr; gap: 10px; }
-      .rvol { text-align: left; }
-      .rvol .v { font-size: 18px; }
+    @media (max-width: 700px) {
       .chart { height: 320px; }
+      .tok .n { max-width: 90px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── key gate ─────────────────────────────────────────────── -->
 <div id="gate">
   <h1>EdgeLvl Terminal</h1>
   <p>Paste your licence key to load the board.<br>It stays in this browser — nothing is sent anywhere else.</p>
   <input id="keyin" type="text" placeholder="S-XXXXXX-XXXXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
   <button id="keygo">Open terminal</button>
   <div class="err" id="keyerr"></div>
-  <div class="gate-foot">
-    Lost it? <a href="/welcome">Look it up here</a> · No key? <a href="/">Get access</a>
-  </div>
+  <div class="gate-foot">Lost it? <a href="/welcome">Look it up here</a> · No key? <a href="/">Get access</a></div>
 </div>
 
-<!-- ── app ──────────────────────────────────────────────────── -->
 <div class="wrap" id="app" style="display:none">
   <header>
-    <div class="brand">
-      <img src="/edge-logo.png" alt="EdgeLvl">
-      <span>Terminal</span>
-    </div>
+    <div class="brand"><img src="/edge-logo.png" alt="EdgeLvl"><span>Terminal</span></div>
     <div class="status">
-      <div class="live"><div class="dot"></div><span id="livetxt">live</span></div>
-      <span id="clock"></span>
-      <a href="#" id="signout" style="color:var(--dimmer)">sign out</a>
+      <div class="live" id="livewrap"><div class="dot"></div><span id="livetxt">live</span></div>
+      <span id="updated"></span>
+      <a href="#" id="signout">sign out</a>
     </div>
   </header>
 
-  <!-- board -->
   <div id="board">
-    <div class="board-head">
-      <span>Worth a look · still trending</span>
-      <span id="updated"></span>
+    <div class="bar">
+      <span style="letter-spacing:.1em">TRENDING · 5M</span>
+      <div class="spacer"></div>
+      <button class="tab" data-minvol="0">All</button>
+      <button class="tab on" data-minvol="5000">&gt;$5K vol</button>
+      <button class="tab" data-minvol="25000">&gt;$25K vol</button>
     </div>
-    <div id="rows"><div class="empty">Loading the board…</div></div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th class="sortable" data-sort="mcap">MC</th>
+            <th class="sortable" data-sort="ath_mcap">ATH MC</th>
+            <th class="sortable" data-sort="liq">Liq</th>
+            <th class="sortable on" data-sort="vol_5m">5m Vol</th>
+            <th class="sortable" data-sort="swaps_5m">5m TXs</th>
+            <th class="sortable" data-sort="volr">volR</th>
+            <th class="sortable" data-sort="pc5">5m</th>
+          </tr>
+        </thead>
+        <tbody id="rows"><tr><td colspan="8"><div class="empty">Loading the board…</div></td></tr></tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- detail -->
   <div id="detail"></div>
 
   <footer>
-    Shows only signals still trending, freshest first — the newest is the one you are least late to.
-    Greenlighting queues the coin for <b>your</b> bot — your keys and your wallet never leave your machine.
-    Everything after the greenlight lands in your Telegram.
+    5m volume, transactions and volR are GMGN's own trailing-5-minute figures, refreshed every 15 seconds.
+    <b>volR</b> is buy volume ÷ sell volume over that window — above 1 means more was bought than sold.
+    Greenlighting queues the coin for <b>your</b> bot; your keys and wallet never leave your machine.
   </footer>
 </div>
 
@@ -218,41 +221,29 @@
 const API = 'https://api.scgalpha.com';
 let KEY = localStorage.getItem('edgelvl_key') || '';
 let coins = [], openMint = null, timer = null;
+let sortKey = 'vol_5m', minVol = 5000;
+const sent = new Set();
 
-/* ── formatting ─────────────────────────────────────────────── */
 const money = v => {
   v = Number(v) || 0;
   if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
   if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
-  if (v >= 1e3) return '$' + Math.round(v / 1e3) + 'K';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
   return '$' + Math.round(v);
 };
 const pct = v => {
   if (v === null || v === undefined) return '—';
-  const s = v >= 0 ? '+' : '';
-  return `<span class="${v >= 0 ? 'up' : 'down'}">${s}${Math.round(v)}%</span>`;
+  return `<span class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '+' : ''}${v.toFixed(0)}%</span>`;
 };
-const ago = m => m < 60 ? `${Math.round(m)}m ago` : `${(m / 60).toFixed(1)}h ago`;
-
-/* How far it's run since we called it. The number that tells you whether
-   there's anything left — a coin already up 11x is one you're late to, and
-   being late is the failure this board exists to prevent. */
-const moveX = c => {
-  const a = Number(c.alert_mcap) || 0, n = Number(c.current_mcap) || 0;
-  return a && n ? n / a : null;
-};
-const moveText = c => { const x = moveX(c); return x === null ? '—' : `${x.toFixed(1)}x`; };
-const moveClass = c => {
-  const x = moveX(c);
-  if (x === null) return '';
-  if (x >= 3) return 'late';      // the move already happened
-  if (x < 0.8) return 'down';
-  return 'up';
+const age = s => {
+  if (s === null || s === undefined) return '—';
+  if (s < 3600) return Math.round(s / 60) + 'm';
+  if (s < 86400) return (s / 3600).toFixed(0) + 'h';
+  return (s / 86400).toFixed(0) + 'd';
 };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-/* ── api ────────────────────────────────────────────────────── */
 async function api(path, opts = {}) {
   const r = await fetch(API + path, {
     ...opts,
@@ -263,9 +254,8 @@ async function api(path, opts = {}) {
   return r.json();
 }
 
-/* ── gate ───────────────────────────────────────────────────── */
+/* ── gate ── */
 const gate = document.getElementById('gate'), app = document.getElementById('app');
-
 async function tryKey(k) {
   const err = document.getElementById('keyerr');
   err.textContent = '';
@@ -273,96 +263,98 @@ async function tryKey(k) {
   if (!KEY) { err.textContent = 'Enter your licence key.'; return; }
   document.getElementById('keygo').textContent = 'Checking…';
   try {
-    await api('/api/terminal?hours=24&limit=1');
+    await api('/api/trending?limit=1');
     localStorage.setItem('edgelvl_key', KEY);
-    gate.style.display = 'none';
-    app.style.display = 'block';
+    gate.style.display = 'none'; app.style.display = 'block';
     start();
   } catch (e) {
     err.textContent = e.message === 'bad-key'
-      ? 'That key isn\'t active. Check your subscription.'
-      : 'Couldn\'t reach the server — try again in a moment.';
+      ? "That key isn't active. Check your subscription."
+      : "Couldn't reach the server — try again in a moment.";
     document.getElementById('keygo').textContent = 'Open terminal';
   }
 }
-
 document.getElementById('keygo').onclick = () => tryKey(document.getElementById('keyin').value);
 document.getElementById('keyin').onkeydown = e => { if (e.key === 'Enter') tryKey(e.target.value); };
 document.getElementById('signout').onclick = e => {
-  e.preventDefault();
-  localStorage.removeItem('edgelvl_key');
-  location.reload();
+  e.preventDefault(); localStorage.removeItem('edgelvl_key'); location.reload();
 };
 
-/* ── board ──────────────────────────────────────────────────── */
+/* ── board ── */
+function sorted() {
+  return coins.slice().sort((a, b) => (Number(b[sortKey]) || 0) - (Number(a[sortKey]) || 0));
+}
+
 function rowHTML(c) {
-  const growth = c.holder_growth_pct ? ` <b>+${Math.round(c.holder_growth_pct)}%</b>` : '';
+  const volrCls = c.volr === null || c.volr === undefined ? '' : (c.volr >= 1 ? 'good' : 'bad');
+  const ageCls = (c.age_secs || 0) > 86400 ? 'old' : '';
   return `
-  <div class="row ${c.state === 'dead' ? 'dead' : ''}" data-mint="${esc(c.mint)}">
-    <div>
-      <div class="rname">
-        ${esc(c.name || c.mint.slice(0, 8))}
-        <span class="tag ${c.state}">${c.state}</span>
-        <span class="mintchip">${esc(c.mint.slice(0, 4))}</span>
+  <tr data-mint="${esc(c.mint)}">
+    <td>
+      <div class="tok">
+        <img src="${esc(c.logo || '')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+        <div class="nm">
+          <span class="s">${esc((c.symbol || c.mint.slice(0, 6)).slice(0, 14))}</span>
+          <span class="n"><span class="age ${ageCls}">${age(c.age_secs)}</span> · ${esc((c.name || '').slice(0, 22))}</span>
+        </div>
       </div>
-      <div class="rmeta">
-        MC <b>${money(c.current_mcap)}</b> · ATH <b>${money(c.max_mcap)}</b>
-        &nbsp;·&nbsp; 5m ${pct(c.pc5)} &nbsp; 1h ${pct(c.pc1h)}<br>
-        Liq <b>${money(c.liquidity)}</b> · <b>${(c.holders || 0).toLocaleString()}</b> holders${growth}
-        &nbsp;·&nbsp; alerted ${ago(c.alert_age_mins)}
-      </div>
-    </div>
-    <div class="rvol">
-      <div class="v ${moveClass(c)}">${moveText(c)}</div>
-      <div class="l">since alert</div>
-    </div>
-  </div>`;
+    </td>
+    <td>${money(c.mcap)}</td>
+    <td>${money(c.ath_mcap)}</td>
+    <td>${money(c.liq)}</td>
+    <td class="vol">${money(c.vol_5m)}</td>
+    <td class="txs">${(c.swaps_5m || 0).toLocaleString()}<br><b>${c.buys_5m || 0}</b>/<i>${c.sells_5m || 0}</i></td>
+    <td class="volr ${volrCls}">${c.volr === null || c.volr === undefined ? '—' : c.volr.toFixed(2)}</td>
+    <td>${pct(c.pc5)}</td>
+  </tr>`;
 }
 
 function renderBoard() {
-  const el = document.getElementById('rows');
-  if (!coins.length) {
-    el.innerHTML = `<div class="empty">No alerts in the last 24 hours yet.<br>
-      The board fills as the signal engine finds setups.</div>`;
-    return;
+  const tb = document.getElementById('rows');
+  const list = sorted();
+  if (!list.length) {
+    tb.innerHTML = `<tr><td colspan="8"><div class="empty">Nothing above that volume right now.<br>
+      Try the All tab — or wait, the board refreshes every 15 seconds.</div></td></tr>`;
+  } else {
+    tb.innerHTML = list.map(rowHTML).join('');
+    tb.querySelectorAll('tr').forEach(r => r.onclick = () => openDetail(r.dataset.mint));
   }
-  el.innerHTML = coins.map(rowHTML).join('');
-  el.querySelectorAll('.row').forEach(r => r.onclick = () => openDetail(r.dataset.mint));
-  document.getElementById('updated').textContent =
-    'updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.querySelectorAll('thead th.sortable').forEach(th =>
+    th.classList.toggle('on', th.dataset.sort === sortKey));
 }
 
 async function refresh() {
   try {
-    const d = await api('/api/terminal?hours=6&limit=40');
-    // Only coins still showing up in the trending feed the signal engine polls,
-    // freshest first. A coin that's dropped out isn't being traded any more, and
-    // the newest signal is the one you're least late to.
-    coins = (d.coins || [])
-      .filter(c => c.state === 'hot' || c.state === 'cooling')
-      .sort((a, b) => (b.alert_time || 0) - (a.alert_time || 0))
-      .slice(0, 5);
-    document.getElementById('livetxt').textContent = 'live';
+    const d = await api(`/api/trending?limit=30&min_vol=${minVol}`);
+    coins = d.coins || [];
+    document.getElementById('livewrap').classList.toggle('stale', !!d.stale);
+    document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
+    document.getElementById('updated').textContent = `${Math.round(d.age_secs)}s ago`;
     if (openMint) renderDetail(); else renderBoard();
   } catch (e) {
-    if (e.message === 'bad-key') {
-      localStorage.removeItem('edgelvl_key');
-      location.reload();
-      return;
-    }
+    if (e.message === 'bad-key') { localStorage.removeItem('edgelvl_key'); location.reload(); return; }
     document.getElementById('livetxt').textContent = 'reconnecting';
   }
 }
 
-/* ── detail ─────────────────────────────────────────────────── */
-function openDetail(mint) { openMint = mint; renderDetail(); window.scrollTo(0, 0); }
+document.querySelectorAll('.bar .tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.bar .tab').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  minVol = Number(b.dataset.minvol);
+  refresh();
+});
+document.querySelectorAll('thead th.sortable').forEach(th => th.onclick = () => {
+  sortKey = th.dataset.sort; renderBoard();
+});
 
+/* ── detail ── */
+function openDetail(mint) { openMint = mint; renderDetail(); window.scrollTo(0, 0); }
 function closeDetail() {
   openMint = null;
   const el = document.getElementById('detail');
   el.style.display = 'none';
-  el.dataset.mint = '';          // force a fresh build (and a fresh chart) next time
-  el.innerHTML = '';             // stop the iframe loading in the background
+  el.dataset.mint = '';
+  el.innerHTML = '';                       // stop the chart loading in the background
   document.getElementById('board').style.display = 'block';
   renderBoard();
 }
@@ -370,132 +362,90 @@ function closeDetail() {
 function renderDetail() {
   const c = coins.find(x => x.mint === openMint);
   if (!c) { closeDetail(); return; }
-
   document.getElementById('board').style.display = 'none';
   const el = document.getElementById('detail');
   el.style.display = 'block';
 
-  // Already built for this coin? Patch the numbers and leave the DOM alone.
-  // Rebuilding innerHTML on every refresh restarts the chart iframe before it
-  // can finish loading, wipes the greenlight confirmation, and resets scroll.
+  // Rebuilding this on every poll would restart the chart iframe before it can
+  // finish loading, so build once per coin and patch only the numbers after.
   if (el.dataset.mint === c.mint) { updateDetail(c); return; }
   el.dataset.mint = c.mint;
 
-  const dead = c.state === 'dead';
-  const cooling = c.state === 'cooling';
-  const staleTxt = c.data_age_secs == null ? 'no reading' : `updated ${c.data_age_secs}s ago`;
-
-  const note = dead
-    ? 'This coin has dropped off the trending feed — its move is over. Arming it would just burn an hour of the bot waiting for an entry that isn\'t coming.'
-    : cooling
-      ? 'Volume is fading. The bot still needs a dip and a reclaim, so a quiet coin often just times out.'
-      : 'Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Everything after that lands in your Telegram.';
-
   el.innerHTML = `
     <button class="back" onclick="closeDetail()">← back to board</button>
-
     <div class="dhead">
-      <h2>${esc(c.name || c.mint.slice(0, 8))} <span class="tag ${c.state}">${c.state}</span></h2>
-      <div class="dvol">
-        <div class="v ${moveClass(c)}" data-f="move">${moveText(c)}</div>
-        <div class="l">since alert · <span data-f="stale">${staleTxt}</span></div>
-      </div>
+      <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}</h2>
+      <div class="dvol"><div class="v" data-f="vol">${money(c.vol_5m)}</div><div class="l">5m volume</div></div>
     </div>
-
-    <iframe class="chart" src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}"
-            title="chart" referrerpolicy="no-referrer"></iframe>
-
+    <iframe class="chart" src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
     <div class="stats">
-      <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.current_mcap)}</div></div>
-      <div class="stat"><div class="k">At alert</div><div class="v">${money(c.alert_mcap)}</div></div>
-      <div class="stat"><div class="k">ATH</div><div class="v" data-f="ath">${money(c.max_mcap)}</div></div>
-      <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liquidity)}</div></div>
-      <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}${c.holder_growth_pct ? ' <span class="up">+' + Math.round(c.holder_growth_pct) + '%</span>' : ''}</div></div>
-      <div class="stat"><div class="k">Since alert</div><div class="v ${moveClass(c)}" data-f="movestat">${moveText(c)}</div></div>
+      <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.mcap)}</div></div>
+      <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
+      <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
+      <div class="stat"><div class="k">5m TXs</div><div class="v" data-f="txs">${(c.swaps_5m || 0).toLocaleString()}</div></div>
+      <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs"><span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span></div></div>
+      <div class="stat"><div class="k">volR</div><div class="v" data-f="volr">${c.volr == null ? '—' : c.volr.toFixed(2)}</div></div>
       <div class="stat"><div class="k">5m</div><div class="v" data-f="pc5">${pct(c.pc5)}</div></div>
       <div class="stat"><div class="k">1h</div><div class="v" data-f="pc1h">${pct(c.pc1h)}</div></div>
-      <div class="stat"><div class="k">Top 10</div><div class="v">${c.top10_pct ? Math.round(c.top10_pct) + '%' : '—'}</div></div>
-      <div class="stat"><div class="k">Alerted</div><div class="v" data-f="age">${ago(c.alert_age_mins)}</div></div>
+      <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}</div></div>
+      <div class="stat"><div class="k">Age</div><div class="v" data-f="age">${age(c.age_secs)}</div></div>
     </div>
-
     <div class="mintline">
       <code>${esc(c.mint)}</code>
       <button onclick="navigator.clipboard.writeText('${esc(c.mint)}');this.textContent='copied'">copy</button>
       <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank" rel="noopener">GMGN ↗</a>
-      ${c.twitter_handle ? `<a href="https://x.com/${esc(c.twitter_handle)}" target="_blank" rel="noopener">X ↗</a>` : ''}
     </div>
-
-    <button class="glbtn" id="glbtn" ${dead ? 'disabled' : ''}>
-      ${dead ? 'VOLUME GONE — CAN\'T GREENLIGHT' : '🟢 GREENLIGHT'}
-    </button>
-    <div class="glnote ${cooling ? 'warn' : ''}" id="glnote">${note}</div>
+    <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
+    <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Everything after that lands in your Telegram.</div>
   `;
-
-  const btn = document.getElementById('glbtn');
-  if (btn && !dead) btn.onclick = () => greenlight(c);
+  if (sent.has(c.mint)) markSent();
+  else document.getElementById('glbtn').onclick = () => greenlight(c);
 }
 
 function updateDetail(c) {
   const el = document.getElementById('detail');
   const set = (f, html) => { const n = el.querySelector(`[data-f="${f}"]`); if (n) n.innerHTML = html; };
-
-  set('move', moveText(c));
-  set('movestat', moveText(c));
-  set('stale', c.data_age_secs == null ? 'no reading' : `updated ${c.data_age_secs}s ago`);
-  set('mcap', money(c.current_mcap));
-  set('ath', money(c.max_mcap));
-  set('liq', money(c.liquidity));
-  set('holders', (c.holders || 0).toLocaleString() +
-      (c.holder_growth_pct ? ` <span class="up">+${Math.round(c.holder_growth_pct)}%</span>` : ''));
+  set('vol', money(c.vol_5m));
+  set('mcap', money(c.mcap));
+  set('ath', money(c.ath_mcap));
+  set('liq', money(c.liq));
+  set('txs', (c.swaps_5m || 0).toLocaleString());
+  set('bs', `<span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span>`);
+  set('volr', c.volr == null ? '—' : c.volr.toFixed(2));
   set('pc5', pct(c.pc5));
   set('pc1h', pct(c.pc1h));
-  set('age', ago(c.alert_age_mins));
+  set('holders', (c.holders || 0).toLocaleString());
+  set('age', age(c.age_secs));
+}
 
-  // Keep the state tag honest, and pull the greenlight if the move dies while
-  // you're looking at it. Never re-enable a button that's already been used.
-  const tag = el.querySelector('.dhead .tag');
-  if (tag) { tag.className = `tag ${c.state}`; tag.textContent = c.state; }
-
-  const btn = document.getElementById('glbtn');
-  if (btn && !btn.dataset.sent && c.state === 'dead' && !btn.disabled) {
-    btn.disabled = true;
-    btn.textContent = 'VOLUME GONE — CAN\'T GREENLIGHT';
-    const note = document.getElementById('glnote');
-    note.className = 'glnote warn';
-    note.textContent = 'Volume just died on this one. Its move is over.';
-  }
+function markSent() {
+  const btn = document.getElementById('glbtn'), note = document.getElementById('glnote');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '✓ QUEUED FOR YOUR BOT';
+  note.className = 'glnote';
+  note.innerHTML = 'Your bot picks this up within 5 seconds.<br><b>The rest lands in your Telegram.</b>';
 }
 
 async function greenlight(c) {
   const btn = document.getElementById('glbtn'), note = document.getElementById('glnote');
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
+  btn.disabled = true; btn.textContent = 'Sending…';
   try {
     await api('/api/greenlight', { method: 'POST', body: JSON.stringify({ mint: c.mint }) });
-    btn.dataset.sent = '1';        // never let a refresh re-arm this button
-    btn.textContent = '✓ QUEUED FOR YOUR BOT';
-    note.className = 'glnote';
-    note.innerHTML = `Your bot picks this up within 5 seconds and arms it.<br>
-      <b>The rest lands in your Telegram</b> — armed, entry, take-profits, P&amp;L.`;
+    sent.add(c.mint);
+    markSent();
   } catch (e) {
-    btn.disabled = false;
-    btn.textContent = '🟢 GREENLIGHT';
+    btn.disabled = false; btn.textContent = '🟢 GREENLIGHT';
     note.className = 'glnote warn';
-    note.textContent = 'Couldn\'t reach the server — try that again.';
+    note.textContent = "Couldn't reach the server — try that again.";
   }
 }
 
-/* ── boot ───────────────────────────────────────────────────── */
 function start() {
   refresh();
   clearInterval(timer);
-  timer = setInterval(refresh, 15000);
-  setInterval(() => {
-    document.getElementById('clock').textContent =
-      new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }, 1000);
+  timer = setInterval(refresh, 10000);
 }
-
 if (KEY) { gate.style.display = 'none'; app.style.display = 'block'; start(); }
 </script>
 </body>
