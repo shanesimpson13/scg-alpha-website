@@ -150,16 +150,59 @@
     .glnote { font-size: 11.5px; color: var(--dimmer); text-align: center; margin-top: 10px; line-height: 1.6; }
     .glnote.warn { color: var(--amber); }
 
-    .setgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
-    .setrow { border: 1px solid var(--line); border-radius: 9px; padding: 13px 15px; }
-    .setrow label { display: block; font-size: 11px; color: var(--dim); margin-bottom: 3px; }
-    .setrow .hint { font-size: 10px; color: var(--dimmer); line-height: 1.5; margin-bottom: 8px; }
-    .setrow input {
-      width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--line);
-      color: #fff; padding: 8px 10px; font-family: inherit; font-size: 13px; border-radius: 6px;
+    #settings { max-width: 660px; }
+    .sethead { margin-bottom: 26px; }
+    .sethead h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
+    .sethead p { font-size: 12px; color: var(--dim); line-height: 1.7; }
+
+    .setsec { margin-bottom: 26px; }
+    .setsec > h3 {
+      font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--dimmer); font-weight: 500; padding-bottom: 9px;
+      border-bottom: 1px solid var(--line); margin-bottom: 4px;
     }
-    .setrow input:focus { outline: none; border-color: rgba(124,255,160,.45); }
-    .setrow input.bad { border-color: var(--red); }
+    .setrow {
+      display: grid; grid-template-columns: 1fr 116px; gap: 18px;
+      align-items: center; padding: 13px 2px;
+      border-bottom: 1px solid rgba(255,255,255,.045);
+    }
+    .setrow:last-child { border-bottom: 0; }
+    .setrow.off { opacity: .38; }
+    .setrow .lab { font-size: 13px; }
+    .setrow .hint { font-size: 11px; color: var(--dimmer); line-height: 1.5; margin-top: 3px; }
+    .setfield { position: relative; }
+    .setfield input {
+      width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--line);
+      color: #fff; padding: 9px 34px 9px 11px; font-family: inherit; font-size: 13px;
+      border-radius: 6px; text-align: right;
+    }
+    .setfield input:focus { outline: none; border-color: rgba(124,255,160,.45); }
+    .setfield input.bad { border-color: var(--red); }
+    .setfield input:disabled { opacity: .45; cursor: not-allowed; }
+    .setfield .unit {
+      position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+      font-size: 11px; color: var(--dimmer); pointer-events: none;
+    }
+
+    /* the TP2 on/off control */
+    .tgl { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+    .tgl input { display: none; }
+    .tgl .box {
+      width: 15px; height: 15px; border-radius: 4px; border: 1px solid rgba(255,255,255,.22);
+      display: grid; place-items: center; font-size: 10px; color: #000; flex-shrink: 0;
+    }
+    .tgl input:checked + .box { background: var(--green); border-color: var(--green); }
+    .tgl input:checked + .box::after { content: "✓"; }
+
+    .setbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+    .setbar .glbtn { width: auto; padding: 13px 26px; font-size: 13px; }
+    .ghost {
+      background: none; border: 1px solid var(--line); color: var(--dim);
+      font-family: inherit; font-size: 12.5px; padding: 13px 20px;
+      border-radius: 9px; cursor: pointer;
+    }
+    .ghost:hover { color: #fff; border-color: rgba(255,255,255,.25); }
+    #setmsg { font-size: 12px; }
     footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
 
@@ -223,17 +266,16 @@
 
   <div id="settings" style="display:none">
     <button class="back" onclick="closeSettings()">← back to board</button>
-    <h2 style="font-size:19px;font-weight:600;margin-bottom:6px">Your strategy</h2>
-    <p style="font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:20px;max-width:640px">
-      These drive <b>your</b> bot. Changes apply to the next coin you greenlight —
-      never to a trade already open, because moving a stop on a position you're
-      holding is a decision you want to make deliberately, not by editing a box.
-    </p>
-    <div id="setgrid" class="setgrid"></div>
-    <div style="display:flex;gap:10px;align-items:center;margin-top:20px;flex-wrap:wrap">
-      <button class="glbtn" id="savesettings" style="width:auto;padding:14px 28px">Save</button>
-      <button class="tab" id="resetsettings">Reset to defaults</button>
-      <span id="setmsg" style="font-size:12px"></span>
+    <div class="sethead">
+      <h2>Your strategy</h2>
+      <p>These drive <b>your</b> bot. Changes apply to the next coin you greenlight —
+         never to a trade already open.</p>
+    </div>
+    <div id="setbody"></div>
+    <div class="setbar">
+      <button class="glbtn" id="savesettings">Save changes</button>
+      <button class="ghost" id="resetsettings">Reset to defaults</button>
+      <span id="setmsg"></span>
     </div>
   </div>
 
@@ -496,61 +538,118 @@ async function greenlight(c) {
 
 
 /* ── settings ───────────────────────────────────────────────────────────── */
-// label, hint, and how the number is shown/entered. Stored values are raw
-// (0.15), shown as percentages where that's how people actually think.
-const FIELDS = [
-  ["size_sol", "Size per trade (SOL)", "How much goes into each buy.", 1],
-  ["tp1", "Take profit 1 (x)", "First rung. Sells the fraction below.", 1],
-  ["frac1", "Sold at TP1", "The rest rides to TP2.", 100, "%"],
-  ["tp2", "Take profit 2 (x)", "Fully out here — no runner.", 1],
-  ["kill", "Trailing stop", "Off the position's PEAK, not your entry.", 100, "%"],
-  ["dip", "Dip required", "How far off the high before it looks to buy.", 100, "%"],
-  ["bounce", "Reclaim", "Rise off the dip low that triggers the buy.", 100, "%", 1],
-  ["min_vol_5m", "Min 5m volume ($)", "Below this a coin isn't worth the slot.", 1],
-  ["volr_min", "volR floor", "Buy vol ÷ sell vol. Under 1 means more sold than bought.", 1],
-  ["entry_timeout", "Give up after (min)", "Stands down if no setup appears.", 1 / 60],
-  ["max_hold", "Max hold (min)", "Force-exit a position after this.", 1 / 60],
+// [key, label, hint, multiplier, unit, offset]
+// Stored raw (0.15); shown the way people think (15%).
+const SECTIONS = [
+  ["Money", [
+    ["size_sol", "Size per trade", "How much goes into each buy.", 1, "SOL"],
+  ]],
+  ["Entry", [
+    ["dip", "Dip required", "How far off the high before it looks to buy.", 100, "%"],
+    ["bounce", "Reclaim", "Rise off the dip low that triggers the buy.", 100, "%", 1],
+  ]],
+  ["Exit", [
+    ["tp1", "Take profit 1", "The first rung.", 1, "x"],
+    ["frac1", "Sold at TP1", "The rest rides to TP2.", 100, "%"],
+    ["tp2", "Take profit 2", "Fully out here — no runner.", 1, "x"],
+    ["kill", "Trailing stop", "Off the position's peak, not your entry.", 100, "%"],
+  ]],
+  ["Filters", [
+    ["min_vol_5m", "Min 5m volume", "Below this a coin isn't worth the slot.", 1, "$"],
+    ["volr_min", "volR floor", "Buy volume ÷ sell volume over 5 minutes.", 1],
+  ]],
+  ["Timing", [
+    ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
+    ["max_hold", "Max hold", "Force-exit a position after this.", 1 / 60, "min"],
+  ]],
 ];
 
-let bounds = {};
+let bounds = {}, useTp2 = true;
+const F = {};
+SECTIONS.forEach(([, rows]) => rows.forEach(f => { F[f[0]] = f; }));
 
-const toView = (f, v) => {
-  const [, , , mul, , sub] = f;
-  return +(((v - (sub || 0)) * mul).toFixed(6));
-};
-const toRaw = (f, v) => {
-  const [, , , mul, , sub] = f;
-  return +((v / mul) + (sub || 0)).toFixed(6);
-};
+const toView = f => v => +(((v - (f[5] || 0)) * f[3]).toFixed(6));
+const toRaw = f => v => +((v / f[3]) + (f[5] || 0)).toFixed(6);
 
 async function openSettings() {
   document.getElementById('board').style.display = 'none';
   document.getElementById('detail').style.display = 'none';
   document.getElementById('settings').style.display = 'block';
   window.scrollTo(0, 0);
-  const msg = document.getElementById('setmsg');
-  msg.textContent = '';
+  setMsg('');
   try {
     const d = await api('/api/settings');
     bounds = d.bounds || {};
     renderSettings(d.settings || {});
   } catch (e) {
-    msg.className = ''; msg.style.color = 'var(--red)';
-    msg.textContent = "Couldn't load your settings.";
+    setMsg("Couldn't load your settings.", 'var(--red)');
   }
 }
 
-function renderSettings(vals) {
-  document.getElementById('setgrid').innerHTML = FIELDS.map(f => {
-    const [key, label, hint, , unit] = f;
-    const v = vals[key];
-    return `<div class="setrow">
-      <label>${label}${unit ? ` (${unit})` : ''}</label>
-      <div class="hint">${hint}</div>
-      <input id="set_${key}" type="number" step="any" value="${v === undefined ? '' : toView(f, v)}">
-    </div>`;
-  }).join('');
+function setMsg(t, color) {
+  const m = document.getElementById('setmsg');
+  m.textContent = t;
+  m.style.color = color || 'var(--dimmer)';
 }
+
+function rowHTML(f, vals) {
+  const [key, label, hint, , unit] = f;
+  const v = vals[key];
+  const val = v === undefined ? '' : toView(f)(v);
+  // TP2 gets a checkbox in place of its label, so it can be switched off.
+  const lab = key === 'tp2'
+    ? `<label class="tgl"><input type="checkbox" id="set_use_tp2" ${useTp2 ? 'checked' : ''}>
+         <span class="box"></span><span>${label}</span></label>`
+    : `<span>${label}</span>`;
+  return `<div class="setrow" id="row_${key}">
+    <div><div class="lab">${lab}</div><div class="hint" id="hint_${key}">${hint}</div></div>
+    <div class="setfield">
+      <input id="set_${key}" type="number" step="any" value="${val}">
+      ${unit ? `<span class="unit">${unit}</span>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderSettings(vals) {
+  useTp2 = vals.use_tp2 === undefined ? true : !!Number(vals.use_tp2);
+  document.getElementById('setbody').innerHTML = SECTIONS.map(([title, rows]) =>
+    `<div class="setsec"><h3>${title}</h3>${rows.map(f => rowHTML(f, vals)).join('')}</div>`
+  ).join('');
+  document.getElementById('set_use_tp2').onchange = e => {
+    useTp2 = e.target.checked;
+    applyTp2();
+  };
+  ['tp1', 'frac1'].forEach(k => {
+    const el = document.getElementById('set_' + k);
+    if (el) el.oninput = applyTp2;
+  });
+  applyTp2();
+}
+
+/** One rung or two — keep the page honest about what actually gets sold. */
+function applyTp2() {
+  const tp2row = document.getElementById('row_tp2');
+  const tp2in = document.getElementById('set_tp2');
+  const fracRow = document.getElementById('row_frac1');
+  const fracIn = document.getElementById('set_frac1');
+
+  tp2in.disabled = !useTp2;
+  tp2row.classList.toggle('off', !useTp2);
+  fracRow.classList.toggle('off', !useTp2);
+  fracIn.disabled = !useTp2;
+
+  if (!useTp2) {
+    document.getElementById('hint_tp1').textContent = 'Sells the whole position here.';
+    document.getElementById('hint_frac1').textContent = 'Not used with one rung.';
+  } else {
+    const f = Number(fracIn.value) || 0;
+    document.getElementById('hint_tp1').textContent = `Sells ${f}% of the position.`;
+    document.getElementById('hint_frac1').textContent =
+      `The remaining ${Math.max(0, 100 - f)}% rides to TP2.`;
+  }
+}
+
+document.getElementById('opensettings').onclick = e => { e.preventDefault(); openSettings(); };
 
 function closeSettings() {
   document.getElementById('settings').style.display = 'none';
@@ -558,57 +657,46 @@ function closeSettings() {
   renderBoard();
 }
 
-document.getElementById('opensettings').onclick = e => { e.preventDefault(); openSettings(); };
-
-document.getElementById('savesettings').onclick = async () => {
-  const msg = document.getElementById('setmsg');
-  const body = {};
+function collect() {
+  const body = { use_tp2: useTp2 ? 1 : 0 };
   let bad = false;
-  for (const f of FIELDS) {
-    const [key] = f;
+  for (const key of Object.keys(F)) {
     const el = document.getElementById('set_' + key);
+    if (!el) continue;
     el.classList.remove('bad');
-    if (el.value === '') continue;
-    const raw = toRaw(f, Number(el.value));
+    if (el.value === '' || el.disabled) continue;
+    const raw = toRaw(F[key])(Number(el.value));
     const b = bounds[key];
-    if (!isFinite(raw) || (b && (raw < b[0] || raw > b[1]))) {
-      el.classList.add('bad'); bad = true; continue;
-    }
+    if (!isFinite(raw) || (b && (raw < b[0] || raw > b[1]))) { el.classList.add('bad'); bad = true; continue; }
     body[key] = raw;
   }
-  if (bad) {
-    msg.style.color = 'var(--red)';
-    msg.textContent = 'Some values are out of range — the red ones.';
-    return;
-  }
-  msg.style.color = 'var(--dimmer)';
-  msg.textContent = 'Saving…';
+  return bad ? null : body;
+}
+
+document.getElementById('savesettings').onclick = async () => {
+  const body = collect();
+  if (!body) { setMsg('Some values are out of range — the red ones.', 'var(--red)'); return; }
+  setMsg('Saving…');
   try {
     const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(body) });
-    bounds = bounds; renderSettings(d.settings || {});
-    msg.style.color = 'var(--green)';
-    msg.textContent = '✓ Saved — applies to the next coin you greenlight.';
+    renderSettings(d.settings || {});
+    setMsg('✓ Saved — applies to the next coin you greenlight.', 'var(--green)');
   } catch (e) {
-    msg.style.color = 'var(--red)';
-    msg.textContent = e.detail || 'Rejected — check the values and try again.';
+    setMsg(e.detail || 'Rejected — check the values.', 'var(--red)');
   }
 };
 
 document.getElementById('resetsettings').onclick = async () => {
-  const msg = document.getElementById('setmsg');
-  msg.style.color = 'var(--dimmer)';
-  msg.textContent = 'Resetting…';
-  const defaults = { size_sol: 0.05, tp1: 1.5, tp2: 2.0, frac1: 0.70, kill: 0.50,
+  setMsg('Resetting…');
+  const defaults = { size_sol: 0.05, tp1: 1.5, tp2: 2.0, use_tp2: 1, frac1: 0.70, kill: 0.50,
                      dip: 0.15, bounce: 1.04, min_vol_5m: 5000, volr_min: 1.0,
                      entry_timeout: 3600, max_hold: 21600 };
   try {
     const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(defaults) });
     renderSettings(d.settings || {});
-    msg.style.color = 'var(--green)';
-    msg.textContent = '✓ Back to the shipped defaults.';
+    setMsg('✓ Back to the shipped defaults.', 'var(--green)');
   } catch (e) {
-    msg.style.color = 'var(--red)';
-    msg.textContent = "Couldn't reset.";
+    setMsg("Couldn't reset.", 'var(--red)');
   }
 };
 
