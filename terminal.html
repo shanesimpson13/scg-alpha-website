@@ -200,7 +200,7 @@
       overflow: hidden; margin-bottom: 16px;
     }
     .stat {
-      flex: 1 1 120px; min-width: 120px; padding: 12px 14px;
+      flex: 1 1 112px; min-width: 112px; padding: 12px 14px;
       border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
       margin-right: -1px; margin-bottom: -1px;
     }
@@ -570,7 +570,6 @@ function renderDetail() {
       <div class="stat"><div class="k">1h</div><div class="v" data-f="pc1h">${pct(c.pc1h)}</div></div>
       <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}</div></div>
       <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart || 0} / ${c.kol || 0}</div></div>
-      <div class="stat"><div class="k">Top 10</div><div class="v" data-f="top10">${c.top10_pct ? c.top10_pct + '%' : '—'}</div></div>
     </div>
     <div class="mintline">
       <code>${esc(c.mint)}</code>
@@ -597,7 +596,6 @@ function updateDetail(c) {
   set('pc1h', pct(c.pc1h));
   set('holders', (c.holders || 0).toLocaleString());
   set('sk', `${c.smart || 0} / ${c.kol || 0}`);
-  set('top10', c.top10_pct ? c.top10_pct + '%' : '—');
   set('age', age(c.age_secs));
 }
 
