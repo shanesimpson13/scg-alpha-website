@@ -408,6 +408,13 @@
 const API = 'https://api.scgalpha.com';
 let KEY = localStorage.getItem('edgelvl_key') || '';
 let coins = [], openMint = null, timer = null;
+
+// Coins the bot is working that have dropped below your filters. The board list
+// is replaced wholesale on every poll, so anything not on it has to live
+// somewhere that refresh() can't clear — otherwise the open detail view loses
+// its coin and bounces you back.
+let extraCoins = {};
+const findCoin = m => coins.find(c => c.mint === m) || extraCoins[m] || null;
 let sortKey = 'vol_5m';
 
 // Your filters, kept in this browser. Defaults match what the server would
@@ -564,6 +571,13 @@ async function refresh() {
     document.getElementById('livewrap').classList.toggle('stale', !!d.stale);
     document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
     document.getElementById('updated').textContent = `${Math.round(d.age_secs)}s ago`;
+    if (openMint && !coins.find(c => c.mint === openMint)) {
+      // looking at something the board no longer carries — refresh it directly
+      try {
+        const one = await api(`/api/coin/${openMint}`);
+        if (one.coin) extraCoins[openMint] = one.coin;
+      } catch (e) { /* keep showing the last good data */ }
+    }
     if (openMint) renderDetail(); else renderBoard();
     refreshActivity();
   } catch (e) {
@@ -609,10 +623,10 @@ async function openDetail(mint) {
   openMint = mint;
   // The coin may have dropped off the filtered board while the bot still works
   // it — resolve it from the last 30 minutes rather than refusing to open it.
-  if (!coins.find(c => c.mint === mint)) {
+  if (!findCoin(mint)) {
     try {
       const d = await api(`/api/coin/${mint}`);
-      if (d.coin) coins = [...coins, d.coin];
+      if (d.coin) extraCoins[mint] = d.coin;
     } catch (e) { /* fall through; renderDetail will bail cleanly */ }
   }
   renderDetail();
@@ -625,12 +639,13 @@ function closeDetail() {
   el.style.display = 'none';
   el.dataset.mint = '';
   el.innerHTML = '';                       // stop the chart loading in the background
+  extraCoins = {};                         // only needed while a detail is open
   document.getElementById('board').style.display = 'block';
   renderBoard();
 }
 
 function renderDetail() {
-  const c = coins.find(x => x.mint === openMint);
+  const c = findCoin(openMint);
   if (!c) { closeDetail(); return; }
   document.getElementById('board').style.display = 'none';
   const el = document.getElementById('detail');
