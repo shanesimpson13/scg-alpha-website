@@ -272,6 +272,28 @@
     .glnote { font-size: 11.5px; color: var(--dimmer); text-align: center; margin-top: 10px; line-height: 1.6; }
     .glnote.warn { color: var(--amber); }
 
+    /* ── trade journal ── */
+    #journal { max-width: 940px; }
+    .jgrid {
+      display: flex; flex-wrap: wrap; border: 1px solid var(--line);
+      border-radius: 10px; overflow: hidden; margin-bottom: 18px;
+    }
+    .jcell {
+      flex: 1 1 118px; min-width: 118px; padding: 13px 15px;
+      border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      margin-right: -1px; margin-bottom: -1px;
+    }
+    .jcell .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em;
+                text-transform: uppercase; margin-bottom: 5px; }
+    .jcell .v { font-size: 17px; font-weight: 600; }
+    .insight {
+      border: 1px solid var(--line); border-left: 2px solid var(--amber);
+      border-radius: 8px; padding: 12px 15px; margin-bottom: 9px;
+      font-size: 12.5px; line-height: 1.7; color: var(--dim);
+    }
+    .insight b { color: var(--fg); font-weight: 600; }
+    #jrows .s { font-weight: 600; }
+
     #settings { max-width: 660px; }
     .sethead { margin-bottom: 26px; }
     .sethead h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
