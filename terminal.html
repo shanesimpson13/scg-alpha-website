@@ -948,9 +948,6 @@ const SECTIONS = [
     ["tp2", "Take profit 2", "Fully out here — no runner.", 1, "x"],
     ["kill", "Trailing stop", "Off the position's peak, not your entry.", 100, "%"],
   ]],
-  ["Telegram board", [
-    ["min_vol_5m", "Min 5m volume", "Only affects which coins /top shows you. It does not affect trading.", 1, "$"],
-  ]],
   ["Timing", [
     ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
     ["max_hold", "Max hold", "Force-exit a position after this.", 1 / 60, "min"],
@@ -1083,7 +1080,7 @@ document.getElementById('savesettings').onclick = async () => {
 document.getElementById('resetsettings').onclick = async () => {
   setMsg('Resetting…');
   const defaults = { size_sol: 0.05, tp1: 1.5, tp2: 2.0, use_tp2: 1, frac1: 0.70, kill: 0.50,
-                     dip: 0.15, bounce: 1.04, min_vol_5m: 5000, volr_min: 1.0,
+                     dip: 0.15, bounce: 1.04, volr_min: 1.0,
                      entry_timeout: 3600, max_hold: 21600 };
   try {
     const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(defaults) });
