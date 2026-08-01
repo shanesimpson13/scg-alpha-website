@@ -6,29 +6,96 @@
     {
       "source": "/",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
       ]
     },
     {
       "source": "/account",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/safety",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
       ]
     }
   ],
   "redirects": [
-    { "source": "/terminal", "destination": "/", "permanent": false },
-    { "source": "/welcome", "destination": "/", "permanent": false },
-    { "source": "/start", "destination": "/", "permanent": false },
-    { "source": "/system", "destination": "/", "permanent": false },
-    { "source": "/lab", "destination": "/", "permanent": false },
-    { "source": "/vault", "destination": "/", "permanent": false },
-    { "source": "/data", "destination": "/", "permanent": false },
-    { "source": "/scgagent", "destination": "/", "permanent": false },
-    { "source": "/scgagent/(.*)", "destination": "/", "permanent": false },
-    { "source": "/marketplace", "destination": "/", "permanent": true },
-    { "source": "/marketplace/(.*)", "destination": "/", "permanent": true },
-    { "source": "/apply", "destination": "/", "permanent": true },
-    { "source": "/company", "destination": "/", "permanent": true }
+    {
+      "source": "/terminal",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/welcome",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/start",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/system",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/lab",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/vault",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/data",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/scgagent",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/scgagent/(.*)",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/marketplace",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/marketplace/(.*)",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/apply",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/company",
+      "destination": "/",
+      "permanent": true
+    }
   ]
 }

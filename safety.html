@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EdgeLvl — How your money is held</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root {
+    --bg: #0b0d10; --panel: #12151a; --line: #1e232b; --ink: #e8ecf1;
+    --dim: #9aa4b2; --dimmer: #6b7482; --accent: #4ade80; --bad: #f87171;
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f8fa; --panel: #fff; --line: #e4e7ec; --ink: #12151a;
+    --dim: #5b6472; --dimmer: #8b95a3; --accent: #16a34a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.7
+         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 32px 20px 90px; }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 34px; }
+  header img { height: 26px; }
+  header a { color: var(--dim); font-size: 13px; text-decoration: none; }
+  header a:hover { color: var(--ink); }
+  h1 { font-size: 26px; margin: 0 0 10px; letter-spacing: -0.02em; }
+  h2 { font-size: 17px; margin: 34px 0 10px; letter-spacing: -0.01em; }
+  p { margin: 0 0 14px; color: var(--dim); }
+  p.lead { color: var(--ink); font-size: 16px; }
+  strong { color: var(--ink); }
+  .card { background: var(--panel); border: 1px solid var(--line);
+          border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
+  ul { margin: 0 0 14px; padding-left: 20px; color: var(--dim); }
+  li { margin-bottom: 7px; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 8px; font-size: 14px; }
+  td { padding: 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:last-child { text-align: right; white-space: nowrap; padding-left: 14px; }
+  tr:last-child td { border-bottom: 0; }
+  .yes { color: var(--accent); font-weight: 600; }
+  .no { color: var(--bad); font-weight: 600; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+         background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+         padding: 1px 5px; }
+  a { color: var(--accent); }
+  footer { margin-top: 46px; padding-top: 18px; border-top: 1px solid var(--line);
+           font-size: 13px; color: var(--dimmer); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="/edge-logo.png" alt="EdgeLvl">
+    <a href="/">← the board</a>
+  </header>
+
+  <h1>How your money is held</h1>
+  <p class="lead">
+    You fund a wallet that you own. We can place trades with it. We cannot take
+    money out of it, and we cannot give ourselves permission to. That isn't a
+    policy we promise to follow — it's a restriction we are unable to lift.
+  </p>
+
+  <h2>What we can and can't do</h2>
+  <div class="card">
+    <table>
+      <tr><td>Place a trade with your funds</td><td class="yes">yes</td></tr>
+      <tr><td>Convert your deposit so it's tradeable</td><td class="yes">yes</td></tr>
+      <tr><td>Send your funds to another address</td><td class="no">no</td></tr>
+      <tr><td>Send your funds to <em>ourselves</em></td><td class="no">no</td></tr>
+      <tr><td>Change these rules</td><td class="no">no</td></tr>
+      <tr><td>Stop you withdrawing</td><td class="no">no</td></tr>
+    </table>
+  </div>
+
+  <h2>Why "no" actually means no</h2>
+  <p>
+    Your wallet's keys are held by <a href="https://privy.io" target="_blank"
+    rel="noopener">Privy</a>, inside hardware that will only sign a transaction
+    if it passes a rule set attached to the wallet. We are registered as a
+    signer on your wallet with a rule set that permits swaps, and permits
+    turning your deposited SOL into the wrapped form a swap needs. A transfer
+    to any other address matches none of those rules and is refused before a
+    signature exists.
+  </p>
+  <p>
+    The rule set and the wallet are both owned by <strong>your</strong> sign-in,
+    not ours. So we can't edit the rules, and we can't add a second, less
+    restricted signer. Both attempts are rejected for lack of a signature only
+    you can produce.
+  </p>
+
+  <h2>We tested this rather than assuming it</h2>
+  <p>Against the live system, on a real wallet:</p>
+  <div class="card">
+    <table>
+      <tr><td>We sign an ordinary trade</td><td class="yes">signed</td></tr>
+      <tr><td>We try to send funds to an outside address</td><td class="no">refused</td></tr>
+      <tr><td>We hide a transfer inside a genuine trade</td><td class="no">refused</td></tr>
+      <tr><td>We try to rewrite the rules</td><td class="no">refused</td></tr>
+      <tr><td>We try to add an unrestricted signer</td><td class="no">refused</td></tr>
+      <tr><td>You withdraw</td><td class="yes">signed</td></tr>
+    </table>
+  </div>
+  <p>
+    The third row is the one we cared about most: a transfer smuggled into the
+    same transaction as a legitimate action. It fails, because every instruction
+    in a transaction has to satisfy the rule, not just one of them.
+  </p>
+  <p>
+    These checks live in <code>test_privy.py</code> in the bot repository and
+    run against the real API, so you can run them yourself rather than take our
+    word for any of the above.
+  </p>
+
+  <h2>What we know about you</h2>
+  <p>
+    Your email address, your wallet address, and the trades made in it. That's
+    the list. We never see a private key or a seed phrase, because none is ever
+    given to us — there is nothing in our systems that could be stolen and used
+    to move your funds.
+  </p>
+
+  <h2>What this does <em>not</em> protect you from</h2>
+  <p>
+    Being unable to steal from you is not the same as being safe. Honestly:
+  </p>
+  <ul>
+    <li>
+      <strong>Trading losses.</strong> The guardrail stops theft, not bad
+      trades. We can lose your money by trading badly, and these are memecoins
+      — most go to zero. Nothing here changes that, and no result is promised.
+    </li>
+    <li>
+      <strong>Your email.</strong> It's how you get back in, which means
+      whoever controls your inbox controls the wallet. Use an email with
+      two-factor authentication on it.
+    </li>
+    <li>
+      <strong>Privy.</strong> They hold the key material, so you're trusting
+      their security, not only ours. We think that's a better trade than
+      trusting us with a key, but it is a real dependency and you should know
+      it exists.
+    </li>
+    <li>
+      <strong>The chains and exchanges we trade through.</strong> Trades route
+      through Jupiter and the underlying pools. A failure there can cost money
+      regardless of who holds what.
+    </li>
+    <li>
+      <strong>Us, staying up.</strong> If our systems stop, open positions stop
+      being managed. You can always withdraw — that path doesn't depend on us —
+      but nobody is watching your stop while we're down.
+    </li>
+  </ul>
+
+  <h2>Getting your money out</h2>
+  <p>
+    From <a href="/account">your wallet page</a>, any time, without asking us.
+    It's signed in your browser by your own sign-in. Closing the wrapped-SOL
+    account returns its rent deposit as well, so you get back slightly more than
+    you put in; the only cost is the network fee, currently about
+    0.000005&nbsp;SOL.
+  </p>
+
+  <footer>
+    Questions about any of this are fair, and specific ones are better than
+    general reassurance — ask, and we'll point you at the code.
+  </footer>
+</div>
+</body>
+</html>
