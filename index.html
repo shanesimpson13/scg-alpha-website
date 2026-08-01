@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build the system. Trade your edge.</title>
+  <title>Terminal — EdgeLvl</title>
   <link rel="icon" type="image/png" href="/favicon.png?v=2">
   <link rel="icon" href="/favicon.ico?v=2" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
@@ -12,1236 +12,1301 @@
 
     :root {
       --bg: #000;
+      --panel: #0a0a0a;
+      --fg: #fff;
       --line: rgba(255, 255, 255, 0.08);
+      --hair: rgba(255, 255, 255, 0.045);
       --dim: rgba(255, 255, 255, 0.55);
       --dimmer: rgba(255, 255, 255, 0.32);
+      --field: rgba(255, 255, 255, 0.04);
+      --hover: rgba(255, 255, 255, 0.028);
       --green: #7cffa0;
+      --amber: #ffc46b;
+      --red: #ff6b6b;
+    }
+    /* Light theme. Same hierarchy, inverted surfaces — the accents darken so
+       they still read against white. */
+    :root[data-theme="light"] {
+      --bg: #fbfbfa;
+      --panel: #f2f2f0;
+      --fg: #14140f;
+      --line: rgba(0, 0, 0, 0.11);
+      --hair: rgba(0, 0, 0, 0.06);
+      --dim: rgba(0, 0, 0, 0.58);
+      --dimmer: rgba(0, 0, 0, 0.38);
+      --field: rgba(0, 0, 0, 0.03);
+      --hover: rgba(0, 0, 0, 0.028);
+      --green: #12924b;
+      --amber: #a86a00;
+      --red: #c0362c;
     }
 
     body {
-      background: var(--bg);
-      color: #fff;
+      background: var(--bg); color: var(--fg);
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
-      min-height: 100vh;
-      overflow-x: hidden;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
     }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 70px; }
 
-    canvas#starfield {
-      position: fixed; inset: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px; padding-bottom: 14px; margin-bottom: 16px;
+      border-bottom: 1px solid var(--line); flex-wrap: wrap;
     }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand img { height: 20px; width: auto; display: block; }
+    .brand span { font-size: 11px; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; }
+    .status { display: flex; align-items: center; gap: 13px; font-size: 11px; color: var(--dimmer); }
+    .live { display: flex; align-items: center; gap: 6px; color: var(--green); }
+    .live.stale { color: var(--amber); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+    .status a { color: var(--dimmer); }
+    #themetoggle { text-decoration: none; font-size: 14px; }
+    #themetoggle:hover { color: var(--fg); }
 
-    .content { position: relative; z-index: 1; min-height: 100vh; }
+    /* ── gate ── */
+    #gate { max-width: 420px; margin: 12vh auto; text-align: center; }
+    #gate h1 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+    #gate p { font-size: 12.5px; color: var(--dim); line-height: 1.65; margin-bottom: 22px; }
+    #gate input {
+      width: 100%; background: var(--field); border: 1px solid var(--line);
+      color: var(--fg); padding: 13px 14px; font-family: inherit; font-size: 13px;
+      border-radius: 7px; text-align: center;
+    }
+    #gate input:focus { outline: none; border-color: rgba(124,255,160,.45); }
+    #gate button {
+      width: 100%; margin-top: 10px; background: var(--green); color: #000;
+      border: 0; padding: 13px; font-family: inherit; font-size: 13px; font-weight: 600;
+      border-radius: 7px; cursor: pointer;
+    }
+    #gate button:hover { opacity: .88; }
+    .err { color: var(--red); font-size: 12px; margin-top: 12px; min-height: 16px; }
+    .gate-foot { margin-top: 20px; font-size: 11.5px; color: var(--dimmer); }
+    .gate-foot a { color: var(--dim); }
 
-    /* ── top-right scg mark + social ── */
-    .top-bar {
-      position: fixed; top: 28px; right: 32px;
-      display: flex; gap: 20px; align-items: center; z-index: 10;
+    /* ── controls ── */
+    .bar {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+      font-size: 11px; color: var(--dimmer);
     }
-    .top-bar a { opacity: 0.45; transition: opacity 0.3s; line-height: 0; }
-    .top-bar a:hover { opacity: 1; }
-    .top-bar svg { width: 22px; height: 22px; }
-    .top-bar svg.x-icon { width: 18px; height: 18px; }
+    .bar .tab {
+      padding: 5px 11px; border-radius: 6px; cursor: pointer;
+      border: 1px solid var(--line); color: var(--dim); background: none;
+      font-family: inherit; font-size: 11px;
+    }
+    .bar .tab.on { color: #000; background: var(--green); border-color: var(--green); font-weight: 600; }
+    /* One control, divided — reads as a single filter rather than three
+       floating boxes that never line up. */
+    .fltgroup {
+      display: inline-flex; align-items: stretch;
+      border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    }
+    .fltgroup label {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 11px; border-right: 1px solid var(--line);
+    }
+    .fltgroup .fk { font-size: 10px; color: var(--dimmer); letter-spacing: .06em; white-space: nowrap; }
+    .fltgroup .fu { font-size: 10px; color: var(--dimmer); }
+    .fltgroup input {
+      width: 58px; background: none; border: 0; color: var(--fg);
+      font-family: inherit; font-size: 12px; text-align: right; padding: 0;
+      -moz-appearance: textfield;
+    }
+    .fltgroup input::-webkit-outer-spin-button,
+    .fltgroup input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .fltgroup input:focus { outline: none; }
+    .fltgroup label:focus-within { background: var(--field); }
+    .fltgroup button {
+      background: none; border: 0; color: var(--dimmer); font-family: inherit;
+      font-size: 11px; padding: 6px 12px; cursor: pointer;
+    }
+    .fltgroup button:hover { color: var(--fg); background: var(--field); }
+    .bar .spacer { flex: 1; }
 
-    .home-link {
-      position: fixed; top: 28px; left: 32px;
-      font-size: 11px; letter-spacing: 2px;
-      color: var(--green); text-decoration: none;
-      z-index: 10; text-transform: uppercase;
-      transition: color 0.2s;
+    /* ── table ── */
+    .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; min-width: 860px; }
+    thead th {
+      text-align: right; font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--dimmer); font-weight: 500; padding: 11px 14px;
+      border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--panel);
     }
-    .home-link:hover { color: #fff; }
+    thead th:first-child { text-align: left; }
+    thead th.sortable { cursor: pointer; }
+    thead th.sortable:hover { color: var(--dim); }
+    thead th.on { color: var(--green); }
 
-    /* ── page wrap ── */
-    .wrap {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 110px 32px 60px;
-    }
+    tbody tr { border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
+    tbody tr:last-child { border-bottom: 0; }
+    tbody tr:hover { background: var(--hover); }
+    tbody td { padding: 11px 14px; text-align: right; font-size: 12.5px; white-space: nowrap; }
+    tbody td:first-child { text-align: left; }
 
-    /* ── header ── */
-    .title-logo {
-      display: block;
-      width: 360px; height: auto;
-      margin: 0 auto 18px;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
-    .page-title {
-      font-size: 28px; font-weight: 500;
-      letter-spacing: -0.3px; margin-bottom: 6px;
-    }
-    .page-sub {
-      font-size: 13px; color: var(--dim);
-      letter-spacing: 0.3px; margin-bottom: 36px;
-    }
+    .tok { display: flex; align-items: center; gap: 10px; }
+    .tok img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; background: var(--field); flex-shrink: 0; }
+    .tok .nm { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .tok .s { font-weight: 600; font-size: 13px; }
+    .tok .n { font-size: 10px; color: var(--dimmer); overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+    .age { color: var(--green); }
+    .age.old { color: var(--dimmer); }
 
-    /* ── stats grid ── */
+    .up { color: var(--green); }
+    .down { color: var(--red); }
+    /* Volume heat — the number you're scanning for. Over $100K is where the
+       real moves live; $25K is the floor for being worth a look at all. */
+    .vol      { font-weight: 600; color: var(--dim); }
+    .vol.warm { font-weight: 600; color: var(--amber); }
+    .vol.hot  { font-weight: 700; color: var(--green); }
+    .sk { color: var(--dim); }
+    .sk span { color: var(--dimmer); }
+    .txs { font-size: 10.5px; color: var(--dimmer); }
+    .txs b { color: var(--green); font-weight: 400; }
+    .txs i { color: var(--red); font-style: normal; }
+    .volr.good { color: var(--green); }
+    .volr.bad { color: var(--red); }
+
+    /* ── what your bot is doing ── */
+    #activity:empty { display: none; }
+    #activity { margin-bottom: 16px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .acthead {
+      font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dimmer);
+      padding: 10px 15px; border-bottom: 1px solid var(--line); background: var(--panel);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .actrow {
+      display: flex; align-items: center; gap: 13px; padding: 12px 15px;
+      border-bottom: 1px solid var(--hair); font-size: 12.5px;
+    }
+    .actrow:last-child { border-bottom: 0; }
+    .actrow[data-open] { cursor: pointer; }
+    .actrow[data-open]:hover { background: var(--hover); }
+    .actdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .actdot.watching { background: var(--amber); animation: pulse 2s infinite; }
+    .actdot.bought   { background: var(--green); animation: pulse 2s infinite; }
+    .actdot.closed   { background: var(--dimmer); }
+    .actname { font-weight: 600; min-width: 82px; }
+    .actwhat { color: var(--dim); flex: 1; }
+    .actwhen { color: var(--dimmer); font-size: 11px; white-space: nowrap; }
+    .unarmbtn {
+      background: none; border: 1px solid var(--line); color: var(--dim);
+      font-family: inherit; font-size: 10.5px; padding: 5px 11px; border-radius: 6px; cursor: pointer;
+    }
+    .unarmbtn:hover { color: var(--red); border-color: rgba(255,107,107,.4); }
+    .unarmbtn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .empty { text-align: center; padding: 50px 20px; color: var(--dimmer); font-size: 12.5px; line-height: 1.7; }
+
+    /* ── detail ── */
+    #detail { display: none; }
+    .back { background: none; border: 0; color: var(--dim); font-family: inherit;
+            font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 16px; }
+    .back:hover { color: var(--fg); }
+    .dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    .dtitle { min-width: 0; }
+    .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: baseline; gap: 11px; }
+    .dhead h2 img { align-self: center; }
+    .dage { font-size: 12px; font-weight: 400; color: var(--dimmer); }
+    .dhead h2 img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
+    .dvol { text-align: right; }
+    .dvol .v { font-size: 26px; font-weight: 600; color: var(--green); }
+    .dvol .l { font-size: 10px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; }
+    /* The chart is the point of opening a coin — give it room and let it fill
+       the frame instead of floating in padding. */
+    .chartwrap {
+      position: relative; width: 100%; height: 62vh; min-height: 420px; max-height: 760px;
+      border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+      margin-bottom: 16px; background: var(--panel);
+    }
+    .chartwrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+    /* Flex, not grid: a grid leaves empty cells on the last row and the gap
+       trick paints them as blank panels. Flex items grow to fill whatever row
+       they land on, so there's never dead space. Hairlines come from cell
+       borders, with the trailing edges clipped by the container. */
     .stats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      border: 1px solid var(--line);
-      margin-bottom: 28px;
+      display: flex; flex-wrap: wrap;
+      border: 1px solid var(--line); border-radius: 10px;
+      overflow: hidden; margin-bottom: 16px;
     }
     .stat {
-      padding: 22px 24px;
-      border-right: 1px solid var(--line);
+      flex: 1 1 112px; min-width: 112px; padding: 12px 14px;
+      border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      margin-right: -1px; margin-bottom: -1px;
     }
-    .stat:last-child { border-right: none; }
-    .stat-val {
-      font-size: 30px; font-weight: 500;
-      letter-spacing: -0.3px;
-      line-height: 1.1;
+    .stat .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+    .stat .v { font-size: 14px; font-weight: 500; }
+    .mintline { font-size: 11px; color: var(--dimmer); margin-top: 9px;
+                display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    .mintline code { color: var(--dim); word-break: break-all; }
+    .mintline button, .mintline a {
+      background: none; border: 1px solid var(--line); color: var(--dim);
+      font-family: inherit; font-size: 10.5px; padding: 4px 9px; border-radius: 5px;
+      cursor: pointer; text-decoration: none;
     }
-    .stat-val.accent { color: var(--green); }
-    .stat-lbl {
-      margin-top: 8px;
-      font-size: 10px; letter-spacing: 2.5px;
-      color: var(--dimmer); text-transform: uppercase;
+    .mintline button:hover, .mintline a:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    #dband:empty { display: none; }
+    #dband {
+      margin-bottom: 12px; padding: 12px 15px; border: 1px solid var(--line);
+      border-radius: 9px; font-size: 12px; color: var(--dim); line-height: 1.75;
+    }
+    #dband b { color: var(--fg); font-weight: 600; }
+    #dband .bk { color: var(--dimmer); font-size: 10px; letter-spacing: .1em;
+                 text-transform: uppercase; display: block; margin-bottom: 5px; }
+    #dband .step { display: inline-block; margin-right: 16px; }
+
+    #dstatus:empty { display: none; }
+    #dstatus {
+      display: flex; align-items: center; gap: 11px; margin-bottom: 12px;
+      padding: 12px 15px; border: 1px solid var(--line); border-radius: 9px;
+      font-size: 12.5px;
+    }
+    #dstatus .actdot { width: 8px; height: 8px; }
+    #dstatus b { font-weight: 600; }
+    #dstatus .when { margin-left: auto; color: var(--dimmer); font-size: 11px; }
+
+    .glbtn { width: 100%; background: var(--green); color: #000; border: 0; padding: 16px;
+             font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 9px;
+             cursor: pointer; letter-spacing: .04em; }
+    .glbtn:hover:not(:disabled) { opacity: .88; }
+    .glbtn:disabled { background: rgba(255,255,255,.07); color: var(--dimmer); cursor: not-allowed; }
+    .glnote { font-size: 11.5px; color: var(--dimmer); text-align: center; margin-top: 10px; line-height: 1.6; }
+    .glnote.warn { color: var(--amber); }
+
+    /* ── trade journal ── */
+    #journal { max-width: 940px; }
+    .jgrid {
+      display: flex; flex-wrap: wrap; border: 1px solid var(--line);
+      border-radius: 10px; overflow: hidden; margin-bottom: 18px;
+    }
+    .jcell {
+      flex: 1 1 118px; min-width: 118px; padding: 13px 15px;
+      border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      margin-right: -1px; margin-bottom: -1px;
+    }
+    .jcell .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em;
+                text-transform: uppercase; margin-bottom: 5px; }
+    .jcell .v { font-size: 17px; font-weight: 600; }
+    .insight {
+      border: 1px solid var(--line); border-left: 2px solid var(--amber);
+      border-radius: 8px; padding: 12px 15px; margin-bottom: 9px;
+      font-size: 12.5px; line-height: 1.7; color: var(--dim);
+    }
+    .insight b { color: var(--fg); font-weight: 600; }
+    #jrows .s { font-weight: 600; }
+    #jrows .dayrow td {
+      background: var(--panel); padding: 8px 14px; font-size: 10px;
+      letter-spacing: .1em; text-transform: uppercase; color: var(--dimmer);
+      display: flex; justify-content: space-between; gap: 12px;
+    }
+    #jrows .dayrow span { text-transform: none; letter-spacing: 0; font-size: 11px; }
+
+    #settings { max-width: 660px; }
+    .sethead { margin-bottom: 26px; }
+    .sethead h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
+    .sethead p { font-size: 12px; color: var(--dim); line-height: 1.7; }
+
+    .setsec { margin-bottom: 26px; }
+    .setsec > h3 {
+      font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--dimmer); font-weight: 500; padding-bottom: 9px;
+      border-bottom: 1px solid var(--line); margin-bottom: 4px;
+    }
+    .setrow {
+      display: grid; grid-template-columns: 1fr 116px; gap: 18px;
+      align-items: center; padding: 13px 2px;
+      border-bottom: 1px solid var(--hair);
+    }
+    .setrow:last-child { border-bottom: 0; }
+    .setrow.off { opacity: .38; }
+    .setrow .lab { font-size: 13px; }
+    .setrow .hint { font-size: 11px; color: var(--dimmer); line-height: 1.5; margin-top: 3px; }
+    .setfield { position: relative; }
+    .setfield input {
+      width: 100%; background: var(--field); border: 1px solid var(--line);
+      color: var(--fg); padding: 9px 34px 9px 11px; font-family: inherit; font-size: 13px;
+      border-radius: 6px; text-align: right;
+    }
+    .setfield input:focus { outline: none; border-color: rgba(124,255,160,.45); }
+    .setfield input.bad { border-color: var(--red); }
+    .setfield input:disabled { opacity: .45; cursor: not-allowed; }
+    .setfield .unit {
+      position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+      font-size: 11px; color: var(--dimmer); pointer-events: none;
     }
 
-    /* ── filters ── */
-    .filters {
-      display: flex; flex-wrap: wrap;
-      gap: 28px;
-      margin-bottom: 22px;
-      align-items: center;
+    /* the TP2 on/off control */
+    .tgl { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+    .tgl input { display: none; }
+    .tgl .box {
+      width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--line);
+      display: grid; place-items: center; font-size: 10px; color: #000; flex-shrink: 0;
     }
-    .filter-group {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .filter-label {
-      font-size: 10px; letter-spacing: 2.5px;
-      color: var(--dimmer); text-transform: uppercase;
-    }
-    .filter-btns {
-      display: flex; gap: 4px;
-      border: 1px solid var(--line);
-    }
-    .filter-btn {
-      padding: 8px 14px;
-      background: transparent;
-      border: none;
-      color: var(--dim);
-      font-family: inherit;
-      font-size: 11px; letter-spacing: 1.5px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .filter-btn:hover { color: #fff; }
-    .filter-btn.active {
-      background: rgba(124, 255, 160, 0.1);
-      color: var(--green);
-      border: 1px solid var(--green);
-      margin: -1px;
-    }
+    .tgl input:checked + .box { background: var(--green); border-color: var(--green); }
+    .tgl input:checked + .box::after { content: "✓"; }
 
-    /* ── signals table ── */
-    .table-wrap { border: 1px solid var(--line); }
-    table.signals {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
+    .setbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+    .setbar .glbtn { width: auto; padding: 13px 26px; font-size: 13px; }
+    .ghost {
+      background: none; border: 1px solid var(--line); color: var(--dim);
+      font-family: inherit; font-size: 12.5px; padding: 13px 20px;
+      border-radius: 9px; cursor: pointer;
     }
-    table.signals th {
-      text-align: left;
-      padding: 14px 18px;
-      font-size: 10px; letter-spacing: 2.5px;
-      color: var(--dimmer); text-transform: uppercase;
-      font-weight: 500;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.015);
-    }
-    table.signals th.right { text-align: right; }
-    table.signals td {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--line);
-      vertical-align: middle;
-    }
-    table.signals td.right { text-align: right; }
-    table.signals tr.row { cursor: pointer; transition: background 0.15s; }
-    table.signals tr.row:hover { background: rgba(124, 255, 160, 0.04); }
-    table.signals tr:last-child td { border-bottom: none; }
-    .tok {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .tok img {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: rgba(255, 255, 255, 0.06);
-      object-fit: cover; flex-shrink: 0;
-    }
-    .tok-name { font-weight: 500; }
-    .peak-pos { color: var(--green); font-weight: 500; }
-    .peak-neg { color: rgba(255, 110, 110, 0.85); }
+    .ghost:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    #setmsg { font-size: 12px; }
+    footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
+             font-size: 11px; color: var(--dimmer); line-height: 1.7; }
 
-    .empty {
-      padding: 40px 18px; text-align: center;
-      font-size: 12px; color: var(--dimmer);
-      letter-spacing: 1.5px; text-transform: uppercase;
-    }
-
-    /* ── ghost rows (faded preview of more signals) ── */
-    table.signals tr.ghost { pointer-events: none; }
-    table.signals tr.ghost td {
-      filter: blur(3.5px);
-      opacity: 0.35;
-    }
-
-    /* ── locked teaser row (the "more behind paywall" CTA) ── */
-    table.signals tr.locked-row td {
-      padding: 22px 18px;
-      text-align: center;
-      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(124, 255, 160, 0.06) 100%);
-      border-top: 1px solid rgba(124, 255, 160, 0.25);
-    }
-    .locked-text {
-      font-size: 12px;
-      color: var(--dim);
-      letter-spacing: 0.5px;
-      margin-bottom: 12px;
-    }
-    .locked-text strong { color: #fff; font-weight: 600; }
-    .locked-cta {
-      display: inline-block;
-      padding: 12px 22px;
-      border: 1px solid var(--green);
-      background: rgba(124, 255, 160, 0.10);
-      color: var(--green);
-      font-family: inherit;
-      font-size: 11px; letter-spacing: 2.5px;
-      text-transform: uppercase; font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .locked-cta:hover {
-      background: rgba(124, 255, 160, 0.22);
-      box-shadow: 0 0 20px rgba(124, 255, 160, 0.3);
-    }
-
-    /* ── modal card (GMGN-style) ── */
-    .modal {
-      position: fixed; inset: 0;
-      background: rgba(0, 0, 0, 0.78);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: none;
-      align-items: center; justify-content: center;
-      padding: 20px;
-      z-index: 50;
-    }
-    .modal.open { display: flex; }
-    .modal-card {
-      max-width: 540px; width: 100%;
-      background: #0a0a0a;
-      border: 1px solid rgba(124, 255, 160, 0.35);
-      box-shadow: 0 0 100px rgba(124, 255, 160, 0.15);
-      position: relative;
-      overflow: hidden;
-      padding: 26px 28px 22px;
-    }
-    .modal-card::before {
-      content: '';
-      position: absolute; top: 0; right: 0;
-      width: 70%; height: 100%;
-      background: radial-gradient(ellipse at top right, rgba(124, 255, 160, 0.18) 0%, rgba(124, 255, 160, 0) 60%);
-      pointer-events: none;
-    }
-    .modal-close {
-      position: absolute; top: 28px; right: 32px;
-      background: transparent; border: none;
-      color: rgba(255, 255, 255, 0.55);
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 30px; line-height: 1;
-      padding: 8px 12px;
-      transition: color 0.15s, transform 0.15s;
-      z-index: 60;
-    }
-    .modal-close:hover { color: #fff; transform: scale(1.1); }
-
-    /* corners */
-    .modal-corners {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 28px;
-      position: relative; z-index: 2;
-    }
-    .modal-brand-img {
-      height: 28px; width: auto;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
-    .modal-tok-corner {
-      display: flex; align-items: center; gap: 10px;
-      max-width: 60%;
-    }
-    .modal-tok-corner img {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: rgba(255, 255, 255, 0.06); object-fit: cover;
-      flex-shrink: 0;
-    }
-    .modal-tok-corner-info { min-width: 0; text-align: right; }
-    .modal-tok-corner-name {
-      font-size: 16px; font-weight: 600;
-      letter-spacing: 0.2px; line-height: 1.1;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .modal-tok-corner-mint {
-      margin-top: 2px;
-      font-size: 10px; color: var(--dimmer);
-      letter-spacing: 0.5px;
-      cursor: pointer; transition: color 0.15s;
-    }
-    .modal-tok-corner-mint:hover { color: var(--dim); }
-
-    /* big date */
-    .modal-date {
-      font-size: 32px; font-weight: 600;
-      letter-spacing: -0.8px;
-      line-height: 1.1;
-      margin-bottom: 16px;
-      color: #fff;
-      position: relative; z-index: 2;
-    }
-
-    /* hero pill */
-    .modal-pill {
-      display: flex; align-items: center;
-      gap: 18px;
-      padding: 22px 26px;
-      background: #1ce783;
-      border-radius: 10px;
-      margin-bottom: 22px;
-      box-shadow: 0 8px 40px rgba(28, 231, 131, 0.25);
-      position: relative; z-index: 2;
-    }
-    .modal-pill.neg {
-      background: #ff6b6b;
-      box-shadow: 0 8px 40px rgba(255, 107, 107, 0.25);
-    }
-    .modal-pill-emoji {
-      font-size: 36px; line-height: 1;
-      flex-shrink: 0;
-    }
-    .modal-pill-num {
-      font-size: 44px; font-weight: 800;
-      letter-spacing: -2px; line-height: 1;
-      color: #000;
-      flex: 1;
-    }
-    .modal-pill-mult {
-      font-size: 18px; font-weight: 700;
-      color: rgba(0, 0, 0, 0.7);
-      letter-spacing: -0.3px;
-      flex-shrink: 0;
-      padding-left: 14px;
-      border-left: 1.5px solid rgba(0, 0, 0, 0.18);
-    }
-
-    /* stat rows */
-    .modal-rows {
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 18px;
-      position: relative; z-index: 2;
-    }
-    .modal-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 2px;
-      border-bottom: 1px solid var(--line);
-      font-size: 14px;
-    }
-    .modal-row:last-child { border-bottom: none; }
-    .modal-row-lbl { color: var(--dim); }
-    .modal-row-val { color: #fff; font-weight: 600; }
-    .modal-row-val.accent { color: var(--green); }
-
-    /* bottom bar */
-    .modal-bottom {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 12px;
-      position: relative; z-index: 2;
-    }
-    .modal-bottom-brand {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 12px; color: var(--dim);
-      letter-spacing: 0.3px;
-    }
-    .modal-bottom-brand img {
-      height: 14px; width: auto;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      opacity: 0.8;
-      mix-blend-mode: screen;
-    }
-    .modal-bottom-brand a {
-      color: var(--green); text-decoration: none;
-      font-weight: 600;
-    }
-    .modal-bottom-handle {
-      font-size: 12px; color: var(--dimmer);
-      letter-spacing: 0.3px;
-    }
-
-    /* ── member gate ── */
-    .gate {
-      position: fixed; inset: 0;
-      background: rgba(0, 0, 0, 0.88);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 100;
-      padding: 20px;
-    }
-    .gate-card {
-      max-width: 440px; width: 100%;
-      padding: 44px 36px;
-      border: 1px solid rgba(124, 255, 160, 0.4);
-      background: #000;
-      box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
-      text-align: center;
-    }
-    .gate-mark {
-      font-size: 11px; letter-spacing: 5px;
-      color: var(--green); text-transform: uppercase;
-      margin-bottom: 14px;
-    }
-    .gate-title {
-      font-size: 22px; font-weight: 500;
-      letter-spacing: -0.3px; line-height: 1.3;
-      margin-bottom: 12px;
-    }
-    .gate-sub {
-      font-size: 13px; color: var(--dim);
-      line-height: 1.6; margin-bottom: 28px;
-    }
-    .gate-input {
-      width: 100%;
-      padding: 14px 16px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #fff;
-      font-family: inherit; font-size: 13px;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-      transition: border-color 0.2s;
-    }
-    .gate-input:focus { outline: none; border-color: rgba(124, 255, 160, 0.6); }
-    .gate-btn {
-      width: 100%; padding: 14px 24px;
-      border: 2px solid var(--green);
-      background: rgba(124, 255, 160, 0.08);
-      color: var(--green);
-      font-family: inherit;
-      font-size: 12px; font-weight: 500;
-      letter-spacing: 3px; text-transform: uppercase;
-      cursor: pointer; transition: all 0.2s;
-    }
-    .gate-btn:hover { background: rgba(124, 255, 160, 0.16); }
-    .gate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .gate-error {
-      font-size: 11px; color: #ff6b6b;
-      letter-spacing: 1px; text-transform: uppercase;
-      margin-top: 14px; min-height: 14px;
-    }
-    .gate-foot {
-      margin-top: 22px;
-      font-size: 11px; color: var(--dimmer);
-    }
-    .gate-foot a {
-      color: var(--green); text-decoration: none;
-      border-bottom: 1px solid rgba(124, 255, 160, 0.4);
-    }
-
-    /* ── homepage hero ── */
-    .hero {
-      text-align: center;
-      margin-bottom: 36px;
-    }
-    .hero-eyebrow {
-      font-size: 11px; letter-spacing: 3px;
-      color: var(--green); text-transform: uppercase;
-      margin-bottom: 16px;
-    }
-    .hero-eyebrow .dot {
-      display: inline-block; width: 6px; height: 6px;
-      background: var(--green); border-radius: 50%;
-      margin-right: 8px;
-      box-shadow: 0 0 8px var(--green);
-      animation: pulse-dot 2s ease-in-out infinite;
-    }
-    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .hero-title {
-      font-size: 30px; font-weight: 500;
-      letter-spacing: -0.5px; line-height: 1.2;
-      max-width: 700px; margin: 0 auto 14px;
-    }
-    .hero-title .accent { color: var(--green); }
-    .hero-title.big {
-      font-size: 52px; letter-spacing: -1.5px;
-      margin: 26px auto 18px;
-    }
-    @media (max-width: 600px) { .hero-title.big { font-size: 36px; } }
-    .hero-sub {
-      font-size: 14px; color: var(--dim);
-      letter-spacing: 0.3px; line-height: 1.6;
-      max-width: 520px; margin: 0 auto 28px;
-    }
-
-    /* ── funnel: how the system works ── */
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      border: 1px solid var(--line);
-      margin-bottom: 64px;
-    }
-    .step {
-      padding: 28px 26px;
-      border-right: 1px solid var(--line);
-    }
-    .step:last-child { border-right: none; }
-    .step-num {
-      font-size: 11px; letter-spacing: 2.5px;
-      color: var(--green); margin-bottom: 14px;
-    }
-    .step-title {
-      font-size: 15px; font-weight: 600;
-      margin-bottom: 10px; letter-spacing: 0.2px;
-    }
-    .step-body {
-      font-size: 12.5px; color: var(--dim);
-      line-height: 1.7;
-    }
-    .step-body strong { color: #fff; font-weight: 600; }
-
-    /* ── funnel: section headers ── */
-    .sec-head {
-      text-align: center;
-      font-size: 11px; letter-spacing: 3px;
-      color: var(--green); text-transform: uppercase;
-      margin: 0 0 14px;
-    }
-    .sec-title {
-      text-align: center;
-      font-size: 24px; font-weight: 500;
-      letter-spacing: -0.3px; line-height: 1.3;
-      max-width: 640px; margin: 0 auto 12px;
-    }
-    .sec-sub {
-      text-align: center;
-      font-size: 12.5px; color: var(--dim);
-      line-height: 1.7; letter-spacing: 0.3px;
-      max-width: 580px; margin: 0 auto 30px;
-    }
-
-    /* ── funnel: the stack ── */
-    .stack {
-      border: 1px solid var(--line);
-      margin-bottom: 64px;
-    }
-    .stack-row {
-      display: flex; align-items: baseline; gap: 18px;
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--line);
-    }
-    .stack-row:last-child { border-bottom: none; }
-    .stack-name {
-      flex: 0 0 220px;
-      font-size: 13px; font-weight: 600;
-    }
-    .stack-name.gold { color: var(--green); }
-    .stack-note {
-      font-size: 12px; color: var(--dim); line-height: 1.6;
-    }
-
-    /* ── funnel: what's included ── */
-    .inc-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      border: 1px solid var(--line);
-      margin-bottom: 64px;
-    }
-    .inc {
-      padding: 24px;
-      border-right: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-    }
-    .inc:nth-child(2n) { border-right: none; }
-    .inc:nth-last-child(-n+2) { border-bottom: none; }
-    .inc-title {
-      font-size: 13px; font-weight: 600; margin-bottom: 8px;
-    }
-    .inc-title .tick { color: var(--green); margin-right: 8px; }
-    .inc-body { font-size: 12px; color: var(--dim); line-height: 1.65; }
-
-    .honesty-foot {
-      text-align: center;
-      font-size: 11px; color: var(--dimmer);
-      line-height: 1.7; max-width: 560px;
-      margin: 26px auto 0;
-    }
-    .honesty-foot a { color: var(--dim); }
-
-    @media (max-width: 760px) {
-      .steps { grid-template-columns: 1fr; }
-      .step { border-right: none; border-bottom: 1px solid var(--line); }
-      .step:last-child { border-bottom: none; }
-      .stack-row { flex-direction: column; gap: 6px; }
-      .stack-name { flex: none; }
-      .inc-grid { grid-template-columns: 1fr; }
-      .inc { border-right: none; }
-      .inc:nth-last-child(-n+2) { border-bottom: 1px solid var(--line); }
-      .inc:last-child { border-bottom: none; }
-    }
-
-    /* ── mode toggle (Safe / Normal) ── */
-    .mode-toggle {
-      display: flex; justify-content: center;
-      margin-bottom: 14px;
-    }
-    .mode-btns {
-      display: flex; gap: 4px;
-      border: 1px solid var(--line);
-      padding: 4px;
-      background: rgba(255, 255, 255, 0.015);
-    }
-    .mode-btn {
-      padding: 12px 24px;
-      background: transparent; border: none;
-      color: var(--dim);
-      font-family: inherit;
-      font-size: 12px; letter-spacing: 2px;
-      text-transform: uppercase; font-weight: 600;
-      cursor: pointer;
-      transition: all 0.18s;
-    }
-    .mode-btn:hover { color: #fff; }
-    .mode-btn.active {
-      background: rgba(124, 255, 160, 0.12);
-      color: var(--green);
-      border: 1px solid var(--green);
-      margin: -1px;
-    }
-    .mode-desc {
-      text-align: center;
-      font-size: 12px; color: var(--dimmer);
-      letter-spacing: 0.5px; line-height: 1.6;
-      max-width: 520px; margin: 0 auto 28px;
-      min-height: 18px;
-    }
-
-    /* ── delay banner ── */
-    .delay-banner {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; flex-wrap: wrap;
-      padding: 14px 18px;
-      border: 1px solid rgba(124, 255, 160, 0.35);
-      background:
-        linear-gradient(90deg, rgba(124, 255, 160, 0.06) 0%, rgba(124, 255, 160, 0) 60%),
-        rgba(124, 255, 160, 0.015);
-      margin-bottom: 22px;
-    }
-    .delay-text {
-      font-size: 12px; color: var(--dim);
-      letter-spacing: 0.3px; line-height: 1.5;
-    }
-    .delay-text strong { color: #fff; font-weight: 600; }
-    .delay-cta {
-      flex-shrink: 0;
-      padding: 10px 18px;
-      border: 1px solid var(--green);
-      background: rgba(124, 255, 160, 0.08);
-      color: var(--green);
-      font-family: inherit;
-      font-size: 11px; letter-spacing: 2px;
-      text-transform: uppercase; font-weight: 600;
-      text-decoration: none;
-      transition: all 0.18s;
-    }
-    .delay-cta:hover {
-      background: rgba(124, 255, 160, 0.18);
-    }
-
-    /* ── big bottom CTA ── */
-    .bottom-cta {
-      margin-top: 60px;
-      padding: 48px 32px;
-      text-align: center;
-      border: 1px solid rgba(124, 255, 160, 0.45);
-      background:
-        radial-gradient(ellipse at center, rgba(124, 255, 160, 0.08) 0%, rgba(124, 255, 160, 0) 70%),
-        rgba(124, 255, 160, 0.02);
-      box-shadow: 0 0 60px rgba(124, 255, 160, 0.12);
-    }
-    .bottom-cta-eye {
-      font-size: 11px; letter-spacing: 4px;
-      color: var(--green); text-transform: uppercase;
-      margin-bottom: 14px;
-    }
-    .bottom-cta-title {
-      font-size: 24px; font-weight: 500;
-      letter-spacing: -0.3px; line-height: 1.3;
-      margin-bottom: 14px;
-      max-width: 560px; margin-left: auto; margin-right: auto;
-    }
-    .bottom-cta-sub {
-      font-size: 13px; color: var(--dim);
-      max-width: 460px; margin: 0 auto 28px;
-      line-height: 1.6;
-    }
-    .bottom-cta-btn {
-      display: inline-block;
-      padding: 22px 50px;
-      border: 2px solid var(--green);
-      background: rgba(124, 255, 160, 0.06);
-      color: var(--green);
-      font-family: inherit;
-      font-size: 15px; font-weight: 500;
-      letter-spacing: 3px;
-      text-decoration: none;
-      text-transform: uppercase;
-      box-shadow: 0 0 24px rgba(124, 255, 160, 0.18);
-      transition: all 0.25s ease;
-    }
-    .bottom-cta-btn:hover {
-      background: rgba(124, 255, 160, 0.18);
-      box-shadow: 0 0 36px rgba(124, 255, 160, 0.4);
-      transform: translateY(-2px);
-    }
-
-    /* ── responsive ── */
-    @media (max-width: 720px) {
-      .wrap { padding: 90px 18px 60px; }
-      .home-link { top: 20px; left: 20px; }
-      .top-bar { top: 20px; right: 20px; }
-      .page-title { font-size: 22px; }
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      .stat { border-right: none; border-bottom: 1px solid var(--line); }
-      .stat:nth-child(2) { border-right: none; }
-      .stat:nth-child(odd) { border-right: 1px solid var(--line); }
-      .stat:nth-last-child(-n+2) { border-bottom: none; }
-      .filters { gap: 16px; }
-      .filter-btn { padding: 7px 10px; font-size: 10px; }
-      table.signals th, table.signals td { padding: 12px 10px; }
-      table.signals th.hide-sm, table.signals td.hide-sm { display: none; }
-      .modal-mult { font-size: 18px; padding: 6px 10px; }
-      .hero-title { font-size: 22px; }
-      .hero-sub { font-size: 13px; }
-      .mode-btn { padding: 10px 14px; font-size: 11px; letter-spacing: 1.5px; }
-      .delay-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
-      .delay-cta { width: 100%; text-align: center; }
-      .bottom-cta { padding: 36px 22px; margin-top: 48px; }
-      .bottom-cta-title { font-size: 18px; }
-      .bottom-cta-btn { padding: 18px 32px; font-size: 13px; letter-spacing: 2px; }
+    @media (max-width: 700px) {
+      .chart { height: 320px; }
+      .tok .n { max-width: 90px; }
     }
   </style>
 </head>
 <body>
-  <canvas id="starfield"></canvas>
 
-  <a href="/data" class="home-link">EdgeLvl Members →</a>
-
-  <div class="top-bar">
-    <a href="https://x.com/scg_alpha" target="_blank" rel="noopener" aria-label="X">
-      <svg class="x-icon" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-    </a>
-    <a href="https://t.me/scg_alpha" target="_blank" rel="noopener" aria-label="Telegram">
-      <svg viewBox="0 0 24 24" fill="#fff"><path d="M1.946 9.315c5.223-2.279 8.705-3.781 10.447-4.508 4.975-2.07 6.009-2.43 6.685-2.442.148-.003.48.034.695.21.181.148.231.348.255.488.024.14.054.458.03.707-.27 2.845-1.44 9.744-2.036 12.929-.252 1.348-.748 1.8-1.228 1.844-1.044.096-1.837-.69-2.848-1.353-1.584-1.039-2.479-1.685-4.015-2.699-1.776-1.17-.625-1.814.388-2.866.265-.276 4.869-4.464 4.959-4.843.011-.047.022-.224-.083-.317-.106-.093-.262-.061-.374-.036-.16.036-2.688 1.708-7.588 5.015-.718.493-1.368.734-1.952.72-.643-.013-1.878-.363-2.797-.661-1.127-.367-2.023-.56-1.945-1.183.04-.324.487-.656 1.34-.994z"/></svg>
-    </a>
+<div id="gate">
+  <h1>EdgeLvl Terminal</h1>
+  <p>Sign in with your email to load the board.<br>No subscription — you fund a wallet only you can withdraw from.</p>
+  <button id="signin" onclick="location.href='/account'">Sign in</button>
+  <div class="err" id="keyerr"></div>
+  <div class="gate-foot" style="margin-top:18px">
+    Have a licence key? <a href="#" id="showkey">Use it instead</a>
   </div>
+  <div id="keybox" style="display:none;margin-top:14px">
+    <input id="keyin" type="text" placeholder="S-XXXXXX-XXXXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
+    <button id="keygo">Open terminal</button>
+    <div class="gate-foot">Lost it? <a href="/welcome">Look it up here</a></div>
+  </div>
+</div>
 
-  <div class="content">
-    <div class="wrap">
-
-      <div class="hero">
-        <div class="hero-eyebrow"><span class="dot"></span>Semi-automated Solana trading</div>
-        <h1 class="hero-title big">Build the system.<br><span class="accent">Trade your edge.</span></h1>
-        <p class="hero-sub">A signal engine that finds momentum coins early. A bot that trades them with discipline. You approve every trade.</p>
-      </div>
-
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">01</div>
-          <div class="step-title">📡 Signals</div>
-          <div class="step-body">The engine watches every new Solana coin and alerts you the moment one starts trending — volume, momentum, holders.</div>
-        </div>
-        <div class="step">
-          <div class="step-num">02</div>
-          <div class="step-title"><span style="color:var(--green)">⌖</span> Your call</div>
-          <div class="step-body">Like the setup? Tap once and the bot takes it. Skip it and nothing happens. <strong>Every trade needs your approval.</strong></div>
-        </div>
-        <div class="step">
-          <div class="step-num">03</div>
-          <div class="step-title">📈 Execution</div>
-          <div class="step-body">The bot waits for the dip, buys the recovery, and sells at a preset take-profit. No chasing, no panic, no bag-holding.</div>
-        </div>
-      </div>
-
-      <div class="sec-head">Track record</div>
-      <h2 class="sec-title">Every signal, timestamped.</h2>
-      <p class="sec-sub">Peak is the highest price after each alert — the move that was on the table. What you capture depends on when you enter and exit.</p>
-
-      <div class="stats">
-        <div class="stat"><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Signals</div></div>
-        <div class="stat"><div class="stat-val accent" id="s-2x">—</div><div class="stat-lbl">≥ 2× winners</div></div>
-        <div class="stat"><div class="stat-val accent" id="s-5x">—</div><div class="stat-lbl">≥ 5× winners</div></div>
-        <div class="stat"><div class="stat-val accent" id="s-10x">—</div><div class="stat-lbl">≥ 10× MEGAs</div></div>
-      </div>
-
-      <div class="filters">
-        <div class="filter-group">
-          <span class="filter-label">Period</span>
-          <div class="filter-btns" id="period-btns">
-            <button class="filter-btn active" data-period="1">24H</button>
-            <button class="filter-btn" data-period="7">7D</button>
-            <button class="filter-btn" data-period="30">30D</button>
-            <button class="filter-btn" data-period="0">ALL</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="delay-banner">
-        <div class="delay-text"><strong>Free preview:</strong> this table runs an hour behind. Members see signals live.</div>
-        <a href="/start" class="delay-cta">Get access →</a>
-      </div>
-
-      <div class="table-wrap">
-        <table class="signals">
-          <thead>
-            <tr>
-              <th>Token</th>
-              <th class="hide-sm">Date</th>
-              <th class="right">Alert MC</th>
-              <th class="right hide-sm">Peak MC</th>
-              <th class="right">Peak</th>
-            </tr>
-          </thead>
-          <tbody id="rows">
-            <tr><td colspan="5" class="empty">Loading…</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="sec-head" style="margin-top:64px">Setup</div>
-      <h2 class="sec-title">You don't need to know how to code.</h2>
-      <p class="sec-sub">The playbook contains the full system — every code block written and tested. You paste it into an AI coding agent and it builds everything for you, in about an hour.</p>
-
-      <div class="stack">
-        <div class="stack-row">
-          <div class="stack-name">🤖 An AI coding agent</div>
-          <div class="stack-note">Claude Code, Codex, or Cursor. It does the technical work.</div>
-        </div>
-        <div class="stack-row">
-          <div class="stack-name">📡 Telegram</div>
-          <div class="stack-note">Where signals arrive and where you approve trades.</div>
-        </div>
-        <div class="stack-row">
-          <div class="stack-name">🔑 Your own wallet</div>
-          <div class="stack-note">The bot runs on your computer and signs with your wallet. Your money never touches us.</div>
-        </div>
-        <div class="stack-row">
-          <div class="stack-name">⚡ Jupiter + a free RPC</div>
-          <div class="stack-note">Trades route through Jupiter for the best price on any venue.</div>
-        </div>
-      </div>
-
-      <div style="border:1px solid rgba(124,255,160,0.35); background:rgba(124,255,160,0.05); padding:20px 24px; margin:-40px 0 64px; text-align:center;">
-        <div style="font-size:12px; letter-spacing:2px; color:var(--green); text-transform:uppercase; margin-bottom:8px;">🔒 Self-custody</div>
-        <div style="font-size:12.5px; color:var(--dim); line-height:1.7; max-width:520px; margin:0 auto;">The system is software running on your computer, signing with your wallet. We never hold your funds and never see your keys. There is nothing to deposit.</div>
-      </div>
-
-      <div class="sec-head">What you get</div>
-      <h2 class="sec-title">What <span style="color:var(--green)">$29/month</span> gets you.</h2>
-
-      <div class="inc-grid" style="margin-top:30px">
-        <div class="inc">
-          <div class="inc-title">📡 The signal feed</div>
-          <div class="inc-body">Your personal API key. Live alerts the moment the engine fires.</div>
-        </div>
-        <div class="inc">
-          <div class="inc-title">📖 The playbook</div>
-          <div class="inc-body">The complete system as one document — code included, tested, maintained. Your agent builds from it.</div>
-        </div>
-        <div class="inc">
-          <div class="inc-title">💬 Members chat</div>
-          <div class="inc-body">Ask questions, compare configs, see what other members run.</div>
-        </div>
-        <div class="inc">
-          <div class="inc-title">🔁 Updates</div>
-          <div class="inc-body">The system improves, the playbook updates, your agent applies them.</div>
-        </div>
-      </div>
-
-      <div class="bottom-cta">
-        <div class="bottom-cta-eye">The System</div>
-        <div class="bottom-cta-title">Trade with a system.</div>
-        <div class="bottom-cta-sub">$29/month. Cancel anytime. Set up in about an hour.</div>
-        <a href="/start" class="bottom-cta-btn">Get access →</a>
-      </div>
-
-      <p class="honesty-foot">
-        Software and signals — not financial advice. The record shows signal windows, not returns. Memecoins are high-risk; most participants lose. <a href="/scgagent/terms">Terms</a>
-      </p>
-
+<div class="wrap" id="app" style="display:none">
+  <header>
+    <div class="brand"><img src="/edge-logo.png" alt="EdgeLvl"><span>Terminal</span></div>
+    <div class="status">
+      <div class="live" id="livewrap"><div class="dot"></div><span id="livetxt">live</span></div>
+      <span id="updated"></span>
+      <a href="#" id="themetoggle" title="Light / dark">◐</a>
+      <a href="#" id="openjournal">journal</a>
+      <a href="#" id="opensettings">settings</a>
+      <a href="/account" id="account">sign in</a>
+      <a href="#" id="signout" style="display:none">sign out</a>
     </div>
-  </div>
+  </header>
 
-  <!-- ── detail modal ── -->
-  <div class="modal" id="modal">
-    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
-    <div class="modal-card">
-      <div class="modal-corners">
-        <img src="/edge-mark.png" alt="EDGE" class="modal-brand-img" style="height:16px;width:auto;image-rendering:pixelated;">
-        <div class="modal-tok-corner">
-          <div class="modal-tok-corner-info">
-            <div class="modal-tok-corner-name" id="m-name">—</div>
-            <div class="modal-tok-corner-mint" id="m-mint" title="Click to copy">—</div>
-          </div>
-          <img id="m-logo" src="" alt="">
-        </div>
-      </div>
-
-      <div class="modal-date" id="m-date">—</div>
-
-      <div class="modal-pill" id="m-pill">
-        <span class="modal-pill-num" id="m-pct">—</span>
-        <span class="modal-pill-mult" id="m-mult">—</span>
-      </div>
-
-      <div class="modal-rows">
-        <div class="modal-row">
-          <span class="modal-row-lbl">Alert MC</span>
-          <span class="modal-row-val" id="m-alert-mc">—</span>
-        </div>
-        <div class="modal-row">
-          <span class="modal-row-lbl">Peak MC</span>
-          <span class="modal-row-val accent" id="m-ath-mc">—</span>
-        </div>
-      </div>
-
-      <div class="modal-bottom">
-        <div class="modal-bottom-brand">
-          <a href="/" rel="noopener">the record</a>
-        </div>
-        <div class="modal-bottom-handle"></div>
+  <div id="board">
+    <div id="activity"></div>
+    <div class="bar">
+      <span style="letter-spacing:.1em">TRENDING · 5M</span>
+      <div class="spacer"></div>
+      <div class="fltgroup">
+        <label><span class="fk">5m vol</span><input id="f_vol" type="number" step="1000"><span class="fu">$</span></label>
+        <label><span class="fk">min MC</span><input id="f_mc" type="number" step="1000"><span class="fu">$</span></label>
+        <label><span class="fk">max age</span><input id="f_age" type="number" step="1"><span class="fu">d</span></label>
+        <button id="f_reset" title="Back to defaults">reset</button>
       </div>
     </div>
-  </div>
 
-  <script>
-    /* ── starfield ──────────────────────────────────────────────── */
-    (function() {
-      const canvas = document.getElementById('starfield');
-      const ctx = canvas.getContext('2d');
-      let W, H, stars = [];
-      function resize() {
-        W = canvas.width = innerWidth;
-        H = canvas.height = innerHeight;
-      }
-      function build() {
-        stars = [];
-        const n = Math.floor((W * H) / 12000);
-        for (let i = 0; i < n; i++) {
-          stars.push({
-            x: Math.random() * W,
-            y: Math.random() * H,
-            r: Math.random() * 1.2,
-            a: Math.random() * 0.7 + 0.1,
-            d: (Math.random() - 0.5) * 0.05
-          });
-        }
-      }
-      function tick() {
-        ctx.clearRect(0, 0, W, H);
-        for (const s of stars) {
-          s.a += s.d;
-          if (s.a < 0.1 || s.a > 0.9) s.d = -s.d;
-          ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        requestAnimationFrame(tick);
-      }
-      resize(); build();
-      addEventListener('resize', () => { resize(); build(); });
-      tick();
-    })();
-
-    /* ── helpers ─────────────────────────────────────────────────── */
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
-
-    function fmtMcap(n) {
-      if (n == null || isNaN(n)) return '—';
-      if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
-      if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-      if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
-      return '$' + Math.round(n);
-    }
-
-    function fmtDate(ts) {
-      if (!ts) return '—';
-      const d = new Date(ts * 1000);
-      const m = d.toLocaleString('en-US', { month: 'short' });
-      return `${m} ${d.getDate()}, ${d.getFullYear() % 100}`;
-    }
-
-    function multiplier(a) {
-      if (!a.alert_mcap || a.alert_mcap <= 0) return 1;
-      return (a.max_mcap || a.alert_mcap) / a.alert_mcap;
-    }
-
-    function shortMint(mint) {
-      if (!mint || mint.length < 10) return mint || '';
-      return mint.slice(0, 6) + '…' + mint.slice(-4);
-    }
-
-    function tokenLogo(a) {
-      const scan = a.scan_raw_at_alert || {};
-      // Live API shape nests it; older snapshot has it top-level.
-      return scan.logo || a.logo || '';
-    }
-
-    function tokenName(a) {
-      const scan = a.scan_raw_at_alert || {};
-      return a.name || scan.symbol || scan.name || 'Unknown';
-    }
-
-    /* ── data fetch (public homepage — uses dev key for now, swap for free-tier endpoint when backend ready) ── */
-    const API_URL = 'https://api.scgalpha.com/api/feed?limit=10000';   // public, 1hr delayed, full history
-    const FREE_DELAY_SECS = 3600;                                       // safety belt — server already enforces
-
-    /* ── data ────────────────────────────────────────────────────── */
-    let allAlerts = [];
-    let periodDays = 1;     // 24H default
-    let sortBy = 'time';    // 'time' (newest first) or 'performance' (highest mult first)
-    let mode = 'vault';     // 'vault' (all) | 'smart' (smart-wallet whitelist) | 'safe' (clean tokens)
-
-    /* Safe filter — replicates the bot's stricter scam thresholds.
-       Falls through (returns true) if a field is missing so older snapshot
-       entries without scan_raw_at_alert details aren't unfairly excluded. */
-    function passesSafeFilter(a) {
-      // Use server-computed is_safe field from /api/feed (matches /data page)
-      if (typeof a.is_safe === 'boolean') return a.is_safe;
-      // Legacy fallback (older snapshot records)
-      const s = a.scan_raw_at_alert || {};
-      if (s.bundler_rate !== undefined && s.bundler_rate > 0.20) return false;
-      if (s.dev_team_hold_rate !== undefined && s.dev_team_hold_rate > 0.10) return false;
-      if (s.top_10_holder_rate !== undefined && s.top_10_holder_rate > 0.25) return false;
-      if (s.initial_liquidity !== undefined && s.initial_liquidity > 0 && s.initial_liquidity < 5000) return false;
-      const platform = (s.launchpad_platform || '').toLowerCase();
-      if (platform.includes('meteora')) return false;
-      return true;
-    }
-
-    async function fetchAlerts() {
-      try {
-        const res = await fetch(API_URL);
-        if (!res.ok) return;
-        const data = await res.json();
-        allAlerts = data.alerts || [];
-        render();
-      } catch (e) { /* keep showing last good state */ }
-    }
-
-    // Kick off fetch + 30s poll on load (no gate on this page).
-    fetchAlerts();
-    setInterval(fetchAlerts, 30000);
-
-    function getFiltered() {
-      let out = allAlerts;
-
-      // Free-tier delay: hide anything fired less than 1 hour ago.
-      const nowSec = Date.now() / 1000;
-      out = out.filter(a => (nowSec - (a.alert_time || 0)) >= FREE_DELAY_SECS);
-
-      // Period filter
-      if (periodDays > 0) {
-        const cutoff = nowSec - (periodDays * 86400);
-        out = out.filter(a => (a.alert_time || 0) >= cutoff);
-      }
-
-      // Mode filter — Vault (no filter) | Smart (smart-wallet whitelist) | Safe (clean tokens)
-      if (mode === 'safe') {
-        out = out.filter(passesSafeFilter);
-      } else if (mode === 'smart') {
-        out = out.filter(a => a.is_smart === true);
-      }
-
-      return out;
-    }
-
-    function renderStats(filtered) {
-      const total = filtered.length;
-      let n2 = 0, n5 = 0, n10 = 0;
-      for (const a of filtered) {
-        const m = multiplier(a);
-        if (m >= 2) n2++;
-        if (m >= 5) n5++;
-        if (m >= 10) n10++;
-      }
-      document.getElementById('s-total').textContent = total;
-      document.getElementById('s-2x').textContent = n2;
-      document.getElementById('s-5x').textContent = n5;
-      document.getElementById('s-10x').textContent = n10;
-    }
-
-    const TOP_N = 5;       // how many real rows to show on the public homepage
-    const GHOST_N = 2;      // how many faded "preview of more" rows to show beneath
-
-    function rowHTML(a, ghost) {
-      const mult = multiplier(a);
-      const peakClass = mult >= 1 ? 'peak-pos' : 'peak-neg';
-      const logo = tokenLogo(a);
-      const name = tokenName(a);
-      const cls = ghost ? 'ghost' : 'row';
-      const dataAttr = ghost ? '' : `data-mint="${esc(a.mint)}"`;
-      return `
-        <tr class="${cls}" ${dataAttr}>
-          <td>
-            <div class="tok">
-              ${logo ? `<img src="${esc(logo)}" alt="" onerror="this.style.visibility='hidden'">` : `<img alt="" style="visibility:hidden">`}
-              <span class="tok-name">${esc(name)}</span>
-            </div>
-          </td>
-          <td class="hide-sm">${esc(fmtDate(a.alert_time))}</td>
-          <td class="right">${esc(fmtMcap(a.alert_mcap))}</td>
-          <td class="right hide-sm">${esc(fmtMcap(a.max_mcap))}</td>
-          <td class="right ${peakClass}">${mult.toFixed(1)}×</td>
-        </tr>
-      `;
-    }
-
-    function renderRows(filtered) {
-      const tbody = document.getElementById('rows');
-      if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty">No signals match these filters</td></tr>';
-        return;
-      }
-      // Public homepage: always sort by performance desc, show top 5 + ghost teaser
-      const sorted = filtered.slice().sort((a, b) => multiplier(b) - multiplier(a));
-      const top = sorted.slice(0, TOP_N);
-      const ghosts = sorted.slice(TOP_N, TOP_N + GHOST_N);
-      const remaining = sorted.length - TOP_N;
-
-      let html = top.map(a => rowHTML(a, false)).join('');
-      html += ghosts.map(a => rowHTML(a, true)).join('');
-
-      if (remaining > 0) {
-        html += `
-          <tr class="locked-row">
-            <td colspan="5">
-              <div class="locked-text"><strong>+ ${remaining} more signal${remaining === 1 ? '' : 's'}</strong> in this view. Members see everything.</div>
-              <a href="/start" class="locked-cta">Get access →</a>
-            </td>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th class="sortable" data-sort="mcap">MC</th>
+            <th class="sortable" data-sort="ath_mcap">ATH MC</th>
+            <th class="sortable" data-sort="liq">Liq</th>
+            <th class="sortable on" data-sort="vol_5m">5m Vol</th>
+            <th class="sortable" data-sort="swaps_5m">5m TXs</th>
+            <th class="sortable" data-sort="smart">Smart / KOL</th>
+            <th class="sortable" data-sort="volr" title="Buy volume ÷ sell volume over the last 5 minutes">B/S</th>
+            <th class="sortable" data-sort="pc5">5m</th>
           </tr>
-        `;
+        </thead>
+        <tbody id="rows"><tr><td colspan="9"><div class="empty">Loading the board…</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="detail"></div>
+
+  <div id="journal" style="display:none">
+    <button class="back" onclick="closeJournal()">← back to board</button>
+    <div class="sethead">
+      <h2>Trade journal</h2>
+      <p>Every coin you greenlit, and what it did.</p>
+    </div>
+    <div id="jsummary"></div>
+    <div id="jinsights"></div>
+    <div class="tbl-wrap" style="margin-top:18px">
+      <table>
+        <thead><tr>
+          <th>Coin</th><th>Result</th><th>P&amp;L</th>
+          <th title="How far it ran after you greenlit it, regardless of whether the bot entered">Peak after tap</th>
+          <th>When</th>
+        </tr></thead>
+        <tbody id="jrows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="settings" style="display:none">
+    <button class="back" onclick="closeSettings()">← back to board</button>
+    <div class="sethead">
+      <h2>Your strategy</h2>
+      <p>Applies to the next coin you greenlight, never to an open trade.</p>
+    </div>
+    <div id="setbody"></div>
+    <div class="setbar">
+      <button class="glbtn" id="savesettings">Save changes</button>
+      <button class="ghost" id="resetsettings">Reset to defaults</button>
+      <span id="setmsg"></span>
+    </div>
+  </div>
+
+  <footer>
+    Volume, transactions, Smart/KOL and B/S are GMGN's own trailing-5-minute figures, refreshed every 15 seconds.
+    <b>B/S</b> is buy volume ÷ sell volume over that window — above 1 means more was bought than sold.
+    Showing coins over $25K 5m volume and $50K market cap, under 60 days old.
+    Greenlighting queues the coin for <b>your</b> bot; your keys and wallet never leave your machine.
+  </footer>
+</div>
+
+<script>
+const API = 'https://api.scgalpha.com';
+let KEY = localStorage.getItem('edgelvl_key') || '';
+let coins = [], openMint = null, timer = null;
+
+// Coins the bot is working that have dropped below your filters. The board list
+// is replaced wholesale on every poll, so anything not on it has to live
+// somewhere that refresh() can't clear — otherwise the open detail view loses
+// its coin and bounces you back.
+let extraCoins = {};
+const findCoin = m => coins.find(c => c.mint === m) || extraCoins[m] || null;
+let sortKey = 'vol_5m';
+
+// Your filters, kept in this browser. Defaults match what the server would
+// apply anyway, so an untouched terminal behaves exactly as documented.
+const FILTER_DEFAULTS = { vol: 25000, mc: 50000, age: 60 };
+let filters = { ...FILTER_DEFAULTS };
+try { filters = { ...filters, ...JSON.parse(localStorage.getItem('edgelvl_filters') || '{}') }; } catch (e) {}
+// mint -> when it was queued. A confirmation, not a lock: the bot arms within
+// 5s, and after that you may well want to greenlight the same coin again (it
+// may have timed out, or you're re-entering). Re-arming an active coin is
+// already handled by the bot, which just replies that it's on it.
+const sent = new Map();
+const SENT_SHOW_MS = 20000;
+
+const money = v => {
+  v = Number(v) || 0;
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+  return '$' + Math.round(v);
+};
+const pct = v => {
+  if (v === null || v === undefined) return '—';
+  return `<span class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '+' : ''}${v.toFixed(0)}%</span>`;
+};
+const age = s => {
+  if (s === null || s === undefined) return '—';
+  if (s < 3600) return Math.round(s / 60) + 'm';
+  if (s < 86400) return (s / 3600).toFixed(0) + 'h';
+  return (s / 86400).toFixed(0) + 'd';
+};
+/* Socials, so the narrative check doesn't mean leaving the page.
+   rel="noopener noreferrer" — these are links the coin's own creator set. */
+const LINK_LABEL = { twitter: 'X', website: 'Site', telegram: 'Telegram', discord: 'Discord' };
+const links = c => Object.entries(c.links || {})
+  .filter(([, u]) => /^https?:\/\//i.test(u || ''))
+  .map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${LINK_LABEL[k] || k} ↗</a>`)
+  .join('');
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+
+/* Volume heat thresholds. Under $25K a coin isn't worth the slot; over $100K
+   is where the moves that matter happen. */
+const VOL_WARM = 25000, VOL_HOT = 100000;
+const volClass = v => 'vol' + ((v || 0) >= VOL_HOT ? ' hot' : (v || 0) >= VOL_WARM ? ' warm' : '');
+
+/* ── theme ──────────────────────────────────────────────────────────────── */
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('edgelvl_theme', t);
+  const b = document.getElementById('themetoggle');
+  if (b) b.textContent = t === 'light' ? '☾' : '◐';
+}
+applyTheme(localStorage.getItem('edgelvl_theme') || 'dark');
+document.getElementById('themetoggle').onclick = e => {
+  e.preventDefault();
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+};
+
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', ...(opts.headers || {}) }
+  });
+  if (r.status === 401 || r.status === 403) throw new Error('bad-key');
+  if (!r.ok) {
+    // Surface why, not just that it failed — the server explains itself.
+    let detail = '';
+    try { detail = (await r.json()).detail || ''; } catch (e) {}
+    const err = new Error(detail || ('http-' + r.status));
+    err.detail = detail;
+    throw err;
+  }
+  return r.json();
+}
+
+/* ── gate ── */
+const gate = document.getElementById('gate'), app = document.getElementById('app');
+async function tryKey(k) {
+  const err = document.getElementById('keyerr');
+  err.textContent = '';
+  KEY = k.trim();
+  if (!KEY) { err.textContent = 'Enter your licence key.'; return; }
+  document.getElementById('keygo').textContent = 'Checking…';
+  try {
+    await api('/api/trending?limit=1');
+    localStorage.setItem('edgelvl_key', KEY);
+    gate.style.display = 'none'; app.style.display = 'block';
+    start();
+  } catch (e) {
+    err.textContent = e.message === 'bad-key'
+      ? "That key isn't active. Check your subscription."
+      : "Couldn't reach the server — try again in a moment.";
+    document.getElementById('keygo').textContent = 'Open terminal';
+  }
+}
+document.getElementById('keygo').onclick = () => tryKey(document.getElementById('keyin').value);
+document.getElementById('keyin').onkeydown = e => { if (e.key === 'Enter') tryKey(e.target.value); };
+document.getElementById('showkey').onclick = e => {
+  e.preventDefault();
+  document.getElementById('keybox').style.display = 'block';
+  document.getElementById('keyin').focus();
+};
+document.getElementById('signout').onclick = e => {
+  e.preventDefault(); localStorage.removeItem('edgelvl_key'); location.reload();
+};
+
+/* ── board ── */
+function sorted() {
+  return coins.slice().sort((a, b) => (Number(b[sortKey]) || 0) - (Number(a[sortKey]) || 0));
+}
+
+function rowHTML(c) {
+  const volrCls = c.volr === null || c.volr === undefined ? '' : (c.volr >= 1 ? 'good' : 'bad');
+  const ageCls = (c.age_secs || 0) > 86400 ? 'old' : '';
+  return `
+  <tr data-mint="${esc(c.mint)}">
+    <td>
+      <div class="tok">
+        <img src="${esc(c.logo || '')}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">
+        <div class="nm">
+          <span class="s">${esc((c.symbol || c.mint.slice(0, 6)).slice(0, 14))}</span>
+          <span class="n"><span class="age ${ageCls}">${age(c.age_secs)}</span> · ${esc((c.name || '').slice(0, 22))}</span>
+        </div>
+      </div>
+    </td>
+    <td>${money(c.mcap)}</td>
+    <td>${money(c.ath_mcap)}</td>
+    <td>${money(c.liq)}</td>
+    <td class="${volClass(c.vol_5m)}">${money(c.vol_5m)}</td>
+    <td class="txs">${(c.swaps_5m || 0).toLocaleString()}<br><b>${c.buys_5m || 0}</b>/<i>${c.sells_5m || 0}</i></td>
+    <td class="sk">${c.smart || 0}<span>/${c.kol || 0}</span></td>
+    <td class="volr ${volrCls}">${c.volr === null || c.volr === undefined ? '—' : c.volr.toFixed(2)}</td>
+    <td>${pct(c.pc5)}</td>
+  </tr>`;
+}
+
+function renderBoard() {
+  const tb = document.getElementById('rows');
+  const list = sorted();
+  if (!list.length) {
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty">Nothing above that volume right now.<br>
+      Try the All tab — or wait, the board refreshes every 15 seconds.</div></td></tr>`;
+  } else {
+    tb.innerHTML = list.map(rowHTML).join('');
+    tb.querySelectorAll('tr').forEach(r => r.onclick = () => openDetail(r.dataset.mint));
+  }
+  document.querySelectorAll('thead th.sortable').forEach(th =>
+    th.classList.toggle('on', th.dataset.sort === sortKey));
+}
+
+async function refresh() {
+  try {
+    const d = await api(`/api/trending?limit=50&min_vol=${filters.vol}` +
+                        `&min_mc=${filters.mc}&max_age_days=${filters.age}`);
+    coins = d.coins || [];
+    document.getElementById('livewrap').classList.toggle('stale', !!d.stale);
+    document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
+    document.getElementById('updated').textContent = `${Math.round(d.age_secs)}s ago`;
+    if (openMint && !coins.find(c => c.mint === openMint)) {
+      // looking at something the board no longer carries — refresh it directly
+      try {
+        const one = await api(`/api/coin/${openMint}`);
+        if (one.coin) extraCoins[openMint] = one.coin;
+      } catch (e) { /* keep showing the last good data */ }
+    }
+    if (openMint) renderDetail(); else renderBoard();
+    refreshActivity();
+  } catch (e) {
+    // Privy sessions expire after about an hour. Now that the board is public,
+    // a stale one would quietly 401 on every action while everything still
+    // looked fine — so send them somewhere that can renew it instead.
+    if (e.message === 'bad-key') {
+      localStorage.removeItem('edgelvl_key');
+      location.href = '/account?next=' + encodeURIComponent(location.pathname + location.search);
+      return;
+    }
+    document.getElementById('livetxt').textContent = 'reconnecting';
+  }
+}
+
+/* ── filters ────────────────────────────────────────────────────────────── */
+function paintFilters() {
+  f_vol.value = filters.vol;
+  f_mc.value = filters.mc;
+  f_age.value = filters.age;
+}
+let fltTimer = null;
+function onFilterEdit() {
+  clearTimeout(fltTimer);
+  // debounce: typing "25000" shouldn't fire five requests
+  fltTimer = setTimeout(() => {
+    filters = {
+      vol: Math.max(0, Number(f_vol.value) || 0),
+      mc: Math.max(0, Number(f_mc.value) || 0),
+      age: Math.max(0, Number(f_age.value) || 0),
+    };
+    localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
+    refresh();
+  }, 450);
+}
+['f_vol', 'f_mc', 'f_age'].forEach(id => { document.getElementById(id).oninput = onFilterEdit; });
+document.getElementById('f_reset').onclick = () => {
+  filters = { ...FILTER_DEFAULTS };
+  localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
+  paintFilters();
+  refresh();
+};
+paintFilters();
+document.querySelectorAll('thead th.sortable').forEach(th => th.onclick = () => {
+  sortKey = th.dataset.sort; renderBoard();
+});
+
+/* ── detail ── */
+async function openDetail(mint) {
+  openMint = mint;
+  // The coin may have dropped off the filtered board while the bot still works
+  // it — resolve it from the last 30 minutes rather than refusing to open it.
+  if (!findCoin(mint)) {
+    try {
+      const d = await api(`/api/coin/${mint}`);
+      if (d.coin) extraCoins[mint] = d.coin;
+    } catch (e) { /* fall through; renderDetail will bail cleanly */ }
+  }
+  renderDetail();
+  refreshActivity();          // don't wait up to 10s to learn what the bot is doing
+  window.scrollTo(0, 0);
+}
+function closeDetail() {
+  openMint = null;
+  const el = document.getElementById('detail');
+  el.style.display = 'none';
+  el.dataset.mint = '';
+  el.innerHTML = '';                       // stop the chart loading in the background
+  extraCoins = {};                         // only needed while a detail is open
+  document.getElementById('board').style.display = 'block';
+  renderBoard();
+}
+
+function renderDetail() {
+  const c = findCoin(openMint);
+  if (!c) { closeDetail(); return; }
+  document.getElementById('board').style.display = 'none';
+  const el = document.getElementById('detail');
+  el.style.display = 'block';
+
+  // Rebuilding this on every poll would restart the chart iframe before it can
+  // finish loading, so build once per coin and patch only the numbers after.
+  if (el.dataset.mint === c.mint) { updateDetail(c); return; }
+  el.dataset.mint = c.mint;
+
+  el.innerHTML = `
+    <button class="back" onclick="closeDetail()">← back to board</button>
+    <div class="dhead">
+      <div class="dtitle">
+        <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}
+          <span class="dage" data-f="age">${age(c.age_secs)}</span></h2>
+        <div class="mintline">
+          <code>${esc(c.mint)}</code>
+          <button onclick="navigator.clipboard.writeText('${esc(c.mint)}');this.textContent='copied'">copy</button>
+          <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank" rel="noopener">GMGN ↗</a>
+          ${links(c)}
+        </div>
+      </div>
+      <div class="dvol"><div class="v" data-f="vol">${money(c.vol_5m)}</div><div class="l">5m volume</div></div>
+    </div>
+    <div class="chartwrap">
+      <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.mcap)}</div></div>
+      <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
+      <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
+      <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs"><span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span></div></div>
+      <div class="stat"><div class="k">B/S</div><div class="v" data-f="volr">${c.volr == null ? '—' : c.volr.toFixed(2)}</div></div>
+      <div class="stat"><div class="k">5m</div><div class="v" data-f="pc5">${pct(c.pc5)}</div></div>
+      <div class="stat"><div class="k">1h</div><div class="v" data-f="pc1h">${pct(c.pc1h)}</div></div>
+      <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}</div></div>
+      <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart || 0} / ${c.kol || 0}</div></div>
+    </div>
+    <div id="dstatus"></div>
+    <div id="dband"></div>
+    <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
+    <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Everything after that lands in your Telegram.</div>
+  `;
+  if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
+  else document.getElementById('glbtn').onclick = () => greenlight(c);
+}
+
+/** The bot's state for the coin you're looking at, above the greenlight. */
+function renderDetailStatus() {
+  const el = document.getElementById('dstatus');
+  if (!el) return;
+  const r = botStatus[openMint];
+  if (!r) { el.innerHTML = ''; return; }
+  const [dot] = STATE_UI[r.state] || ['closed'];
+  const canUnarm = r.state === 'watching';
+  el.innerHTML = `<div class="actdot ${dot}"></div><div>${stateLine(r)}</div>` +
+                 `<div class="when">${ago(r.ts)}</div>` +
+                 (canUnarm ? `<button class="unarmbtn" id="d_unarm">Unarm</button>` : '');
+  const b = document.getElementById('d_unarm');
+  if (b) b.onclick = async () => {
+    b.disabled = true; b.textContent = 'Dropping…';
+    try {
+      await api('/api/unarm', { method: 'POST', body: JSON.stringify({ mint: openMint }) });
+      b.textContent = 'Dropped';
+    } catch (e) { b.disabled = false; b.textContent = 'Unarm'; }
+  };
+}
+
+/** What would actually trigger a buy, in market cap.
+ *
+ *  While the bot is watching it publishes its real band — the high it's
+ *  measuring from, the dip it needs, and the reclaim that fires. Before you
+ *  greenlight there's no session, so show the same shape computed from the
+ *  current market cap, clearly marked as a projection.
+ */
+/** Immediate "here is where it would buy" the instant you greenlight. */
+function showPendingBand(c) {
+  const el = document.getElementById('dband');
+  if (!el) return;
+  const mc = Number(c.mcap) || 0;
+  if (!mc) return;
+  const floor = mc * (1 - SET.dip), ceil = mc * (1 - SET.dip) * SET.bounce;
+  el.innerHTML = `<span class="bk">Watching · waiting for a dip and a reclaim</span>` +
+    `<span class="step">from <b>${money(mc)}</b></span>` +
+    `<span class="step">dip below <b>${money(floor)}</b></span>` +
+    `<span class="step">buy on the reclaim above <b>${money(ceil)}</b></span>` +
+    `<div style="color:var(--dimmer);font-size:11px;margin-top:5px">` +
+    `Measured from wherever it goes next — the bot's own numbers appear in a few seconds.</div>`;
+}
+
+function renderBand(c) {
+  const el = document.getElementById('dband');
+  if (!el) return;
+  const r = botStatus[openMint];
+  const b = r && r.band;
+
+  if (b && r.state === 'watching') {
+    // The window that ACTUALLY fires. "dip then reclaim" is misleading on a coin
+    // that fell hard: the dip branch swallows every price under hi×(1-DIP) and
+    // returns before the reclaim is even checked, so a bounce off a deep low
+    // does nothing until price climbs back above that line.
+    const warm = b.warmup_left > 0 ? ` · ${b.warmup_left}s of warmup left` : '';
+    const now = Number(c.mcap) || 0;
+    const from = b.buy_from, to = b.buy_to;
+    let gap = '';
+    if (now && from) {
+      const fromNum = parseMoney(from);
+      if (fromNum && now < fromNum) {
+        gap = `<div style="color:var(--amber);font-size:11px;margin-top:5px">` +
+              `Currently ${money(now)} — needs <b>${(fromNum / now).toFixed(2)}x</b> from here to reach that window.</div>`;
+      } else if (fromNum) {
+        gap = `<div style="color:var(--green);font-size:11px;margin-top:5px">In range now.</div>`;
       }
-
-      tbody.innerHTML = html;
-
-      // Wire clicks only for the visible top rows (ghosts are non-interactive via CSS)
-      tbody.querySelectorAll('tr.row').forEach(tr => {
-        tr.addEventListener('click', () => {
-          const mint = tr.dataset.mint;
-          const a = allAlerts.find(x => x.mint === mint);
-          if (a) openModal(a);
-        });
-      });
     }
+    el.innerHTML = `<span class="bk">Buys between${warm}</span>` +
+      `<span class="step"><b>${esc(from || '—')}</b> and <b>${esc(to || '—')}</b></span>` +
+      `<span class="step" style="color:var(--dimmer)">high ${esc(b.hi || '—')}` +
+      `${b.dipped ? ' · dipped' : ' · no dip yet'}</span>` + gap;
+    return;
+  }
 
-    function render() {
-      const filtered = getFiltered();
-      renderStats(filtered);
-      renderRows(filtered);
+  // no live session — project from where it is now
+  const mc = Number(c.mcap) || 0;
+  if (!mc) { el.innerHTML = ''; return; }
+  const dip = mc * (1 - SET.dip), reclaim = dip * SET.bounce;
+  el.innerHTML = `<span class="bk">What would trigger a buy</span>` +
+    `<span class="step">from <b>${money(mc)}</b></span>` +
+    `<span class="step">a dip below <b>${money(dip)}</b></span>` +
+    `<span class="step">then a reclaim above <b>${money(reclaim)}</b></span>` +
+    `<div style="color:var(--dimmer);font-size:11px;margin-top:4px">` +
+    `Projected from the current market cap. Once you greenlight, the bot measures from the high it sees.</div>`;
+}
+
+function updateDetail(c) {
+  const el = document.getElementById('detail');
+  const set = (f, html) => { const n = el.querySelector(`[data-f="${f}"]`); if (n) n.innerHTML = html; };
+  set('vol', money(c.vol_5m));
+  set('mcap', money(c.mcap));
+  set('ath', money(c.ath_mcap));
+  set('liq', money(c.liq));
+  set('bs', `<span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span>`);
+  set('volr', c.volr == null ? '—' : c.volr.toFixed(2));
+  set('pc5', pct(c.pc5));
+  set('pc1h', pct(c.pc1h));
+  set('holders', (c.holders || 0).toLocaleString());
+  set('sk', `${c.smart || 0} / ${c.kol || 0}`);
+  renderBand(c);
+  set('age', age(c.age_secs));
+}
+
+function markSent(c) {
+  const btn = document.getElementById('glbtn'), note = document.getElementById('glnote');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '✓ QUEUED FOR YOUR BOT';
+  note.className = 'glnote';
+  note.innerHTML = 'Your bot picks this up within 5 seconds.<br><b>The rest lands in your Telegram.</b>';
+
+  // Hand the button back so the coin can be greenlit again later.
+  const left = SENT_SHOW_MS - (Date.now() - (sent.get(c.mint) || 0));
+  setTimeout(() => {
+    if (openMint !== c.mint) return;               // you navigated away
+    const b = document.getElementById('glbtn');
+    if (!b) return;
+    b.disabled = false;
+    b.textContent = '🟢 GREENLIGHT';
+    b.onclick = () => greenlight(c);
+    const n = document.getElementById('glnote');
+    n.className = 'glnote';
+    n.innerHTML = 'Already handed to your bot. Greenlight again only if you want to re-arm it.';
+  }, Math.max(0, left));
+}
+
+async function greenlight(c) {
+  const btn = document.getElementById('glbtn'), note = document.getElementById('glnote');
+
+  // First greenlight is the moment an account starts to matter — not before.
+  // Come back to this coin afterwards rather than dumping them on the board.
+  if (!KEY) {
+    sessionStorage.setItem('edgelvl_pending_coin', c.mint);
+    location.href = '/account?next=' + encodeURIComponent('/?coin=' + c.mint);
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await api('/api/greenlight', { method: 'POST', body: JSON.stringify({ mint: c.mint }) });
+    sent.set(c.mint, Date.now());
+    markSent(c);
+    // Don't wait ~15s for the bot's first band. Show where it would buy right
+    // now, computed from the same rule, and the live one replaces it shortly.
+    showPendingBand(c);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '🟢 GREENLIGHT';
+    note.className = 'glnote warn';
+    note.textContent = "Couldn't reach the server — try that again.";
+  }
+}
+
+
+
+/* ── what your bot is doing ─────────────────────────────────────────────── */
+// Mirrored from the bot. It owns positions and P&L; this only displays what it
+// reported, so the two can never disagree about what's actually held.
+const STATE_UI = {
+  watching:     ["watching", "Waiting for a dip and a reclaim", true],
+  bought:       ["bought",   "In position",                     false],
+  tp:           ["closed",   "Took profit",                     false],   // legacy rows
+  tp1:          ["bought",   "TP1",                             false],
+  tp2:          ["closed",   "TP2",                             false],
+  stopped:      ["closed",   "Stopped out",                     false],
+  "stood down": ["closed",   "No setup appeared",               false],
+  unarmed:      ["closed",   "You dropped it",                  false],
+};
+
+/** What actually happened, in the terms you set the strategy in.
+ *  A take-profit is the multiple it hit — not the realised P&L, which after
+ *  selling 70% at 1.5x is only about +5% and reads like a bad trade. */
+function stateLine(r) {
+  const [, label] = STATE_UI[r.state] || ['closed', r.state];
+  const pnl = p => `<span class="${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '+' : ''}${(p * 100).toFixed(0)}%</span>`;
+
+  const t = r.targets || {};
+  if (r.state === 'bought') {
+    const tps = (t.tps || []).map(x => esc(x)).join(' → ');
+    return `In position — entered <b>${esc(t.entry || r.mc || '—')}</b>` +
+           (tps ? ` · takes profit at ${tps}` : '') +
+           (t.stop ? ` · stop ${esc(t.stop)}` : '');
+  }
+
+  if (r.state === 'tp1' || r.state === 'tp2' || r.state === 'tp') {
+    // "hit 1.5x" only reads right when we know which rung and what multiple.
+    // Older rows carry neither, so don't force the sentence.
+    const head = r.mult ? `${label} hit <b>${r.mult}x</b>` : label;
+    const open = r.open_pct ? ` · ${Math.round(r.open_pct)}% still riding` : '';
+    const banked = r.pnl != null ? ` · ${pnl(r.pnl)} banked` : '';
+    // where the rest gets out — otherwise a part-sold position is a mystery
+    const next = t.next ? ` · next <b>${esc(t.next)}</b>` : '';
+    const from = t.entry ? ` · from ${esc(t.entry)}` : '';
+    return `${head}${open}${banked}${next}${from}`;
+  }
+  if (r.state === 'stopped') return `Stopped out${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
+  return label;
+}
+
+/** Turn "$149.3K" back into a number so we can compare it to the live cap. */
+const parseMoney = str => {
+  const m = /^\$?([\d.]+)([KMB])?$/.exec(String(str || '').trim());
+  if (!m) return null;
+  return parseFloat(m[1]) * ({ K: 1e3, M: 1e6, B: 1e9 }[m[2]] || 1);
+};
+
+const ago = ts => {
+  const s = Math.max(0, Date.now() / 1000 - ts);
+  if (s < 60) return `${Math.round(s)}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  return `${(s / 3600).toFixed(1)}h ago`;
+};
+
+let botStatus = {};      // mint -> the bot's last word on that coin
+let SET = { dip: 0.15, bounce: 1.04 };   // your thresholds, for the projection
+
+async function refreshActivity() {
+  let rows = [];
+  try {
+    rows = (await api('/api/status')).positions || [];
+  } catch (e) {
+    return;                       // never let this break the board
+  }
+  botStatus = {};
+  rows.forEach(r => { botStatus[r.mint] = r; });
+  if (openMint) renderDetailStatus();
+
+  const el = document.getElementById('activity');
+  if (!rows.length) { el.innerHTML = ''; return; }
+
+  const live = rows.filter(r => ['watching', 'bought', 'tp1'].includes(r.state)).length;
+  el.innerHTML = `
+    <div class="acthead">
+      <span>Your bot${live ? ` · ${live} active` : ''}</span>
+      <span>${rows.some(r => r.dry_run) ? 'dry run' : ''}</span>
+    </div>` + rows.slice(0, 6).map(r => {
+    const [dot, , canUnarm] = STATE_UI[r.state] || ["closed", r.state, false];
+    const what = stateLine(r);
+    return `<div class="actrow" data-open="${esc(r.mint)}">
+      <div class="actdot ${dot}"></div>
+      <div class="actname">${esc(r.name || r.mint.slice(0, 6))}</div>
+      <div class="actwhat">${what}</div>
+      <div class="actwhen">${ago(r.ts)}</div>
+      ${canUnarm ? `<button class="unarmbtn" data-unarm="${esc(r.mint)}">Unarm</button>` : ''}
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('[data-open]').forEach(row => row.onclick = () => openDetail(row.dataset.open));
+  el.querySelectorAll('[data-unarm]').forEach(b => b.onclick = async ev => {
+    ev.stopPropagation();
+    b.disabled = true;
+    b.textContent = 'Dropping…';
+    try {
+      await api('/api/unarm', { method: 'POST', body: JSON.stringify({ mint: b.dataset.unarm }) });
+      b.textContent = 'Dropped';
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = 'Unarm';
     }
+  });
+}
 
-    /* ── filter wiring ──────────────────────────────────────────── */
-    document.querySelectorAll('#period-btns .filter-btn').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('#period-btns .filter-btn').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        periodDays = parseInt(b.dataset.period, 10) || 0;
-        render();
-      });
-    });
-    // (Sort toggle removed on public homepage — always sorted by performance desc.)
 
-    /* ── modal ──────────────────────────────────────────────────── */
-    const modalEl = document.getElementById('modal');
+/* ── trade journal ──────────────────────────────────────────────────────── */
+async function openJournal() {
+  ['board', 'detail', 'settings'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('journal').style.display = 'block';
+  window.scrollTo(0, 0);
+  let d;
+  try { d = await api('/api/trades?limit=500'); }
+  catch (e) { document.getElementById('jsummary').innerHTML =
+    `<div class="empty">Couldn't load your journal.</div>`; return; }
 
-    function pnlEmoji(mult) {
-      if (mult >= 10) return '🚀';
-      if (mult >= 5)  return '🔥';
-      if (mult >= 2)  return '📈';
-      if (mult >= 1)  return '↑';
-      return '📉';
+  const s = d.summary || {};
+  const pct = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(0)}%`;
+  const cls = v => v == null ? '' : (v >= 0 ? 'up' : 'down');
+
+  document.getElementById('jsummary').innerHTML = `<div class="jgrid">
+    <div class="jcell"><div class="k">Greenlights</div><div class="v">${s.greenlights ?? 0}</div></div>
+    <div class="jcell"><div class="k">Entered</div><div class="v">${s.entered ?? 0}</div></div>
+    <div class="jcell"><div class="k">Win rate</div><div class="v">${s.win_rate == null ? '—' : (s.win_rate * 100).toFixed(0) + '%'}</div></div>
+    <div class="jcell"><div class="k">Net</div><div class="v ${cls(s.net_sol)}">${(s.net_sol ?? 0).toFixed(3)} SOL</div></div>
+    <div class="jcell"><div class="k">Avg win</div><div class="v up">${pct(s.avg_win)}</div></div>
+    <div class="jcell"><div class="k">Avg loss</div><div class="v down">${pct(s.avg_loss)}</div></div>
+    <div class="jcell"><div class="k">Avg peak after tap</div><div class="v">${s.avg_peak_after_tap ?? '—'}x</div></div>
+  </div>`;
+
+  document.getElementById('jinsights').innerHTML = insights(s).map(t => `<div class="insight">${t}</div>`).join('');
+
+  const rows = d.trades || [];
+  // Day headers with that day's tally — a flat list of 200 rows tells you
+  // nothing about whether last Tuesday was any good.
+  let day = null;
+  document.getElementById('jrows').innerHTML = rows.length ? rows.map(r => {
+    let header = '';
+    const d0 = (r.ts || '').slice(0, 10);
+    if (d0 !== day) {
+      day = d0;
+      const sameDay = rows.filter(x => (x.ts || '').slice(0, 10) === d0);
+      const took = sameDay.filter(x => x.entered);
+      const net = took.reduce((a, x) => a + (x.pnl_sol || 0), 0);
+      const w = took.filter(x => (x.pnl_sol || 0) > 0).length;
+      header = `<tr class="dayrow"><td colspan="5">${d0}` +
+        `<span>${sameDay.length} greenlit · ${took.length} taken` +
+        (took.length ? ` · ${w}W/${took.length - w}L · <b class="${net >= 0 ? 'up' : 'down'}">` +
+          `${net >= 0 ? '+' : ''}${net.toFixed(3)} SOL</b>` : '') +
+        `</span></td></tr>`;
     }
+    return header + (() => {
+    const p = r.entered ? r.pnl_sol / Math.max(r.spent_sol || 1, 1e-9) : null;
+    const res = !r.entered ? '<span style="color:var(--dimmer)">no entry</span>'
+      : (p >= 0 ? '<span class="up">win</span>' : '<span class="down">loss</span>');
+    return `<tr>
+      <td><span class="s">${esc(r.name || '')}</span></td>
+      <td style="text-align:right">${res}</td>
+      <td style="text-align:right" class="${cls(p)}">${p == null ? '—' : pct(p)}</td>
+      <td style="text-align:right">${r.peak_after_tap ?? '—'}x</td>
+      <td style="text-align:right;color:var(--dimmer)">${(r.ts || '').slice(11, 16)}</td>
+    </tr>`;
+    })();
+  }).join('') : `<tr><td colspan="5"><div class="empty">No trades yet.</div></td></tr>`;
+}
 
-    function fmtFullDate(ts) {
-      if (!ts) return '—';
-      const d = new Date(ts * 1000);
-      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    }
+/** Read the numbers back as plain observations. No advice that the data
+ *  doesn't support — just what the record says. */
+function insights(s) {
+  const out = [];
+  const n = s.entered || 0;
+  if (!s.greenlights) return ['No trades yet.'];
 
-    function fmtPct(pct) {
-      const sign = pct >= 0 ? '+' : '−';
-      const abs = Math.abs(pct);
-      // Always include thousands separators for impact
-      return sign + abs.toLocaleString(undefined, {
-        minimumFractionDigits: abs >= 100 ? 0 : 1,
-        maximumFractionDigits: abs >= 100 ? 0 : 1
-      }) + '%';
-    }
+  if (n >= 3 && s.avg_win != null && s.avg_loss != null) {
+    const need = Math.abs(s.avg_loss) / (Math.abs(s.avg_loss) + s.avg_win);
+    out.push(`Break-even needs <b>${(need * 100).toFixed(0)}%</b> wins at your ` +
+      `+${(s.avg_win * 100).toFixed(0)}% / ${(s.avg_loss * 100).toFixed(0)}% sizes. ` +
+      `You're at <b>${((s.win_rate || 0) * 100).toFixed(0)}%</b>.`);
+  }
+  if (s.avg_peak_after_tap != null) {
+    out.push(`Picks ran <b>${s.avg_peak_after_tap}x</b> on average after greenlight. ` +
+      `Near 1.0x means the coins aren't moving, not that the entry is wrong.`);
+  }
+  if (s.skipped && s.avg_peak_when_skipped != null) {
+    out.push(`<b>${s.skipped}</b> never entered; those ran <b>${s.avg_peak_when_skipped}x</b>. ` +
+      (s.avg_peak_when_skipped < 1.3 ? 'Mostly flat — little missed.'
+                                     : 'Above your take-profit — entries are being missed.'));
+  }
+  if (n >= 3 && Math.abs(s.avg_loss || 0) > 0.4) {
+    out.push(`Losses average <b>${(s.avg_loss * 100).toFixed(0)}%</b> — the trailing stop, in full, nearly every time.`);
+  }
+  return out;
+}
 
-    function openModal(a) {
-      const mult = multiplier(a);
-      const pct = (mult - 1) * 100;
-      const isNeg = mult < 1;
+function closeJournal() {
+  document.getElementById('journal').style.display = 'none';
+  document.getElementById('board').style.display = 'block';
+  renderBoard();
+}
+document.getElementById('openjournal').onclick = e => { e.preventDefault(); openJournal(); };
 
-      // Logo
-      const logo = tokenLogo(a);
-      const mLogo = document.getElementById('m-logo');
-      mLogo.src = logo || '';
-      mLogo.style.visibility = logo ? 'visible' : 'hidden';
-      mLogo.onerror = () => { mLogo.style.visibility = 'hidden'; };
+/* ── settings ───────────────────────────────────────────────────────────── */
+// [key, label, hint, multiplier, unit, offset]
+// Stored raw (0.15); shown the way people think (15%).
+const SECTIONS = [
+  ["Money", [
+    ["size_sol", "Size per trade", "How much goes into each buy.", 1, "SOL"],
+  ]],
+  ["Entry", [
+    ["dip", "Dip required", "How far off the high before it looks to buy.", 100, "%"],
+    ["bounce", "Reclaim", "Rise off the dip low that triggers the buy.", 100, "%", 1],
+    ["volr_min", "B/S floor", "Checked at the moment of entry, not when you greenlight. Under 1 means more is being sold than bought — the buy waits rather than the coin being dropped.", 1],
+  ]],
+  ["Exit", [
+    ["tp1", "Take profit 1", "The first rung.", 1, "x"],
+    ["frac1", "Sold at TP1", "The rest rides to TP2.", 100, "%"],
+    ["tp2", "Take profit 2", "Fully out here — no runner.", 1, "x"],
+    ["kill", "Trailing stop", "Off the position's peak, not your entry.", 100, "%"],
+  ]],
+  ["Timing", [
+    ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
+    ["max_hold", "Max hold", "Force-exit a position after this.", 1 / 60, "min"],
+  ]],
+];
 
-      // Token name + abbreviated CA in top-right corner
-      document.getElementById('m-name').textContent = tokenName(a);
-      const mintEl = document.getElementById('m-mint');
-      mintEl.textContent = shortMint(a.mint);
-      mintEl.onclick = () => {
-        if (!a.mint) return;
-        navigator.clipboard.writeText(a.mint);
-        const orig = mintEl.textContent;
-        mintEl.textContent = 'copied!';
-        setTimeout(() => { mintEl.textContent = orig; }, 1200);
-      };
+let bounds = {}, useTp2 = true;
+const F = {};
+SECTIONS.forEach(([, rows]) => rows.forEach(f => { F[f[0]] = f; }));
 
-      // Big date
-      document.getElementById('m-date').textContent = fmtFullDate(a.alert_time);
+const toView = f => v => +(((v - (f[5] || 0)) * f[3]).toFixed(6));
+const toRaw = f => v => +((v / f[3]) + (f[5] || 0)).toFixed(6);
 
-      // Hero pill
-      const pillEl = document.getElementById('m-pill');
-      pillEl.classList.toggle('neg', isNeg);
-      const emojiEl = document.getElementById('m-emoji');
-      if (emojiEl) emojiEl.textContent = pnlEmoji(mult);
-      document.getElementById('m-pct').textContent = fmtPct(pct);
-      document.getElementById('m-mult').textContent = mult.toFixed(1) + '×';
+async function openSettings() {
+  ['board', 'detail', 'journal'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('settings').style.display = 'block';
+  window.scrollTo(0, 0);
+  setMsg('');
+  try {
+    const d = await api('/api/settings');
+    bounds = d.bounds || {};
+    SET = { dip: d.settings.dip ?? SET.dip, bounce: d.settings.bounce ?? SET.bounce };
+    renderSettings(d.settings || {});
+  } catch (e) {
+    setMsg("Couldn't load your settings.", 'var(--red)');
+  }
+}
 
-      // Stat rows
-      document.getElementById('m-alert-mc').textContent = fmtMcap(a.alert_mcap);
-      document.getElementById('m-ath-mc').textContent = fmtMcap(a.max_mcap);
+function setMsg(t, color) {
+  const m = document.getElementById('setmsg');
+  m.textContent = t;
+  m.style.color = color || 'var(--dimmer)';
+}
 
-      modalEl.classList.add('open');
-    }
-    function closeModal() { modalEl.classList.remove('open'); }
-    document.getElementById('modal-close').addEventListener('click', closeModal);
-    modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-  </script>
+function settingRowHTML(f, vals) {
+  const [key, label, hint, , unit] = f;
+  const v = vals[key];
+  const val = v === undefined ? '' : toView(f)(v);
+  // TP2 gets a checkbox in place of its label, so it can be switched off.
+  const lab = key === 'tp2'
+    ? `<label class="tgl"><input type="checkbox" id="set_use_tp2" ${useTp2 ? 'checked' : ''}>
+         <span class="box"></span><span>${label}</span></label>`
+    : `<span>${label}</span>`;
+  return `<div class="setrow" id="row_${key}">
+    <div><div class="lab">${lab}</div><div class="hint" id="hint_${key}">${hint}</div></div>
+    <div class="setfield">
+      <input id="set_${key}" type="number" step="any" value="${val}">
+      ${unit ? `<span class="unit">${unit}</span>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderSettings(vals) {
+  useTp2 = vals.use_tp2 === undefined ? true : !!Number(vals.use_tp2);
+  document.getElementById('setbody').innerHTML = SECTIONS.map(([title, rows]) =>
+    `<div class="setsec"><h3>${title}</h3>${rows.map(f => settingRowHTML(f, vals)).join('')}</div>`
+  ).join('');
+  document.getElementById('set_use_tp2').onchange = e => {
+    useTp2 = e.target.checked;
+    applyTp2();
+  };
+  ['tp1', 'frac1'].forEach(k => {
+    const el = document.getElementById('set_' + k);
+    if (el) el.oninput = applyTp2;
+  });
+  applyTp2();
+}
+
+/** One rung or two — keep the page honest about what actually gets sold. */
+function applyTp2() {
+  const tp2row = document.getElementById('row_tp2');
+  const tp2in = document.getElementById('set_tp2');
+  const fracRow = document.getElementById('row_frac1');
+  const fracIn = document.getElementById('set_frac1');
+
+  tp2in.disabled = !useTp2;
+  tp2row.classList.toggle('off', !useTp2);
+  fracRow.classList.toggle('off', !useTp2);
+  fracIn.disabled = !useTp2;
+
+  if (!useTp2) {
+    document.getElementById('hint_tp1').textContent = 'Sells the whole position here.';
+    document.getElementById('hint_frac1').textContent = 'Not used with one rung.';
+  } else {
+    const f = Number(fracIn.value) || 0;
+    document.getElementById('hint_tp1').textContent = `Sells ${f}% of the position.`;
+    document.getElementById('hint_frac1').textContent =
+      `The remaining ${Math.max(0, 100 - f)}% rides to TP2.`;
+  }
+}
+
+document.getElementById('opensettings').onclick = e => { e.preventDefault(); openSettings(); };
+
+function closeSettings() {
+  document.getElementById('settings').style.display = 'none';
+  document.getElementById('board').style.display = 'block';
+  renderBoard();
+}
+
+function collect() {
+  const body = { use_tp2: useTp2 ? 1 : 0 };
+  let bad = false;
+  for (const key of Object.keys(F)) {
+    const el = document.getElementById('set_' + key);
+    if (!el) continue;
+    el.classList.remove('bad');
+    if (el.value === '' || el.disabled) continue;
+    const raw = toRaw(F[key])(Number(el.value));
+    const b = bounds[key];
+    if (!isFinite(raw) || (b && (raw < b[0] || raw > b[1]))) { el.classList.add('bad'); bad = true; continue; }
+    body[key] = raw;
+  }
+  return bad ? null : body;
+}
+
+document.getElementById('savesettings').onclick = async () => {
+  const body = collect();
+  if (!body) { setMsg('Some values are out of range — the red ones.', 'var(--red)'); return; }
+  setMsg('Saving…');
+  try {
+    const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(body) });
+    renderSettings(d.settings || {});
+    setMsg('✓ Saved — applies to the next coin you greenlight.', 'var(--green)');
+  } catch (e) {
+    setMsg(e.detail || 'Rejected — check the values.', 'var(--red)');
+  }
+};
+
+document.getElementById('resetsettings').onclick = async () => {
+  setMsg('Resetting…');
+  const defaults = { size_sol: 0.05, tp1: 1.5, tp2: 2.0, use_tp2: 1, frac1: 0.70, kill: 0.50,
+                     dip: 0.15, bounce: 1.04, volr_min: 1.0,
+                     entry_timeout: 3600, max_hold: 21600 };
+  try {
+    const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(defaults) });
+    renderSettings(d.settings || {});
+    setMsg('✓ Back to the shipped defaults.', 'var(--green)');
+  } catch (e) {
+    setMsg("Couldn't reset.", 'var(--red)');
+  }
+};
+
+function start() {
+  // the buy-trigger projection uses YOUR dip and reclaim, so fetch them up
+  // front rather than only when the settings page is opened
+  api('/api/settings').then(d => {
+    if (d && d.settings) SET = { dip: d.settings.dip ?? SET.dip, bounce: d.settings.bounce ?? SET.bounce };
+  }).catch(() => {});
+  refresh();
+  clearInterval(timer);
+  timer = setInterval(refresh, 10000);
+}
+/* The board is public. Anyone can watch it work before deciding to trade on it
+   — you can't judge a signal feed you're not allowed to see. Signing in is what
+   greenlighting requires, not what looking requires. */
+gate.style.display = 'none';
+app.style.display = 'block';
+document.getElementById('account').textContent = KEY ? 'wallet' : 'sign in';
+document.getElementById('signout').style.display = KEY ? '' : 'none';
+start();
+</script>
 </body>
 </html>
