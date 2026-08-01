@@ -940,6 +940,7 @@ const SECTIONS = [
   ["Entry", [
     ["dip", "Dip required", "How far off the high before it looks to buy.", 100, "%"],
     ["bounce", "Reclaim", "Rise off the dip low that triggers the buy.", 100, "%", 1],
+    ["volr_min", "B/S floor", "Checked at the moment of entry, not when you greenlight. Under 1 means more is being sold than bought — the buy waits rather than the coin being dropped.", 1],
   ]],
   ["Exit", [
     ["tp1", "Take profit 1", "The first rung.", 1, "x"],
@@ -947,9 +948,8 @@ const SECTIONS = [
     ["tp2", "Take profit 2", "Fully out here — no runner.", 1, "x"],
     ["kill", "Trailing stop", "Off the position's peak, not your entry.", 100, "%"],
   ]],
-  ["Filters", [
-    ["min_vol_5m", "Min 5m volume", "Below this a coin isn't worth the slot.", 1, "$"],
-    ["volr_min", "B/S floor", "Buy volume ÷ sell volume over 5 minutes. Under 1 means more was sold than bought.", 1],
+  ["Telegram board", [
+    ["min_vol_5m", "Min 5m volume", "Only affects which coins /top shows you. It does not affect trading.", 1, "$"],
   ]],
   ["Timing", [
     ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
