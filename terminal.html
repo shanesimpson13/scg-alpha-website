@@ -740,12 +740,27 @@ function renderBand(c) {
   const b = r && r.band;
 
   if (b && r.state === 'watching') {
-    const steps = [`<span class="step">high <b>${esc(b.hi || '—')}</b></span>`,
-                   `<span class="step">needs a dip below <b>${esc(b.dip || '—')}</b></span>`];
-    if (b.reclaim) steps.push(`<span class="step">then a reclaim above <b>${esc(b.reclaim)}</b></span>`);
-    else steps.push(`<span class="step">then a reclaim off that low</span>`);
+    // The window that ACTUALLY fires. "dip then reclaim" is misleading on a coin
+    // that fell hard: the dip branch swallows every price under hi×(1-DIP) and
+    // returns before the reclaim is even checked, so a bounce off a deep low
+    // does nothing until price climbs back above that line.
     const warm = b.warmup_left > 0 ? ` · ${b.warmup_left}s of warmup left` : '';
-    el.innerHTML = `<span class="bk">What triggers a buy${warm}</span>${steps.join('')}`;
+    const now = Number(c.mcap) || 0;
+    const from = b.buy_from, to = b.buy_to;
+    let gap = '';
+    if (now && from) {
+      const fromNum = parseMoney(from);
+      if (fromNum && now < fromNum) {
+        gap = `<div style="color:var(--amber);font-size:11px;margin-top:5px">` +
+              `Currently ${money(now)} — needs <b>${(fromNum / now).toFixed(2)}x</b> from here to reach that window.</div>`;
+      } else if (fromNum) {
+        gap = `<div style="color:var(--green);font-size:11px;margin-top:5px">In range now.</div>`;
+      }
+    }
+    el.innerHTML = `<span class="bk">Buys between${warm}</span>` +
+      `<span class="step"><b>${esc(from || '—')}</b> and <b>${esc(to || '—')}</b></span>` +
+      `<span class="step" style="color:var(--dimmer)">high ${esc(b.hi || '—')}` +
+      `${b.dipped ? ' · dipped' : ' · no dip yet'}</span>` + gap;
     return;
   }
 
@@ -851,6 +866,13 @@ function stateLine(r) {
   if (r.state === 'stopped') return `Stopped out${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
   return label;
 }
+
+/** Turn "$149.3K" back into a number so we can compare it to the live cap. */
+const parseMoney = str => {
+  const m = /^\$?([\d.]+)([KMB])?$/.exec(String(str || '').trim());
+  if (!m) return null;
+  return parseFloat(m[1]) * ({ K: 1e3, M: 1e6, B: 1e9 }[m[2]] || 1);
+};
 
 const ago = ts => {
   const s = Math.max(0, Date.now() / 1000 - ts);
