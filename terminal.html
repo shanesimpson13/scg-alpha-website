@@ -352,6 +352,7 @@
       <div class="live" id="livewrap"><div class="dot"></div><span id="livetxt">live</span></div>
       <span id="updated"></span>
       <a href="#" id="themetoggle" title="Light / dark">◐</a>
+      <a href="#" id="openjournal">journal</a>
       <a href="#" id="opensettings">settings</a>
       <a href="#" id="signout">sign out</a>
     </div>
@@ -391,6 +392,27 @@
   </div>
 
   <div id="detail"></div>
+
+  <div id="journal" style="display:none">
+    <button class="back" onclick="closeJournal()">← back to board</button>
+    <div class="sethead">
+      <h2>Trade journal</h2>
+      <p>Every coin you greenlit and what it did. The point isn't the running total —
+         it's whether your picks were worth taking.</p>
+    </div>
+    <div id="jsummary"></div>
+    <div id="jinsights"></div>
+    <div class="tbl-wrap" style="margin-top:18px">
+      <table>
+        <thead><tr>
+          <th>Coin</th><th>Result</th><th>P&amp;L</th>
+          <th title="How far it ran after you greenlit it, regardless of whether the bot entered">Peak after tap</th>
+          <th>When</th>
+        </tr></thead>
+        <tbody id="jrows"></tbody>
+      </table>
+    </div>
+  </div>
 
   <div id="settings" style="display:none">
     <button class="back" onclick="closeSettings()">← back to board</button>
@@ -733,6 +755,21 @@ function renderDetailStatus() {
  *  greenlight there's no session, so show the same shape computed from the
  *  current market cap, clearly marked as a projection.
  */
+/** Immediate "here is where it would buy" the instant you greenlight. */
+function showPendingBand(c) {
+  const el = document.getElementById('dband');
+  if (!el) return;
+  const mc = Number(c.mcap) || 0;
+  if (!mc) return;
+  const floor = mc * (1 - SET.dip), ceil = mc * (1 - SET.dip) * SET.bounce;
+  el.innerHTML = `<span class="bk">Watching · waiting for a dip and a reclaim</span>` +
+    `<span class="step">from <b>${money(mc)}</b></span>` +
+    `<span class="step">dip below <b>${money(floor)}</b></span>` +
+    `<span class="step">buy on the reclaim above <b>${money(ceil)}</b></span>` +
+    `<div style="color:var(--dimmer);font-size:11px;margin-top:5px">` +
+    `Measured from wherever it goes next — the bot's own numbers appear in a few seconds.</div>`;
+}
+
 function renderBand(c) {
   const el = document.getElementById('dband');
   if (!el) return;
@@ -823,6 +860,9 @@ async function greenlight(c) {
     await api('/api/greenlight', { method: 'POST', body: JSON.stringify({ mint: c.mint }) });
     sent.set(c.mint, Date.now());
     markSent(c);
+    // Don't wait ~15s for the bot's first band. Show where it would buy right
+    // now, computed from the same rule, and the live one replaces it shortly.
+    showPendingBand(c);
   } catch (e) {
     btn.disabled = false; btn.textContent = '🟢 GREENLIGHT';
     note.className = 'glnote warn';
@@ -853,7 +893,13 @@ function stateLine(r) {
   const [, label] = STATE_UI[r.state] || ['closed', r.state];
   const pnl = p => `<span class="${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '+' : ''}${(p * 100).toFixed(0)}%</span>`;
 
-  if (r.state === 'bought' && r.mc) return `In position — entered at <b>${esc(r.mc)}</b> MC`;
+  const t = r.targets || {};
+  if (r.state === 'bought') {
+    const tps = (t.tps || []).map(x => esc(x)).join(' → ');
+    return `In position — entered <b>${esc(t.entry || r.mc || '—')}</b>` +
+           (tps ? ` · takes profit at ${tps}` : '') +
+           (t.stop ? ` · stop ${esc(t.stop)}` : '');
+  }
 
   if (r.state === 'tp1' || r.state === 'tp2' || r.state === 'tp') {
     // "hit 1.5x" only reads right when we know which rung and what multiple.
@@ -861,7 +907,10 @@ function stateLine(r) {
     const head = r.mult ? `${label} hit <b>${r.mult}x</b>` : label;
     const open = r.open_pct ? ` · ${Math.round(r.open_pct)}% still riding` : '';
     const banked = r.pnl != null ? ` · ${pnl(r.pnl)} banked` : '';
-    return `${head}${open}${banked}`;
+    // where the rest gets out — otherwise a part-sold position is a mystery
+    const next = t.next ? ` · next <b>${esc(t.next)}</b>` : '';
+    const from = t.entry ? ` · from ${esc(t.entry)}` : '';
+    return `${head}${open}${banked}${next}${from}`;
   }
   if (r.state === 'stopped') return `Stopped out${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
   return label;
@@ -930,6 +979,89 @@ async function refreshActivity() {
   });
 }
 
+
+/* ── trade journal ──────────────────────────────────────────────────────── */
+async function openJournal() {
+  ['board', 'detail', 'settings'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('journal').style.display = 'block';
+  window.scrollTo(0, 0);
+  let d;
+  try { d = await api('/api/trades?limit=500'); }
+  catch (e) { document.getElementById('jsummary').innerHTML =
+    `<div class="empty">Couldn't load your journal.</div>`; return; }
+
+  const s = d.summary || {};
+  const pct = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(0)}%`;
+  const cls = v => v == null ? '' : (v >= 0 ? 'up' : 'down');
+
+  document.getElementById('jsummary').innerHTML = `<div class="jgrid">
+    <div class="jcell"><div class="k">Greenlights</div><div class="v">${s.greenlights ?? 0}</div></div>
+    <div class="jcell"><div class="k">Entered</div><div class="v">${s.entered ?? 0}</div></div>
+    <div class="jcell"><div class="k">Win rate</div><div class="v">${s.win_rate == null ? '—' : (s.win_rate * 100).toFixed(0) + '%'}</div></div>
+    <div class="jcell"><div class="k">Net</div><div class="v ${cls(s.net_sol)}">${(s.net_sol ?? 0).toFixed(3)} SOL</div></div>
+    <div class="jcell"><div class="k">Avg win</div><div class="v up">${pct(s.avg_win)}</div></div>
+    <div class="jcell"><div class="k">Avg loss</div><div class="v down">${pct(s.avg_loss)}</div></div>
+    <div class="jcell"><div class="k">Avg peak after tap</div><div class="v">${s.avg_peak_after_tap ?? '—'}x</div></div>
+  </div>`;
+
+  document.getElementById('jinsights').innerHTML = insights(s).map(t => `<div class="insight">${t}</div>`).join('');
+
+  const rows = d.trades || [];
+  document.getElementById('jrows').innerHTML = rows.length ? rows.map(r => {
+    const p = r.entered ? r.pnl_sol / Math.max(r.spent_sol || 1, 1e-9) : null;
+    const res = !r.entered ? '<span style="color:var(--dimmer)">no entry</span>'
+      : (p >= 0 ? '<span class="up">win</span>' : '<span class="down">loss</span>');
+    return `<tr>
+      <td><span class="s">${esc(r.name || '')}</span></td>
+      <td style="text-align:right">${res}</td>
+      <td style="text-align:right" class="${cls(p)}">${p == null ? '—' : pct(p)}</td>
+      <td style="text-align:right">${r.peak_after_tap ?? '—'}x</td>
+      <td style="text-align:right;color:var(--dimmer)">${(r.ts || '').slice(5, 16).replace('T', ' ')}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5"><div class="empty">No finished trades yet.</div></td></tr>`;
+}
+
+/** Read the numbers back as plain observations. No advice that the data
+ *  doesn't support — just what the record says. */
+function insights(s) {
+  const out = [];
+  const n = s.entered || 0;
+  if (!s.greenlights) return ['<b>Nothing here yet.</b> Greenlight a few coins and this fills in.'];
+
+  if (n >= 3 && s.avg_win != null && s.avg_loss != null) {
+    const need = Math.abs(s.avg_loss) / (Math.abs(s.avg_loss) + s.avg_win);
+    out.push(`Your average win is <b>${(s.avg_win * 100).toFixed(0)}%</b> and your average loss ` +
+      `<b>${(s.avg_loss * 100).toFixed(0)}%</b>. At those sizes you need to be right ` +
+      `<b>${(need * 100).toFixed(0)}%</b> of the time just to break even — ` +
+      `you're at <b>${((s.win_rate || 0) * 100).toFixed(0)}%</b>.`);
+  }
+  if (s.avg_peak_after_tap != null) {
+    out.push(`Your picks ran an average of <b>${s.avg_peak_after_tap}x</b> after you greenlit them. ` +
+      `That's your selection, independent of the bot — if it's near 1.0x, the coins aren't moving ` +
+      `after you tap and no entry rule can fix that.`);
+  }
+  if (s.skipped && s.avg_peak_when_skipped != null) {
+    out.push(`<b>${s.skipped}</b> greenlights never entered, and those ran ` +
+      `<b>${s.avg_peak_when_skipped}x</b> on average. ` +
+      (s.avg_peak_when_skipped < 1.3
+        ? `Low — so not entering mostly saved you from flat coins.`
+        : `High — the entry rule is turning down coins that went on to run.`));
+  }
+  if (n >= 3 && Math.abs(s.avg_loss || 0) > 0.4) {
+    out.push(`Losses average <b>${(s.avg_loss * 100).toFixed(0)}%</b>, which is the trailing stop firing ` +
+      `almost every time. A tighter stop caps the damage but gets shaken out more often — ` +
+      `worth testing against this record rather than guessing.`);
+  }
+  return out;
+}
+
+function closeJournal() {
+  document.getElementById('journal').style.display = 'none';
+  document.getElementById('board').style.display = 'block';
+  renderBoard();
+}
+document.getElementById('openjournal').onclick = e => { e.preventDefault(); openJournal(); };
+
 /* ── settings ───────────────────────────────────────────────────────────── */
 // [key, label, hint, multiplier, unit, offset]
 // Stored raw (0.15); shown the way people think (15%).
@@ -962,8 +1094,7 @@ const toView = f => v => +(((v - (f[5] || 0)) * f[3]).toFixed(6));
 const toRaw = f => v => +((v / f[3]) + (f[5] || 0)).toFixed(6);
 
 async function openSettings() {
-  document.getElementById('board').style.display = 'none';
-  document.getElementById('detail').style.display = 'none';
+  ['board', 'detail', 'journal'].forEach(id => document.getElementById(id).style.display = 'none');
   document.getElementById('settings').style.display = 'block';
   window.scrollTo(0, 0);
   setMsg('');
