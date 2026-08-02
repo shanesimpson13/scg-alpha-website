@@ -76,15 +76,6 @@
     #themetoggle { text-decoration: none; font-size: 14px; }
     #themetoggle:hover { color: var(--fg); }
 
-    .flow { border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px; margin-bottom: 12px; }
-    .fh { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em;
-          text-transform: uppercase; margin-bottom: 9px; }
-    .frow { display: flex; flex-wrap: wrap; gap: 22px; }
-    .f { display: flex; align-items: baseline; gap: 7px; }
-    .f .k { font-size: 11px; color: var(--dimmer); }
-    .f .v { font-size: 13.5px; font-weight: 500; font-variant-numeric: tabular-nums; }
-
-    .meta { font-size: 11px; color: var(--dimmer); margin: 0 0 12px 2px; }
 
     /* ── token safety ── */
     #dsec { margin: 14px 0 4px; }
@@ -313,12 +304,12 @@
        they land on, so there's never dead space. Hairlines come from cell
        borders, with the trailing edges clipped by the container. */
     .stats {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+      display: flex; flex-wrap: wrap;
       border: 1px solid var(--line); border-radius: 10px;
-      overflow: hidden; margin-bottom: 12px;
+      overflow: hidden; margin-bottom: 16px;
     }
     .stat {
-      padding: 12px 14px;
+      flex: 1 1 112px; min-width: 112px; padding: 12px 14px;
       border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
       margin-right: -1px; margin-bottom: -1px;
     }
@@ -872,27 +863,13 @@ function renderDetail() {
       <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.mcap)}</div></div>
       <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
       <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
-      <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}</div></div>
-      <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart || 0} / ${c.kol || 0}</div></div>
+      <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs"><span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span></div></div>
+      <div class="stat"><div class="k">B/S</div><div class="v" data-f="volr">${c.volr == null ? '—' : c.volr.toFixed(2)}</div></div>
       <div class="stat"><div class="k">5m</div><div class="v" data-f="pc5">${pct(c.pc5)}</div></div>
       <div class="stat"><div class="k">1h</div><div class="v" data-f="pc1h">${pct(c.pc1h)}</div></div>
+      <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}</div></div>
+      <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart || 0} / ${c.kol || 0}</div></div>
     </div>
-
-    <!-- Five-minute flow, grouped the way GMGN groups it: the volume, who was
-         doing it, and the net. Net buy is the number that actually says which
-         side is winning — a big volume with a flat net is just churn. -->
-    <div class="flow">
-      <div class="fh">5-minute flow</div>
-      <div class="frow">
-        <div class="f"><span class="k">Vol</span><span class="v" data-f="v5">${money(c.vol_5m)}</span></div>
-        <div class="f"><span class="k">Buys</span><span class="v up" data-f="b5">${(c.buys_5m || 0).toLocaleString()}</span></div>
-        <div class="f"><span class="k">Sells</span><span class="v down" data-f="s5">${(c.sells_5m || 0).toLocaleString()}</span></div>
-        <div class="f"><span class="k">Net</span><span class="v" data-f="net">${netFlow(c)}</span></div>
-        <div class="f"><span class="k">B/S</span><span class="v" data-f="volr">${c.volr == null ? '—' : c.volr.toFixed(2)}</span></div>
-        <div class="f"><span class="k">1h vol</span><span class="v" data-f="vol1h">${money(c.vol_1h)}</span></div>
-      </div>
-    </div>
-
     <div id="dsec"></div>
     <div id="dstatus"></div>
     <div id="dband"></div>
@@ -1015,15 +992,6 @@ function renderBand(c) {
     `Projected from the current market cap. Once you greenlight, the bot measures from the high it sees.</div>`;
 }
 
-/** Buy volume minus sell volume over the last 5 minutes. Which side is
-    actually winning, rather than how much noise there was. */
-function netFlow(c) {
-  const b = Number(c.buy_vol_5m), s = Number(c.sell_vol_5m);
-  if (!isFinite(b) || !isFinite(s)) return '—';
-  const n = b - s;
-  return `<span class="${n >= 0 ? 'up' : 'down'}">${n >= 0 ? '+' : '−'}${money(Math.abs(n))}</span>`;
-}
-
 function updateDetail(c) {
   const el = document.getElementById('detail');
   const set = (f, html) => { const n = el.querySelector(`[data-f="${f}"]`); if (n) n.innerHTML = html; };
@@ -1036,12 +1004,6 @@ function updateDetail(c) {
   set('pc5', pct(c.pc5));
   set('pc1h', pct(c.pc1h));
   set('holders', (c.holders || 0).toLocaleString());
-  set('v5', money(c.vol_5m));
-  set('b5', (c.buys_5m || 0).toLocaleString());
-  set('s5', (c.sells_5m || 0).toLocaleString());
-  set('net', netFlow(c));
-  set('vol1h', money(c.vol_1h));
-  set('vol1h', money(c.vol_1h));
   set('sk', `${c.smart || 0} / ${c.kol || 0}`);
   renderBand(c);
   set('age', age(c.age_secs));
