@@ -56,7 +56,12 @@
     .brand { display: flex; align-items: center; gap: 10px; }
     /* Set in the app's own face rather than drawn. The whole interface is bold
        uppercase mono; the name had no reason to be the one thing that isn't. */
-    .brand .wordmark { font-size: 15px; font-weight: 700; letter-spacing: .16em; color: var(--fg); }
+    /* Heavier than the 700 the mono face tops out at — the stroke thickens it
+       for real rather than letting the browser fake a bold. */
+    .brand .wordmark {
+      font-size: 16px; font-weight: 800; letter-spacing: .15em; color: var(--fg);
+      -webkit-text-stroke: 0.6px currentColor;
+    }
     .status { display: flex; align-items: center; gap: 13px; font-size: 11px; color: var(--dimmer); }
     .live { display: flex; align-items: center; gap: 6px; color: var(--green); }
     .live.stale { color: var(--amber); }
