@@ -140,6 +140,13 @@
     .wmsg { font-size: 11.5px; color: var(--dim); margin-top: 11px; min-height: 15px; }
     .wmsg.bad { color: var(--red); }
     .wmsg.good { color: var(--green); }
+    .poswarn { font-size: 11px; color: var(--amber); margin-top: 7px; line-height: 1.6; }
+    .posrow { display: flex; justify-content: space-between; align-items: center;
+              gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--hair); }
+    .posrow:last-child { border-bottom: 0; }
+    .posrow .amt { font-variant-numeric: tabular-nums; font-size: 13px; }
+    .posrow .mint { font-size: 10px; color: var(--dimmer); }
+    .posrow button { padding: 5px 12px; font-size: 11px; }
     .wfoot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--hair);
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
 
@@ -541,6 +548,8 @@
 
       <div class="wrow"><span class="k">Tradeable</span><span class="v" id="wbal">—</span></div>
       <div class="wrow"><span class="k">Held for fees</span><span class="v" id="wgas">—</span></div>
+
+      <div id="wpos"></div>
 
       <div class="wlabel">DEPOSIT — SEND SOL HERE</div>
       <div class="waddr" id="waddr">…</div>
@@ -1320,6 +1329,7 @@ async function loadWallet() {
     document.getElementById('wbal').textContent = sol4(a.balances.wsol);
     document.getElementById('wgas').textContent = sol4(Math.min(a.balances.sol, a.gas_reserve_sol));
     paintChip(a.balances.wsol);
+    loadPositions();
 
     // A deposit lands whenever it lands. Watch for it rather than making
     // someone press refresh and wonder whether it worked.
@@ -1360,6 +1370,44 @@ window.resumePending = () => {
   closeWallet();
   openDetail(mint);        // back to the coin they were trying to greenlight
 };
+
+/* Anything held that isn't SOL. Read from the chain, not from our records —
+   a position the bot has lost track of is exactly the one you need to see. */
+async function loadPositions() {
+  const box = document.getElementById('wpos');
+  try {
+    const { positions } = await api('/api/positions');
+    if (!positions.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="wlabel">HOLDING</div>'
+      + positions.map(p => `<div class="posrow">
+           <div><div class="amt">${Number(p.amount).toLocaleString()}</div>
+                <div class="mint">${p.mint.slice(0, 16)}…</div></div>
+           <button class="ghost" data-sell="${p.mint}">Sell</button>
+         </div>`).join('')
+      + `<div class="poswarn">The bot only manages a position it opened. Anything
+         listed here it isn't watching — no take-profit, no stop.</div>`;
+    box.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => sellPosition(b));
+  } catch (e) { box.innerHTML = ''; }
+}
+
+async function sellPosition(btn) {
+  const mint = btn.dataset.sell;
+  btn.disabled = true; btn.textContent = 'Selling…';
+  wsay('wmsg', 'Selling — this can take a few seconds to confirm.');
+  try {
+    const r = await api('/api/position/close', {
+      method: 'POST', body: JSON.stringify({ mint }),
+    });
+    document.getElementById('wmsg').innerHTML = r.pending
+      ? `Sent, still confirming. <a href="${r.explorer}" target="_blank" rel="noopener">Track it</a>`
+      : `Sold for ~${Number(r.sol_received).toFixed(4)} SOL. <a href="${r.explorer}" target="_blank" rel="noopener">View it</a>`;
+    document.getElementById('wmsg').className = 'wmsg good';
+    loadWallet(); loadPositions();
+  } catch (e) {
+    wsay('wmsg', e.message, 'bad');
+    btn.disabled = false; btn.textContent = 'Sell';
+  }
+}
 
 document.getElementById('walletchip').onclick = e => { e.preventDefault(); openWallet(); };
 document.getElementById('wrefresh').onclick = () => loadWallet();
