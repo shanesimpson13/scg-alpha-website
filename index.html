@@ -1249,12 +1249,30 @@ const SOL_MARK = `<svg width="11" height="9" viewBox="0 0 397.7 311.7" aria-hidd
   <path fill="url(#sg)" d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
 </svg>`;
 
+/* The chip shows a number or it shows "sign in". It never shows the word
+   "wallet" — that's a label where a balance should be, and you'd have to open
+   the panel to learn the one thing the chip exists to tell you.
+   The last balance is remembered so a reload paints it immediately instead of
+   flashing a placeholder while the request is in flight. */
 function paintChip(bal) {
   const chip = document.getElementById('walletchip');
   if (!KEY) { chip.innerHTML = `${SOL_MARK}<span class="bal">sign in</span>`; return; }
-  chip.innerHTML = SOL_MARK + (bal === null
-    ? '<span class="bal">wallet</span>'
-    : `<span class="bal">${sol4(bal)}</span>`);
+  if (bal !== null && bal !== undefined) {
+    localStorage.setItem('edgelvl_bal', String(bal));
+  } else {
+    const cached = localStorage.getItem('edgelvl_bal');
+    bal = cached === null ? 0 : Number(cached);
+  }
+  chip.innerHTML = `${SOL_MARK}<span class="bal">${sol4(bal)}</span>`;
+}
+
+/* Keep the header honest without opening anything. */
+async function refreshChip() {
+  if (!KEY) return;
+  try {
+    const a = await api('/api/account');
+    paintChip(a.balances.wsol);
+  } catch (e) { /* leave the last known figure rather than blanking it */ }
 }
 
 function openWallet() {
@@ -1311,6 +1329,7 @@ async function loadWallet() {
    (wsay, paintChip, loadWallet, api) are on `window` already. Re-exposing `api`
    as `window.api = (p, o) => api(p, o)` makes it call itself forever, because
    for a declaration those are the same binding. */
+window.refreshChip = refreshChip;
 window.setKey = t => { KEY = t; localStorage.setItem('edgelvl_key', t); };
 window.resumePending = () => {
   if (!pendingCoin) return;
@@ -1329,7 +1348,9 @@ document.getElementById('wcopy').onclick = async () => {
 };
 document.getElementById('wsignout').onclick = async e => {
   e.preventDefault();
-  localStorage.removeItem('edgelvl_key'); KEY = '';
+  localStorage.removeItem('edgelvl_key');
+  localStorage.removeItem('edgelvl_bal');
+  KEY = '';
   if (window.EdgeAuth) await window.EdgeAuth.logout();
   location.reload();
 };
@@ -1477,6 +1498,8 @@ function start() {
    — you can't judge a signal feed you're not allowed to see. Signing in is what
    greenlighting requires, not what looking requires. */
 paintChip(null);
+refreshChip();
+setInterval(refreshChip, 30000);
 start();
 </script>
 
@@ -1586,7 +1609,7 @@ $('wwithdraw').onclick = async () => {
 (async () => {
   try {
     const t = await window.EdgeAuth.getToken();
-    if (t) { window.setKey(t); window.paintChip(null); }
+    if (t) { window.setKey(t); window.paintChip(null); window.refreshChip(); }
   } catch (_) { /* not signed in */ }
 })();
 </script>
