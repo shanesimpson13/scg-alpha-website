@@ -875,7 +875,11 @@ function renderDetail() {
         <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
         <div class="stat"><div class="k">1h volume</div><div class="v" data-f="vol1h">${money(c.vol_1h)}</div></div>
         <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart||0} / ${c.kol||0}</div></div>
-        <div class="stat"><div class="k">Top 10</div><div class="v" data-f="top10">${c.top10_pct==null?'—':c.top10_pct+'%'}</div></div>
+        <div class="stat"><div class="k">Top 10</div><div class="v" data-f="top10">${wpct(c.top10_pct)}</div></div>
+        <div class="stat"><div class="k">Bundler</div><div class="v" data-f="bundler">${wpct(c.bundler_pct, 30)}</div></div>
+        <div class="stat"><div class="k">Bot degen</div><div class="v" data-f="botdegen">${wpct(c.botdegen_pct, 40)}</div></div>
+        <div class="stat"><div class="k">Insiders</div><div class="v" data-f="insiders">${wpct(c.insiders_pct, 5)}</div></div>
+        <div class="stat"><div class="k">Phishing</div><div class="v" data-f="phishing">${wpct(c.phishing_pct, 10)}</div></div>
       </div>
     </div>
     <div id="dstatus"></div>
@@ -996,6 +1000,14 @@ function renderBand(c) {
 }
 
 /** Buys minus sells over 5 minutes, by transaction count. */
+/** A wallet-quality percentage, reddened past the point it starts to matter.
+    No threshold means "just show the number" — Top 10 is context, not a warning. */
+function wpct(v, warn) {
+  if (v == null) return '—';
+  const bad = warn != null && v >= warn;
+  return `<span class="${bad ? 'down' : ''}">${v}%</span>`;
+}
+
 function netTx(c) {
   const n = (c.buys_5m || 0) - (c.sells_5m || 0);
   return `<span class="${n >= 0 ? 'up' : 'down'}">${n >= 0 ? '+' : '−'}${Math.abs(n).toLocaleString()}</span>`;
@@ -1024,7 +1036,11 @@ function updateDetail(c) {
   set('v5', money(c.vol_5m));
   set('net', netTx(c));
   set('vol1h', money(c.vol_1h));
-  set('top10', c.top10_pct == null ? '—' : c.top10_pct + '%');
+  set('top10', wpct(c.top10_pct));
+  set('bundler', wpct(c.bundler_pct, 30));
+  set('botdegen', wpct(c.botdegen_pct, 40));
+  set('insiders', wpct(c.insiders_pct, 5));
+  set('phishing', wpct(c.phishing_pct, 10));
   const t = document.getElementById('tage');
   if (t) t.textContent = c.fast_age == null ? '' : ` · ${c.fast_age}s ago`;
   set('sk', `${c.smart || 0} / ${c.kol || 0}`);
