@@ -730,6 +730,21 @@ function renderBoard() {
     th.classList.toggle('on', th.dataset.sort === sortKey));
 }
 
+/* Exactly one of these is visible at a time. Five separate places used to
+   toggle display, each hiding a different subset, which is why panels stacked
+   and why the refresh could yank you off the one you were reading. */
+const VIEWS = ['board', 'detail', 'journal', 'settings', 'wallet'];
+let view = 'board';
+
+function showView(name) {
+  view = name;
+  VIEWS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (id === name) ? 'block' : 'none';
+  });
+  window.scrollTo(0, 0);
+}
+
 async function refresh() {
   try {
     const d = await api(`/api/trending?limit=50&min_vol=${filters.vol}` +
@@ -745,7 +760,8 @@ async function refresh() {
         if (one.coin) extraCoins[openMint] = one.coin;
       } catch (e) { /* keep showing the last good data */ }
     }
-    if (openMint) renderDetail(); else renderBoard();
+    if (view === 'detail' && openMint) renderDetail();
+    else if (view === 'board') renderBoard();
     refreshActivity();
   } catch (e) {
     // Privy sessions expire after about an hour. Now that the board is public,
@@ -812,20 +828,18 @@ async function openDetail(mint) {
 function closeDetail() {
   openMint = null;
   const el = document.getElementById('detail');
-  el.style.display = 'none';
   el.dataset.mint = '';
   el.innerHTML = '';                       // stop the chart loading in the background
   extraCoins = {};                         // only needed while a detail is open
-  document.getElementById('board').style.display = 'block';
+  showView('board');
   renderBoard();
 }
 
 function renderDetail() {
   const c = findCoin(openMint);
   if (!c) { closeDetail(); return; }
-  document.getElementById('board').style.display = 'none';
   const el = document.getElementById('detail');
-  el.style.display = 'block';
+  if (view !== 'detail') showView('detail');
 
   // Rebuilding this on every poll would restart the chart iframe before it can
   // finish loading, so build once per coin and patch only the numbers after.
@@ -1134,8 +1148,7 @@ async function refreshActivity() {
 
 /* ── trade journal ──────────────────────────────────────────────────────── */
 async function openJournal() {
-  ['board', 'detail', 'settings'].forEach(id => document.getElementById(id).style.display = 'none');
-  document.getElementById('journal').style.display = 'block';
+  showView('journal');
   window.scrollTo(0, 0);
   let d;
   try { d = await api('/api/trades?limit=500'); }
@@ -1221,8 +1234,7 @@ function insights(s) {
 }
 
 function closeJournal() {
-  document.getElementById('journal').style.display = 'none';
-  document.getElementById('board').style.display = 'block';
+  showView('board');
   renderBoard();
 }
 document.getElementById('openjournal').onclick = e => { e.preventDefault(); openJournal(); };
@@ -1307,9 +1319,7 @@ async function refreshChip() {
 }
 
 function openWallet() {
-  ['board', 'detail', 'journal', 'settings'].forEach(id =>
-    document.getElementById(id).style.display = 'none');
-  document.getElementById('wallet').style.display = 'block';
+  showView('wallet');
   window.scrollTo(0, 0);
   document.getElementById('wsignin').style.display = KEY ? 'none' : 'block';
   document.getElementById('wfunded').style.display = KEY ? 'block' : 'none';
@@ -1317,8 +1327,7 @@ function openWallet() {
 }
 
 function closeWallet() {
-  document.getElementById('wallet').style.display = 'none';
-  document.getElementById('board').style.display = 'block';
+  showView('board');
 }
 
 let walletPoll = null;
@@ -1335,7 +1344,7 @@ async function loadWallet() {
     // someone press refresh and wonder whether it worked.
     clearInterval(walletPoll);
     walletPoll = setInterval(async () => {
-      if (document.getElementById('wallet').style.display === 'none') return;
+      if (view !== 'wallet') return;   // stop polling once they leave
       try {
         const b = await api('/api/account');
         if (b.balances.unwrapped > 0.0005) {
@@ -1426,8 +1435,7 @@ document.getElementById('wsignout').onclick = async e => {
 };
 
 async function openSettings() {
-  ['board', 'detail', 'journal'].forEach(id => document.getElementById(id).style.display = 'none');
-  document.getElementById('settings').style.display = 'block';
+  showView('settings');
   window.scrollTo(0, 0);
   setMsg('');
   try {
@@ -1506,8 +1514,7 @@ function applyTp2() {
 document.getElementById('opensettings').onclick = e => { e.preventDefault(); openSettings(); };
 
 function closeSettings() {
-  document.getElementById('settings').style.display = 'none';
-  document.getElementById('board').style.display = 'block';
+  showView('board');
   renderBoard();
 }
 
