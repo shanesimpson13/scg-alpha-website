@@ -1304,9 +1304,12 @@ function paintChip(bal) {
     localStorage.setItem('edgelvl_bal', String(bal));
   } else {
     const cached = localStorage.getItem('edgelvl_bal');
-    bal = cached === null ? 0 : Number(cached);
+    // Never invent a zero. A wallet claiming 0.0000 when the balance is simply
+    // unknown is worse than admitting we don't know — it reads as "your money
+    // is gone", and someone will believe it.
+    bal = cached === null ? null : Number(cached);
   }
-  chip.innerHTML = `${SOL_MARK}<span class="bal">${sol4(bal)}</span>`;
+  chip.innerHTML = `${SOL_MARK}<span class="bal">${bal === null ? '—' : sol4(bal)}</span>`;
 }
 
 /* Keep the header honest without opening anything. */
@@ -1315,7 +1318,18 @@ async function refreshChip() {
   try {
     const a = await api('/api/account');
     paintChip(a.balances.wsol);
-  } catch (e) { /* leave the last known figure rather than blanking it */ }
+  } catch (e) {
+    // A credential the wallet doesn't accept — an expired session, or a licence
+    // key, which can read the board but has no wallet. Say "sign in" rather
+    // than sit there showing a number we can't stand behind.
+    if (e.message === 'bad-key' || /token|sign in/i.test(e.message || '')) {
+      localStorage.removeItem('edgelvl_key');
+      localStorage.removeItem('edgelvl_bal');
+      KEY = '';
+      paintChip(null);
+    }
+    /* anything else: keep the last known figure */
+  }
 }
 
 function openWallet() {
