@@ -75,9 +75,22 @@
       border: 1px solid var(--line); border-radius: 6px; background: var(--field);
       color: var(--fg); font-size: 11px; text-decoration: none; line-height: 1;
     }
+    /* .status a dims every link in the header; the balance shouldn't be dim. */
+    .status a.chip { color: var(--fg); }
     .chip:hover { border-color: var(--dim); }
     .chip .bal { font-variant-numeric: tabular-nums; }
-    .chip .sol { color: var(--dimmer); }
+    .chip svg { display: block; }
+
+    /* Solana's own gradient, for the actions that are actually about SOL.
+       GREENLIGHT stays green — it's named after the colour. */
+    /* .glbtn is declared further down, so this needs the extra specificity to
+       win rather than relying on source order. */
+    .glbtn.solbtn {
+      background: linear-gradient(96deg, #9945FF 0%, #14F195 100%);
+      color: #08110c; border: 0; font-weight: 600;
+    }
+    .glbtn.solbtn:hover { filter: brightness(1.08); background: linear-gradient(96deg, #9945FF 0%, #14F195 100%); }
+    .glbtn.solbtn:disabled { opacity: .45; filter: none; }
 
     /* ── wallet panel ── */
     #wallet { max-width: 520px; }
@@ -486,13 +499,13 @@
       <div id="wemail">
         <div class="wlabel">EMAIL</div>
         <input id="wemailin" type="email" autocomplete="email" placeholder="you@example.com">
-        <div class="wbtns"><button class="glbtn" id="wsend">Send code</button></div>
+        <div class="wbtns"><button class="glbtn solbtn" id="wsend">Send code</button></div>
       </div>
       <div id="wcode" style="display:none">
         <div class="wlabel">CODE SENT TO <span id="wsentto"></span></div>
         <input id="wcodein" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
         <div class="wbtns">
-          <button class="glbtn" id="wverify">Sign in</button>
+          <button class="glbtn solbtn" id="wverify">Sign in</button>
           <button class="ghost" id="wother">Different email</button>
         </div>
       </div>
@@ -1224,12 +1237,24 @@ function wsay(id, text, kind = '') {
   n.textContent = text; n.className = 'wmsg ' + kind;
 }
 
+/* Solana's mark, inline. An <img> would be a second request for 400 bytes, and
+   inline means it can pick up the gradient rather than shipping two files for
+   light and dark. */
+const SOL_MARK = `<svg width="11" height="9" viewBox="0 0 397.7 311.7" aria-hidden="true">
+  <linearGradient id="sg" x1="360.9" y1="-37.5" x2="141.2" y2="383.3"
+    gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9945FF"/>
+    <stop offset="1" stop-color="#14F195"/></linearGradient>
+  <path fill="url(#sg)" d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z"/>
+  <path fill="url(#sg)" d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z"/>
+  <path fill="url(#sg)" d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
+</svg>`;
+
 function paintChip(bal) {
   const chip = document.getElementById('walletchip');
-  if (!KEY) { chip.textContent = 'sign in'; return; }
-  chip.innerHTML = bal === null
+  if (!KEY) { chip.innerHTML = `${SOL_MARK}<span class="bal">sign in</span>`; return; }
+  chip.innerHTML = SOL_MARK + (bal === null
     ? '<span class="bal">wallet</span>'
-    : `<span class="sol">◎</span><span class="bal">${sol4(bal)}</span>`;
+    : `<span class="bal">${sol4(bal)}</span>`);
 }
 
 function openWallet() {
