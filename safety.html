@@ -32,7 +32,7 @@
   .wrap { max-width: 720px; margin: 0 auto; padding: 22px 26px 90px; }
   header { display: flex; align-items: center; gap: 12px; padding-bottom: 16px;
            border-bottom: 1px solid var(--line); margin-bottom: 34px; }
-  header .wordmark { height: 13px; width: auto; display: block; shape-rendering: crispEdges; }
+  header .wordmark { font-size: 15px; font-weight: 700; letter-spacing: .16em; color: var(--fg); }
   header a { color: var(--dimmer); font-size: 11px; text-decoration: none; }
   header a:hover { color: var(--fg); }
   h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 12px; }
@@ -72,17 +72,7 @@
 <body>
 <div class="wrap">
   <header>
-    <svg class="wordmark" viewBox="0 0 26 7" fill="currentColor" role="img" aria-label="EDGE">
-      <rect x="0" y="0" width="5" height="1"/><rect x="0" y="1" width="1" height="5"/>
-      <rect x="0" y="3" width="4" height="1"/><rect x="0" y="6" width="5" height="1"/>
-      <rect x="7" y="0" width="4" height="1"/><rect x="7" y="1" width="1" height="5"/>
-      <rect x="11" y="1" width="1" height="5"/><rect x="7" y="6" width="4" height="1"/>
-      <rect x="14" y="0" width="5" height="1"/><rect x="14" y="1" width="1" height="5"/>
-      <rect x="14" y="6" width="5" height="1"/><rect x="17" y="3" width="2" height="1"/>
-      <rect x="18" y="3" width="1" height="4"/>
-      <rect x="21" y="0" width="5" height="1"/><rect x="21" y="1" width="1" height="5"/>
-      <rect x="21" y="3" width="4" height="1"/><rect x="21" y="6" width="5" height="1"/>
-    </svg>
+    <span class="wordmark">EDGE</span>
     <a href="/">← back to board</a>
   </header>
 

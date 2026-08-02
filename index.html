@@ -54,7 +54,9 @@
       border-bottom: 1px solid var(--line); flex-wrap: wrap;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .wordmark { height: 13px; width: auto; display: block; shape-rendering: crispEdges; }
+    /* Set in the app's own face rather than drawn. The whole interface is bold
+       uppercase mono; the name had no reason to be the one thing that isn't. */
+    .brand .wordmark { font-size: 15px; font-weight: 700; letter-spacing: .16em; color: var(--fg); }
     .status { display: flex; align-items: center; gap: 13px; font-size: 11px; color: var(--dimmer); }
     .live { display: flex; align-items: center; gap: 6px; color: var(--green); }
     .live.stale { color: var(--amber); }
@@ -421,26 +423,7 @@
 
 <div class="wrap" id="app">
   <header>
-    <!-- Wordmark drawn on a pixel grid rather than shipped as an image: it
-         inherits the text colour, so it's correct in both themes without a
-         second file or an invert filter, and it stays crisp at any size. -->
-    <div class="brand" aria-label="EDGE">
-      <svg class="wordmark" viewBox="0 0 26 7" fill="currentColor" role="img" aria-label="EDGE">
-        <!-- E -->
-        <rect x="0" y="0" width="5" height="1"/><rect x="0" y="1" width="1" height="5"/>
-        <rect x="0" y="3" width="4" height="1"/><rect x="0" y="6" width="5" height="1"/>
-        <!-- D -->
-        <rect x="7" y="0" width="4" height="1"/><rect x="7" y="1" width="1" height="5"/>
-        <rect x="11" y="1" width="1" height="5"/><rect x="7" y="6" width="4" height="1"/>
-        <!-- G -->
-        <rect x="14" y="0" width="5" height="1"/><rect x="14" y="1" width="1" height="5"/>
-        <rect x="14" y="6" width="5" height="1"/><rect x="17" y="3" width="2" height="1"/>
-        <rect x="18" y="3" width="1" height="4"/>
-        <!-- E -->
-        <rect x="21" y="0" width="5" height="1"/><rect x="21" y="1" width="1" height="5"/>
-        <rect x="21" y="3" width="4" height="1"/><rect x="21" y="6" width="5" height="1"/>
-      </svg>
-    </div>
+    <div class="brand"><span class="wordmark">EDGE</span></div>
     <div class="status">
       <div class="live" id="livewrap"><div class="dot"></div><span id="livetxt">live</span></div>
       <span id="updated"></span>
