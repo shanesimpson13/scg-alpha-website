@@ -13,15 +13,6 @@
       ]
     },
     {
-      "source": "/account",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, must-revalidate"
-        }
-      ]
-    },
-    {
       "source": "/safety",
       "headers": [
         {
@@ -34,6 +25,11 @@
   "redirects": [
     {
       "source": "/terminal",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/account",
       "destination": "/",
       "permanent": false
     },

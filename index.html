@@ -61,9 +61,52 @@
     .live.stale { color: var(--amber); }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+    /* Links inherit the terminal's palette. Browser-default blue on a black
+       monospace board looks like a mistake, because it is one. */
+    a { color: var(--dim); }
+    a:hover { color: var(--fg); }
     .status a { color: var(--dimmer); }
     #themetoggle { text-decoration: none; font-size: 14px; }
     #themetoggle:hover { color: var(--fg); }
+
+    /* ── wallet chip: balance sits in the header, like every terminal ── */
+    .chip {
+      display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px;
+      border: 1px solid var(--line); border-radius: 6px; background: var(--field);
+      color: var(--fg); font-size: 11px; text-decoration: none; line-height: 1;
+    }
+    .chip:hover { border-color: var(--dim); }
+    .chip .bal { font-variant-numeric: tabular-nums; }
+    .chip .sol { color: var(--dimmer); }
+
+    /* ── wallet panel ── */
+    #wallet { max-width: 520px; }
+    #wallet h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
+    #wallet .lede { font-size: 12px; color: var(--dim); line-height: 1.7; margin-bottom: 26px; }
+    .wrow {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 11px 0; border-bottom: 1px solid var(--hair); font-size: 12.5px;
+    }
+    .wrow:last-of-type { border-bottom: 0; }
+    .wrow .k { color: var(--dim); }
+    .wrow .v { font-variant-numeric: tabular-nums; font-size: 14px; }
+    .wlabel { font-size: 11px; color: var(--dimmer); margin: 22px 0 7px; }
+    .waddr {
+      font-family: inherit; font-size: 11.5px; word-break: break-all; line-height: 1.6;
+      background: var(--field); border: 1px solid var(--line); border-radius: 6px;
+      padding: 11px 12px; color: var(--fg);
+    }
+    #wallet input {
+      width: 100%; padding: 10px 12px; background: var(--field); color: var(--fg);
+      border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 13px;
+    }
+    #wallet input:focus { outline: none; border-color: var(--dim); }
+    .wbtns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .wmsg { font-size: 11.5px; color: var(--dim); margin-top: 11px; min-height: 15px; }
+    .wmsg.bad { color: var(--red); }
+    .wmsg.good { color: var(--green); }
+    .wfoot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--hair);
+             font-size: 11px; color: var(--dimmer); line-height: 1.7; }
 
     /* ── gate ── */
     #gate { max-width: 420px; margin: 12vh auto; text-align: center; }
@@ -364,22 +407,7 @@
 </head>
 <body>
 
-<div id="gate">
-  <h1>EdgeLvl Terminal</h1>
-  <p>Sign in with your email to load the board.<br>No subscription — you fund a wallet only you can withdraw from.</p>
-  <button id="signin" onclick="location.href='/account'">Sign in</button>
-  <div class="err" id="keyerr"></div>
-  <div class="gate-foot" style="margin-top:18px">
-    Have a licence key? <a href="#" id="showkey">Use it instead</a>
-  </div>
-  <div id="keybox" style="display:none;margin-top:14px">
-    <input id="keyin" type="text" placeholder="S-XXXXXX-XXXXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
-    <button id="keygo">Open terminal</button>
-    <div class="gate-foot">Lost it? <a href="/welcome">Look it up here</a></div>
-  </div>
-</div>
-
-<div class="wrap" id="app" style="display:none">
+<div class="wrap" id="app">
   <header>
     <div class="brand"><img src="/edge-logo.png" alt="EdgeLvl"><span>Terminal</span></div>
     <div class="status">
@@ -388,8 +416,7 @@
       <a href="#" id="themetoggle" title="Light / dark">◐</a>
       <a href="#" id="openjournal">journal</a>
       <a href="#" id="opensettings">settings</a>
-      <a href="/account" id="account">sign in</a>
-      <a href="#" id="signout" style="display:none">sign out</a>
+      <a href="#" class="chip" id="walletchip">sign in</a>
     </div>
   </header>
 
@@ -448,6 +475,56 @@
     </div>
   </div>
 
+  <div id="wallet" style="display:none">
+    <button class="back" onclick="closeWallet()">← back to board</button>
+
+    <div id="wsignin">
+      <h2>Sign in</h2>
+      <p class="lede">Your email, and nothing else. We can trade your wallet;
+        only you can take money out of it —
+        <a href="/safety">how that's enforced</a>.</p>
+      <div id="wemail">
+        <div class="wlabel">EMAIL</div>
+        <input id="wemailin" type="email" autocomplete="email" placeholder="you@example.com">
+        <div class="wbtns"><button class="glbtn" id="wsend">Send code</button></div>
+      </div>
+      <div id="wcode" style="display:none">
+        <div class="wlabel">CODE SENT TO <span id="wsentto"></span></div>
+        <input id="wcodein" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
+        <div class="wbtns">
+          <button class="glbtn" id="wverify">Sign in</button>
+          <button class="ghost" id="wother">Different email</button>
+        </div>
+      </div>
+      <div class="wmsg" id="wauthmsg"></div>
+    </div>
+
+    <div id="wfunded" style="display:none">
+      <h2>Your wallet</h2>
+      <p class="lede">You own it. We can trade it and nothing else —
+        <a href="/safety">how that's enforced</a>.</p>
+
+      <div class="wrow"><span class="k">Tradeable</span><span class="v" id="wbal">—</span></div>
+      <div class="wrow"><span class="k">Held for fees</span><span class="v" id="wgas">—</span></div>
+
+      <div class="wlabel">DEPOSIT — SEND SOL HERE</div>
+      <div class="waddr" id="waddr">…</div>
+      <div class="wbtns">
+        <button class="ghost" id="wcopy">Copy</button>
+        <button class="ghost" id="wrefresh">Refresh</button>
+      </div>
+
+      <div class="wlabel">WITHDRAW</div>
+      <input id="wdest" placeholder="Your Solana address" spellcheck="false">
+      <div class="wbtns"><button class="ghost" id="wwithdraw">Withdraw everything</button></div>
+      <div class="wmsg" id="wmsg"></div>
+
+      <div class="wfoot">
+        <a href="#" id="wsignout">Sign out</a>
+      </div>
+    </div>
+  </div>
+
   <div id="settings" style="display:none">
     <button class="back" onclick="closeSettings()">← back to board</button>
     <div class="sethead">
@@ -475,6 +552,10 @@
 <script>
 const API = 'https://api.scgalpha.com';
 let KEY = localStorage.getItem('edgelvl_key') || '';
+// The coin someone hit Greenlight on before signing in. Held so the sign-in
+// finishes what they were actually trying to do instead of dropping them back
+// on the board to find it again.
+let pendingCoin = null;
 let coins = [], openMint = null, timer = null;
 
 // Coins the bot is working that have dropped below your filters. The board list
@@ -561,36 +642,6 @@ async function api(path, opts = {}) {
   return r.json();
 }
 
-/* ── gate ── */
-const gate = document.getElementById('gate'), app = document.getElementById('app');
-async function tryKey(k) {
-  const err = document.getElementById('keyerr');
-  err.textContent = '';
-  KEY = k.trim();
-  if (!KEY) { err.textContent = 'Enter your licence key.'; return; }
-  document.getElementById('keygo').textContent = 'Checking…';
-  try {
-    await api('/api/trending?limit=1');
-    localStorage.setItem('edgelvl_key', KEY);
-    gate.style.display = 'none'; app.style.display = 'block';
-    start();
-  } catch (e) {
-    err.textContent = e.message === 'bad-key'
-      ? "That key isn't active. Check your subscription."
-      : "Couldn't reach the server — try again in a moment.";
-    document.getElementById('keygo').textContent = 'Open terminal';
-  }
-}
-document.getElementById('keygo').onclick = () => tryKey(document.getElementById('keyin').value);
-document.getElementById('keyin').onkeydown = e => { if (e.key === 'Enter') tryKey(e.target.value); };
-document.getElementById('showkey').onclick = e => {
-  e.preventDefault();
-  document.getElementById('keybox').style.display = 'block';
-  document.getElementById('keyin').focus();
-};
-document.getElementById('signout').onclick = e => {
-  e.preventDefault(); localStorage.removeItem('edgelvl_key'); location.reload();
-};
 
 /* ── board ── */
 function sorted() {
@@ -626,8 +677,7 @@ function renderBoard() {
   const tb = document.getElementById('rows');
   const list = sorted();
   if (!list.length) {
-    tb.innerHTML = `<tr><td colspan="9"><div class="empty">Nothing above that volume right now.<br>
-      Try the All tab — or wait, the board refreshes every 15 seconds.</div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty">Nothing above that volume right now.</div></td></tr>`;
   } else {
     tb.innerHTML = list.map(rowHTML).join('');
     tb.querySelectorAll('tr').forEach(r => r.onclick = () => openDetail(r.dataset.mint));
@@ -659,7 +709,9 @@ async function refresh() {
     // looked fine — so send them somewhere that can renew it instead.
     if (e.message === 'bad-key') {
       localStorage.removeItem('edgelvl_key');
-      location.href = '/account?next=' + encodeURIComponent(location.pathname + location.search);
+      KEY = '';
+      paintChip(null);
+      openWallet();
       return;
     }
     document.getElementById('livetxt').textContent = 'reconnecting';
@@ -904,10 +956,10 @@ async function greenlight(c) {
   const btn = document.getElementById('glbtn'), note = document.getElementById('glnote');
 
   // First greenlight is the moment an account starts to matter — not before.
-  // Come back to this coin afterwards rather than dumping them on the board.
+  // Sign in without leaving the page or losing the coin you were looking at.
   if (!KEY) {
-    sessionStorage.setItem('edgelvl_pending_coin', c.mint);
-    location.href = '/account?next=' + encodeURIComponent('/?coin=' + c.mint);
+    pendingCoin = c;
+    openWallet();
     return;
   }
 
@@ -1162,6 +1214,101 @@ SECTIONS.forEach(([, rows]) => rows.forEach(f => { F[f[0]] = f; }));
 const toView = f => v => +(((v - (f[5] || 0)) * f[3]).toFixed(6));
 const toRaw = f => v => +((v / f[3]) + (f[5] || 0)).toFixed(6);
 
+/* ── wallet ───────────────────────────────────────────────────────────────
+   Everything about money lives here, in the terminal, in the terminal's own
+   language. Signing in is a panel, not a different site with a different look. */
+const sol4 = n => (n === null || n === undefined) ? '—' : Number(n).toFixed(4);
+
+function wsay(id, text, kind = '') {
+  const n = document.getElementById(id);
+  n.textContent = text; n.className = 'wmsg ' + kind;
+}
+
+function paintChip(bal) {
+  const chip = document.getElementById('walletchip');
+  if (!KEY) { chip.textContent = 'sign in'; return; }
+  chip.innerHTML = bal === null
+    ? '<span class="bal">wallet</span>'
+    : `<span class="sol">◎</span><span class="bal">${sol4(bal)}</span>`;
+}
+
+function openWallet() {
+  ['board', 'detail', 'journal', 'settings'].forEach(id =>
+    document.getElementById(id).style.display = 'none');
+  document.getElementById('wallet').style.display = 'block';
+  window.scrollTo(0, 0);
+  document.getElementById('wsignin').style.display = KEY ? 'none' : 'block';
+  document.getElementById('wfunded').style.display = KEY ? 'block' : 'none';
+  if (KEY) loadWallet();
+}
+
+function closeWallet() {
+  document.getElementById('wallet').style.display = 'none';
+  document.getElementById('board').style.display = 'block';
+}
+
+let walletPoll = null;
+async function loadWallet() {
+  try {
+    const a = await api('/api/account');          // creates it on first call
+    document.getElementById('waddr').textContent = a.address;
+    document.getElementById('wbal').textContent = sol4(a.balances.wsol);
+    document.getElementById('wgas').textContent = sol4(Math.min(a.balances.sol, a.gas_reserve_sol));
+    paintChip(a.balances.wsol);
+
+    // A deposit lands whenever it lands. Watch for it rather than making
+    // someone press refresh and wonder whether it worked.
+    clearInterval(walletPoll);
+    walletPoll = setInterval(async () => {
+      if (document.getElementById('wallet').style.display === 'none') return;
+      try {
+        const b = await api('/api/account');
+        if (b.balances.unwrapped > 0.0005) {
+          wsay('wmsg', 'Deposit spotted — making it tradeable…');
+          const w = await api('/api/account/wrap', { method: 'POST' });
+          document.getElementById('wbal').textContent = sol4(w.balances.wsol);
+          paintChip(w.balances.wsol);
+          wsay('wmsg', 'Ready to trade.', 'good');
+        } else {
+          document.getElementById('wbal').textContent = sol4(b.balances.wsol);
+          paintChip(b.balances.wsol);
+        }
+      } catch (e) { /* transient — next tick retries */ }
+    }, 6000);
+  } catch (e) {
+    wsay('wmsg', e.message, 'bad');
+  }
+}
+
+/* The Privy module is separate — it has to be, it's the only part that needs to
+   be an ES module. These are the seams between the two.
+   Only things the module can't already reach: top-level `function` declarations
+   (wsay, paintChip, loadWallet, api) are on `window` already. Re-exposing `api`
+   as `window.api = (p, o) => api(p, o)` makes it call itself forever, because
+   for a declaration those are the same binding. */
+window.setKey = t => { KEY = t; localStorage.setItem('edgelvl_key', t); };
+window.resumePending = () => {
+  if (!pendingCoin) return;
+  const mint = pendingCoin.mint;
+  pendingCoin = null;
+  closeWallet();
+  openDetail(mint);        // back to the coin they were trying to greenlight
+};
+
+document.getElementById('walletchip').onclick = e => { e.preventDefault(); openWallet(); };
+document.getElementById('wrefresh').onclick = () => loadWallet();
+document.getElementById('wcopy').onclick = async () => {
+  await navigator.clipboard.writeText(document.getElementById('waddr').textContent);
+  const b = document.getElementById('wcopy');
+  b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy'), 1400);
+};
+document.getElementById('wsignout').onclick = async e => {
+  e.preventDefault();
+  localStorage.removeItem('edgelvl_key'); KEY = '';
+  if (window.EdgeAuth) await window.EdgeAuth.logout();
+  location.reload();
+};
+
 async function openSettings() {
   ['board', 'detail', 'journal'].forEach(id => document.getElementById(id).style.display = 'none');
   document.getElementById('settings').style.display = 'block';
@@ -1304,11 +1451,119 @@ function start() {
 /* The board is public. Anyone can watch it work before deciding to trade on it
    — you can't judge a signal feed you're not allowed to see. Signing in is what
    greenlighting requires, not what looking requires. */
-gate.style.display = 'none';
-app.style.display = 'block';
-document.getElementById('account').textContent = KEY ? 'wallet' : 'sign in';
-document.getElementById('signout').style.display = KEY ? '' : 'none';
+paintChip(null);
 start();
+</script>
+
+<script type="module">
+/* Privy, kept to itself. The rest of the terminal is a plain script and stays
+   that way; this module hands it the three things it needs and nothing more.
+
+   Two traps, both of which fail silently: there is no `Privy` named export
+   (importing one gives undefined until you construct it), and without a storage
+   adapter every call dies with "Unable to access storage" at call time rather
+   than at construction — so the page looks perfectly healthy while sign-in is
+   dead. The version is pinned because 0.7.0 is broken on this CDN. */
+import Privy, { LocalStorage } from 'https://esm.sh/@privy-io/js-sdk-core@0.68.6';
+
+const privy = new Privy({
+  appId: 'cmsasu2fa00930dlc04skfjwl',      // public identifier, not a secret
+  storage: new LocalStorage(),
+});
+
+window.EdgeAuth = {
+  sendCode: (email) => privy.auth.email.sendCode(email),
+  loginWithCode: async (email, code) => {
+    const s = await privy.auth.email.loginWithCode(email, code);
+    return s.token || await privy.getAccessToken();
+  },
+  getToken: () => privy.getAccessToken(),
+  logout: () => privy.auth.logout().catch(() => {}),
+  signTransaction: (transaction) => privy.embeddedWallet.signTransaction({
+    transaction, encoding: 'base64', chainType: 'solana',
+  }),
+};
+
+const $ = id => document.getElementById(id);
+let email = '';
+
+function friendly(e) {
+  const m = (e && e.message) || String(e);
+  if (/code/i.test(m) && /invalid|incorrect|expired/i.test(m))
+    return 'That code is wrong or has expired. Send a new one.';
+  if (/network|fetch/i.test(m)) return "Couldn't reach the server — try again.";
+  return m;
+}
+
+$('wsend').onclick = async () => {
+  email = $('wemailin').value.trim();
+  if (!email.includes('@')) return window.wsay('wauthmsg', 'Enter your email.', 'bad');
+  $('wsend').disabled = true;
+  window.wsay('wauthmsg', 'Sending…');
+  try {
+    await window.EdgeAuth.sendCode(email);
+    $('wsentto').textContent = email;
+    $('wemail').style.display = 'none';
+    $('wcode').style.display = 'block';
+    window.wsay('wauthmsg', '');
+    $('wcodein').focus();
+  } catch (e) { window.wsay('wauthmsg', friendly(e), 'bad'); }
+  finally { $('wsend').disabled = false; }
+};
+
+$('wother').onclick = () => {
+  $('wcode').style.display = 'none';
+  $('wemail').style.display = 'block';
+  window.wsay('wauthmsg', '');
+};
+
+$('wverify').onclick = async () => {
+  const code = $('wcodein').value.trim();
+  if (!code) return window.wsay('wauthmsg', 'Enter the code from your email.', 'bad');
+  $('wverify').disabled = true;
+  window.wsay('wauthmsg', 'Checking…');
+  try {
+    window.setKey(await window.EdgeAuth.loginWithCode(email, code));
+    $('wsignin').style.display = 'none';
+    $('wfunded').style.display = 'block';
+    await window.loadWallet();
+    window.resumePending();
+  } catch (e) { window.wsay('wauthmsg', friendly(e), 'bad'); }
+  finally { $('wverify').disabled = false; }
+};
+
+$('wwithdraw').onclick = async () => {
+  const destination = $('wdest').value.trim();
+  if (!destination) return window.wsay('wmsg', 'Where should it go?', 'bad');
+  $('wwithdraw').disabled = true;
+  try {
+    window.wsay('wmsg', 'Preparing…');
+    const built = await window.api('/api/withdraw', {
+      method: 'POST', body: JSON.stringify({ destination }),
+    });
+    // Signed here, by them. Our key cannot produce this transaction at all.
+    window.wsay('wmsg', `Signing ${Number(built.amount_sol).toFixed(4)} SOL…`);
+    const signed = await window.EdgeAuth.signTransaction(built.transaction);
+    window.wsay('wmsg', 'Sending…');
+    const sent = await window.api('/api/withdraw/submit', {
+      method: 'POST',
+      body: JSON.stringify({ transaction: signed.signedTransaction || signed }),
+    });
+    $('wmsg').innerHTML = `Sent. <a href="${sent.explorer}" target="_blank" rel="noopener">View it</a>`;
+    $('wmsg').className = 'wmsg good';
+    window.loadWallet();
+  } catch (e) { window.wsay('wmsg', friendly(e), 'bad'); }
+  finally { $('wwithdraw').disabled = false; }
+};
+
+/* Restore a session on load so the chip shows a balance rather than "sign in"
+   to someone who signed in yesterday. */
+(async () => {
+  try {
+    const t = await window.EdgeAuth.getToken();
+    if (t) { window.setKey(t); window.paintChip(null); }
+  } catch (_) { /* not signed in */ }
+})();
 </script>
 </body>
 </html>

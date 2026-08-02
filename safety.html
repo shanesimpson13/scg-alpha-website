@@ -6,50 +6,74 @@
 <title>EdgeLvl — How your money is held</title>
 <link rel="icon" href="/favicon.ico">
 <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Same palette and type as the board. A page about custody that looks like a
+     different product invites the question of whose page it is. */
   :root {
-    --bg: #0b0d10; --panel: #12151a; --line: #1e232b; --ink: #e8ecf1;
-    --dim: #9aa4b2; --dimmer: #6b7482; --accent: #4ade80; --bad: #f87171;
+    --bg: #000; --panel: #0a0a0a; --fg: #fff;
+    --line: rgba(255,255,255,0.08); --hair: rgba(255,255,255,0.045);
+    --dim: rgba(255,255,255,0.55); --dimmer: rgba(255,255,255,0.32);
+    --field: rgba(255,255,255,0.04);
+    --green: #7cffa0; --red: #ff6b6b;
   }
   :root[data-theme="light"] {
-    --bg: #f7f8fa; --panel: #fff; --line: #e4e7ec; --ink: #12151a;
-    --dim: #5b6472; --dimmer: #8b95a3; --accent: #16a34a;
+    --bg: #fbfbfa; --panel: #f2f2f0; --fg: #14140f;
+    --line: rgba(0,0,0,0.11); --hair: rgba(0,0,0,0.06);
+    --dim: rgba(0,0,0,0.58); --dimmer: rgba(0,0,0,0.38);
+    --field: rgba(0,0,0,0.03);
+    --green: #12924b; --red: #c0362c;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.7
-         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  .wrap { max-width: 680px; margin: 0 auto; padding: 32px 20px 90px; }
-  header { display: flex; align-items: center; gap: 10px; margin-bottom: 34px; }
-  header img { height: 26px; }
-  header a { color: var(--dim); font-size: 13px; text-decoration: none; }
-  header a:hover { color: var(--ink); }
-  h1 { font-size: 26px; margin: 0 0 10px; letter-spacing: -0.02em; }
-  h2 { font-size: 17px; margin: 34px 0 10px; letter-spacing: -0.01em; }
-  p { margin: 0 0 14px; color: var(--dim); }
-  p.lead { color: var(--ink); font-size: 16px; }
-  strong { color: var(--ink); }
-  .card { background: var(--panel); border: 1px solid var(--line);
-          border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
-  ul { margin: 0 0 14px; padding-left: 20px; color: var(--dim); }
-  li { margin-bottom: 7px; }
-  table { width: 100%; border-collapse: collapse; margin: 4px 0 8px; font-size: 14px; }
-  td { padding: 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-  td:last-child { text-align: right; white-space: nowrap; padding-left: 14px; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 13px/1.75 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 22px 26px 90px; }
+  header { display: flex; align-items: center; gap: 12px; padding-bottom: 16px;
+           border-bottom: 1px solid var(--line); margin-bottom: 34px; }
+  header img { height: 18px; }
+  header a { color: var(--dimmer); font-size: 11px; text-decoration: none; }
+  header a:hover { color: var(--fg); }
+  h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 12px; }
+  h2 { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+       color: var(--dimmer); margin: 38px 0 12px; }
+  p { color: var(--dim); margin-bottom: 13px; }
+  p.lead { color: var(--fg); font-size: 14px; line-height: 1.8; margin-bottom: 4px; }
+  strong, b { color: var(--fg); font-weight: 600; }
+  em { font-style: normal; color: var(--fg); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+          padding: 6px 16px; margin: 14px 0; }
+  ul { margin: 0 0 13px; padding-left: 18px; color: var(--dim); }
+  li { margin-bottom: 9px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 11px 0; border-bottom: 1px solid var(--hair); vertical-align: top;
+       color: var(--dim); }
+  td:last-child { text-align: right; white-space: nowrap; padding-left: 16px; }
   tr:last-child td { border-bottom: 0; }
-  .yes { color: var(--accent); font-weight: 600; }
-  .no { color: var(--bad); font-weight: 600; }
-  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
-         background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
-         padding: 1px 5px; }
-  a { color: var(--accent); }
-  footer { margin-top: 46px; padding-top: 18px; border-top: 1px solid var(--line);
-           font-size: 13px; color: var(--dimmer); }
+  .yes { color: var(--green); }
+  .no { color: var(--red); }
+  code { background: var(--field); border: 1px solid var(--line); border-radius: 4px;
+         padding: 1px 5px; font-size: 12px; color: var(--fg); }
+  a { color: var(--dim); }
+  a:hover { color: var(--fg); }
+  footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--line);
+           font-size: 11px; color: var(--dimmer); line-height: 1.8; }
 </style>
+<script>
+  /* Whatever theme they picked on the board, before first paint so it never
+     flashes the wrong one. */
+  try {
+    document.documentElement.setAttribute(
+      'data-theme', localStorage.getItem('edgelvl_theme') || 'dark');
+  } catch (e) {}
+</script>
 </head>
 <body>
 <div class="wrap">
   <header>
     <img src="/edge-logo.png" alt="EdgeLvl">
-    <a href="/">← the board</a>
+    <a href="/">← back to board</a>
   </header>
 
   <h1>How your money is held</h1>
