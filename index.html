@@ -8,15 +8,6 @@
   <link rel="icon" href="/favicon.ico?v=2" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
   <style>
-    /* Press Start 2P — the arcade face, SIL Open Font License, so it's free to
-       use commercially and to self-host. Self-hosted rather than pulled from
-       Google's CDN: no third-party request on every page load, and the header
-       can't be left un-styled by someone else's outage. */
-    @font-face {
-      font-family: 'Press Start 2P';
-      src: url('/press-start-2p.woff2') format('woff2');
-      font-weight: 400; font-style: normal; font-display: swap;
-    }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -64,20 +55,13 @@
       border-bottom: 1px solid var(--line); flex-wrap: wrap;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
-    /* Set in the app's own face rather than drawn. The whole interface is bold
-       uppercase mono; the name had no reason to be the one thing that isn't. */
-    /* Heavier than the 700 the mono face tops out at — the stroke thickens it
-       for real rather than letting the browser fake a bold. */
-    /* Press Start 2P runs large for its point size and already carries its own
-       spacing, so it needs a smaller size and no extra tracking. */
-    .brand .wordmark {
-      font-family: 'Press Start 2P', ui-monospace, monospace;
-      font-size: 14px; letter-spacing: 0; color: var(--fg);
-      /* The face ships one weight, so "bolder" means thickening the strokes.
-         Kept under half a pixel — more than that and the square corners start
-         to round off, which is the whole character of an arcade face. */
-      -webkit-text-stroke: 0.45px currentColor;
-    }
+    /* The real wordmark, as outlines. Fill comes from currentColor so one file
+       serves both themes and it stays sharp at any size. width:auto on an
+       inline SVG with no intrinsic size collapses to zero, so the ratio lets
+       height alone drive it — resizing later is one number. */
+    .brand .wordmark { height: 15px; width: auto; display: block; color: var(--fg);
+                       aspect-ratio: 180.303 / 39.203; }
+
     .status { display: flex; align-items: center; gap: 13px; font-size: 11px; color: var(--dimmer); }
     .live { display: flex; align-items: center; gap: 6px; color: var(--green); }
     .live.stale { color: var(--amber); }
@@ -88,6 +72,7 @@
     a { color: var(--dim); }
     a:hover { color: var(--fg); }
     .status a { color: var(--dimmer); }
+    /* .status a dims every link in the header; the balance shouldn't be dim. */
     #themetoggle { text-decoration: none; font-size: 14px; }
     #themetoggle:hover { color: var(--fg); }
 
@@ -96,8 +81,8 @@
       display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px;
       border: 1px solid var(--line); border-radius: 6px; background: var(--field);
       color: var(--fg); font-size: 11px; text-decoration: none; line-height: 1;
+      white-space: nowrap;
     }
-    /* .status a dims every link in the header; the balance shouldn't be dim. */
     .status a.chip { color: var(--fg); }
     .chip:hover { border-color: var(--dim); }
     .chip .bal { font-variant-numeric: tabular-nums; }
@@ -451,7 +436,7 @@
 
 <div class="wrap" id="app">
   <header>
-    <div class="brand"><span class="wordmark">EDGE</span></div>
+    <div class="brand"><svg class="wordmark" viewBox="97.350 166.297 180.303 39.203" fill="currentColor" role="img" aria-label="EDGE"><g transform="translate(93.427734,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g><g transform="translate(140.461163,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 35.28125 -39.203125 L 35.28125 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 0 Z M 35.28125 -7.84375 L 35.28125 -31.359375 L 43.125 -31.359375 L 43.125 -7.84375 Z M 35.28125 -7.84375 "/></g><g transform="translate(187.494592,205.499987)"><path d="M 11.765625 0 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 -15.6875 L 19.59375 -15.6875 L 19.59375 -23.515625 L 43.125 -23.515625 L 43.125 0 Z M 3.921875 -7.84375 L 3.921875 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 Z M 11.765625 -31.359375 L 11.765625 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 Z M 11.765625 -31.359375 "/></g><g transform="translate(234.528021,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g></svg></div>
     <div class="status">
       <div class="live" id="livewrap"><div class="dot"></div><span id="livetxt">live</span></div>
       <span id="updated"></span>
