@@ -77,14 +77,6 @@
     #themetoggle:hover { color: var(--fg); }
 
 
-    /* ── token safety ── */
-    #dsec { margin: 14px 0 4px; }
-    .sec { display: flex; flex-wrap: wrap; gap: 7px; }
-    .secitem { font-size: 11px; padding: 4px 9px; border-radius: 5px;
-               border: 1px solid var(--line); background: var(--field); color: var(--dim); }
-    .secitem.good { color: var(--green); border-color: color-mix(in srgb, var(--green) 35%, transparent); }
-    .secitem.bad { color: var(--red); border-color: color-mix(in srgb, var(--red) 45%, transparent); }
-    .secnote { font-size: 10.5px; color: var(--dimmer); margin-top: 7px; line-height: 1.6; }
 
     /* ── wallet chip: balance sits in the header, like every terminal ── */
     .chip {
@@ -303,6 +295,11 @@
        trick paints them as blank panels. Flex items grow to fill whatever row
        they land on, so there's never dead space. Hairlines come from cell
        borders, with the trailing edges clipped by the container. */
+    .tier { margin-bottom: 12px; }
+    .th { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em;
+          text-transform: uppercase; margin-bottom: 6px; display: flex; gap: 8px; }
+    .tier.slow .th { opacity: .7; }
+    .tage { color: var(--green); }
     .stats {
       display: flex; flex-wrap: wrap;
       border: 1px solid var(--line); border-radius: 10px;
@@ -859,51 +856,35 @@ function renderDetail() {
     <div class="chartwrap">
       <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
     </div>
-    <div class="stats">
-      <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.mcap)}</div></div>
-      <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
-      <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
-      <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs"><span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span></div></div>
-      <div class="stat"><div class="k">B/S</div><div class="v" data-f="volr">${c.volr == null ? '—' : c.volr.toFixed(2)}</div></div>
-      <div class="stat"><div class="k">5m</div><div class="v" data-f="pc5">${pct(c.pc5)}</div></div>
-      <div class="stat"><div class="k">1h</div><div class="v" data-f="pc1h">${pct(c.pc1h)}</div></div>
-      <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders || 0).toLocaleString()}</div></div>
-      <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart || 0} / ${c.kol || 0}</div></div>
+    <div class="tier">
+      <div class="th">Live<span class="tage" id="tage"></span></div>
+      <div class="stats">
+        <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.mcap)}</div></div>
+        <div class="stat"><div class="k">5m volume</div><div class="v" data-f="v5">${money(c.vol_5m)}</div></div>
+        <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs"><span class="up">${(c.buys_5m||0).toLocaleString()}</span> / <span class="down">${(c.sells_5m||0).toLocaleString()}</span></div></div>
+        <div class="stat"><div class="k">Net</div><div class="v" data-f="net">${netTx(c)}</div></div>
+        <div class="stat"><div class="k">B/S</div><div class="v" data-f="volr">${bsRatio(c)}</div></div>
+        <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders||0).toLocaleString()}</div></div>
+      </div>
     </div>
-    <div id="dsec"></div>
+
+    <div class="tier slow">
+      <div class="th">Every 15s</div>
+      <div class="stats">
+        <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
+        <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
+        <div class="stat"><div class="k">1h volume</div><div class="v" data-f="vol1h">${money(c.vol_1h)}</div></div>
+        <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart||0} / ${c.kol||0}</div></div>
+        <div class="stat"><div class="k">Top 10</div><div class="v" data-f="top10">${c.top10_pct==null?'—':c.top10_pct+'%'}</div></div>
+      </div>
+    </div>
     <div id="dstatus"></div>
     <div id="dband"></div>
     <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
     <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.</div>
   `;
-  loadSecurity(c.mint);
   if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
   else document.getElementById('glbtn').onclick = () => greenlight(c);
-}
-
-/** Rug-relevant facts. Server caches these for a minute — they're properties of
-    the token, not of the market, so they don't move. */
-async function loadSecurity(mint) {
-  const box = document.getElementById('dsec');
-  if (!box) return;
-  box.innerHTML = '';
-  try {
-    const d = await api('/api/security/' + mint);
-    if (openMint !== mint) return;            // they moved on while we waited
-    const chip = (label, ok, bad) => `<span class="secitem ${ok ? 'good' : (bad ? 'bad' : '')}">${label}</span>`;
-    const bits = [
-      chip(d.sellable ? 'Sellable' : 'CANNOT SELL', d.sellable, !d.sellable),
-      chip(`Tax ${d.buy_tax}/${d.sell_tax}%`, !d.buy_tax && !d.sell_tax, d.high_tax),
-      chip(d.mint_renounced ? 'Mint renounced' : 'Dev can mint', d.mint_renounced, !d.mint_renounced),
-      chip(d.freeze_renounced ? 'No freeze' : 'Dev can freeze', d.freeze_renounced, !d.freeze_renounced),
-      chip(d.lp_burned ? 'LP burned' : (d.lp_locked ? 'LP locked' : 'LP loose'), d.lp_burned || d.lp_locked, !(d.lp_burned || d.lp_locked)),
-      chip(`Top 10 ${d.top10_pct}%`, d.top10_pct < 20, d.top10_pct > 40),
-    ];
-    if (d.blacklist) bits.push(chip('Blacklist', false, true));
-    box.innerHTML = `<div class="sec">${bits.join('')}</div>
-      <div class="secnote">From GMGN's security read, refreshed each minute. It
-      describes the token's rules, not whether the trade is good.</div>`;
-  } catch (e) { /* a missing safety panel shouldn't take the page down */ }
 }
 
 /** The bot's state for the coin you're looking at, above the greenlight. */
@@ -962,21 +943,43 @@ function renderBand(c) {
     // does nothing until price climbs back above that line.
     const warm = b.warmup_left > 0 ? ` · ${b.warmup_left}s of warmup left` : '';
     const now = Number(c.mcap) || 0;
-    const from = b.buy_from, to = b.buy_to;
+    const fromNum = parseMoney(b.buy_from);
+
+    // The old copy said "no dip yet" and "In range now" in the same breath,
+    // which read as "about to buy" when in fact nothing could fire. The dip
+    // has to happen FIRST: the strategy swallows every price at or below
+    // hi×(1−dip) without even checking the reclaim, so until price has been
+    // down there, this window is theoretical.
+    if (!b.dipped) {
+      const trigger = parseMoney(b.buy_from);
+      const need = (now && trigger) ? (trigger / now) : null;
+      el.innerHTML = `<span class="bk">Waiting for a dip${warm}</span>` +
+        `<span class="step">needs to trade at or below <b>${esc(b.buy_from || '—')}</b></span>` +
+        `<span class="step" style="color:var(--dimmer)">high so far ${esc(b.hi || '—')}</span>` +
+        `<div style="color:var(--dimmer);font-size:11px;margin-top:5px">` +
+        `No dip yet, so nothing can trigger. Currently ${money(now)}` +
+        `${need && need < 1 ? ` — ${((1 - need) * 100).toFixed(1)}% below the high would do it` : ''}.</div>`;
+      return;
+    }
+
+    // Dipped. Now the reclaim window is real and the price can actually be in it.
     let gap = '';
-    if (now && from) {
-      const fromNum = parseMoney(from);
-      if (fromNum && now < fromNum) {
+    if (now && fromNum) {
+      const toNum = parseMoney(b.buy_to);
+      if (now < fromNum) {
         gap = `<div style="color:var(--amber);font-size:11px;margin-top:5px">` +
-              `Currently ${money(now)} — needs <b>${(fromNum / now).toFixed(2)}x</b> from here to reach that window.</div>`;
-      } else if (fromNum) {
-        gap = `<div style="color:var(--green);font-size:11px;margin-top:5px">In range now.</div>`;
+              `Currently ${money(now)} — needs <b>${(fromNum / now).toFixed(3)}x</b> to reach the window.</div>`;
+      } else if (toNum && now > toNum) {
+        gap = `<div style="color:var(--amber);font-size:11px;margin-top:5px">` +
+              `Currently ${money(now)} — above the window; waiting for a lower entry.</div>`;
+      } else {
+        gap = `<div style="color:var(--green);font-size:11px;margin-top:5px">` +
+              `In the window now — buys on the next confirmed tick.</div>`;
       }
     }
-    el.innerHTML = `<span class="bk">Buys between${warm}</span>` +
-      `<span class="step"><b>${esc(from || '—')}</b> and <b>${esc(to || '—')}</b></span>` +
-      `<span class="step" style="color:var(--dimmer)">high ${esc(b.hi || '—')}` +
-      `${b.dipped ? ' · dipped' : ' · no dip yet'}</span>` + gap;
+    el.innerHTML = `<span class="bk">Dipped · buys between${warm}</span>` +
+      `<span class="step"><b>${esc(b.buy_from || '—')}</b> and <b>${esc(b.buy_to || '—')}</b></span>` +
+      `<span class="step" style="color:var(--dimmer)">high ${esc(b.hi || '—')}</span>` + gap;
     return;
   }
 
@@ -992,6 +995,20 @@ function renderBand(c) {
     `Projected from the current market cap. Once you greenlight, the bot measures from the high it sees.</div>`;
 }
 
+/** Buys minus sells over 5 minutes, by transaction count. */
+function netTx(c) {
+  const n = (c.buys_5m || 0) - (c.sells_5m || 0);
+  return `<span class="${n >= 0 ? 'up' : 'down'}">${n >= 0 ? '+' : '−'}${Math.abs(n).toLocaleString()}</span>`;
+}
+
+/** The live B/S is a transaction-COUNT ratio, because that's what updates in
+    under two seconds. The bot still gates on GMGN's volume-weighted ratio,
+    which is slower and better — so this is for reading, not for deciding. */
+function bsRatio(c) {
+  const v = c.bs_count != null ? c.bs_count : c.volr;
+  return v == null ? '—' : Number(v).toFixed(2);
+}
+
 function updateDetail(c) {
   const el = document.getElementById('detail');
   const set = (f, html) => { const n = el.querySelector(`[data-f="${f}"]`); if (n) n.innerHTML = html; };
@@ -1000,10 +1017,16 @@ function updateDetail(c) {
   set('ath', money(c.ath_mcap));
   set('liq', money(c.liq));
   set('bs', `<span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span>`);
-  set('volr', c.volr == null ? '—' : c.volr.toFixed(2));
+  set('volr', bsRatio(c));
   set('pc5', pct(c.pc5));
   set('pc1h', pct(c.pc1h));
   set('holders', (c.holders || 0).toLocaleString());
+  set('v5', money(c.vol_5m));
+  set('net', netTx(c));
+  set('vol1h', money(c.vol_1h));
+  set('top10', c.top10_pct == null ? '—' : c.top10_pct + '%');
+  const t = document.getElementById('tage');
+  if (t) t.textContent = c.fast_age == null ? '' : ` · ${c.fast_age}s ago`;
   set('sk', `${c.smart || 0} / ${c.kol || 0}`);
   renderBand(c);
   set('age', age(c.age_secs));
