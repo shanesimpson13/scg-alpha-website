@@ -72,7 +72,11 @@
        spacing, so it needs a smaller size and no extra tracking. */
     .brand .wordmark {
       font-family: 'Press Start 2P', ui-monospace, monospace;
-      font-size: 13px; letter-spacing: 0; color: var(--fg);
+      font-size: 14px; letter-spacing: 0; color: var(--fg);
+      /* The face ships one weight, so "bolder" means thickening the strokes.
+         Kept under half a pixel — more than that and the square corners start
+         to round off, which is the whole character of an arcade face. */
+      -webkit-text-stroke: 0.45px currentColor;
     }
     .status { display: flex; align-items: center; gap: 13px; font-size: 11px; color: var(--dimmer); }
     .live { display: flex; align-items: center; gap: 6px; color: var(--green); }
