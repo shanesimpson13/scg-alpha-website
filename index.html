@@ -305,6 +305,7 @@
     .dgrid { display: grid; grid-template-columns: minmax(0, 1fr) 320px;
              gap: 12px; align-items: start; margin-bottom: 14px; }
     @media (max-width: 980px) { .dgrid { grid-template-columns: minmax(0, 1fr); } }
+    .dmain { min-width: 0; }
     .drail { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
     .chartwrap {
       position: relative; width: 100%; height: 62vh; min-height: 420px; max-height: 760px;
@@ -316,7 +317,10 @@
        trick paints them as blank panels. Flex items grow to fill whatever row
        they land on, so there's never dead space. Hairlines come from cell
        borders, with the trailing edges clipped by the container. */
-    .tier { margin-bottom: 8px; }
+    .tier { margin-bottom: 0; }
+    .chartwrap { margin-bottom: 10px; }
+    .tier:not(:last-child) .stats { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .tier + .tier .stats { border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
     .th { font-size: 9px; color: var(--dimmer); letter-spacing: .1em;
           text-transform: uppercase; margin-bottom: 4px; display: flex; gap: 8px; }
     .tier.slow .th { opacity: .7; }
@@ -881,17 +885,11 @@ function renderDetail() {
 
     </div>
     <div class="dgrid">
+      <div class="dmain">
       <div class="chartwrap">
         <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
       </div>
-      <aside class="drail">
-        <div id="dstatus"></div>
-        <div id="dband"></div>
-        <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
-        <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.</div>
-      </aside>
-    </div>
-    <div class="tier">
+      <div class="tier">
       <div class="stats">
         <div class="stat"><div class="k">5m volume</div><div class="v ${volClass(c.vol_5m)}" data-f="v5">${money(c.vol_5m)}</div></div>
         <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
@@ -910,7 +908,16 @@ function renderDetail() {
         <div class="stat"><div class="k">Bundler</div><div class="v" data-f="bundler">${wpct(c.bundler_pct, 30)}</div></div>
         <div class="stat"><div class="k">Bot degen</div><div class="v" data-f="botdegen">${wpct(c.botdegen_pct, 40)}</div></div>
         <div class="stat"><div class="k">Phishing</div><div class="v" data-f="phishing">${wpct(c.phishing_pct, 10)}</div></div>
+        </div>
       </div>
+      </div>
+
+      <aside class="drail">
+        <div id="dstatus"></div>
+        <div id="dband"></div>
+        <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
+        <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.</div>
+      </aside>
     </div>
   `;
   if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
