@@ -47,7 +47,10 @@
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
       min-height: 100vh; -webkit-font-smoothing: antialiased;
     }
-    .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 70px; }
+    /* Terminals use the window they're given — 1180px left a third of a wide
+       monitor empty. Capped rather than fully fluid so the board's columns
+       don't drift apart on an ultrawide. */
+    .wrap { max-width: 1760px; margin: 0 auto; padding: 20px 24px 70px; }
 
     header {
       display: flex; align-items: center; justify-content: space-between;
@@ -218,6 +221,10 @@
     tbody tr:hover { background: var(--hover); }
     tbody td { padding: 11px 14px; text-align: right; font-size: 12.5px; white-space: nowrap; }
     tbody td:first-child { text-align: left; }
+    /* Every numeric column is nowrap, so on a wide screen the table dumped all
+       the slack into the token column and left one huge gap before MC. Capping
+       column one spreads the extra across the numbers instead. */
+    thead th:first-child, tbody td:first-child { width: 20%; }
 
     .tok { display: flex; align-items: center; gap: 10px; }
     .tok img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; background: var(--field); flex-shrink: 0; }
@@ -304,7 +311,7 @@
        left half the row empty no matter how small the type got; the dead space
        was the looseness, not the font sizes. */
     .dgrid {
-      display: grid; grid-template-columns: minmax(0, 1fr) 312px;
+      display: grid; grid-template-columns: minmax(0, 1fr) clamp(312px, 21vw, 392px);
       gap: 10px; align-items: start; margin-bottom: 10px;
     }
     @media (max-width: 900px) { .dgrid { grid-template-columns: minmax(0, 1fr); } }
