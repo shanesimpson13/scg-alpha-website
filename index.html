@@ -47,11 +47,15 @@
       font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, 'Cascadia Code', 'Courier New', monospace;
       min-height: 100vh; -webkit-font-smoothing: antialiased;
     }
-    .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 70px; }
-    /* A chart earns width; a scannable board doesn't. Widening only when a
-       coin is open leaves the home page pixel-for-pixel where it was — the
-       class goes on <body> in showView(). */
-    body.wideview .wrap { max-width: 1560px; }
+    /* Reserve the scrollbar's width whether or not the page needs one. Without
+       this the board (short, no scrollbar) is 7px wider than the coin page
+       (tall, scrollbar), so the logo still shifted every time you opened a
+       coin — the same jump, just smaller. */
+    html { scrollbar-gutter: stable; }
+    /* One width for every view. Widening only the coin page meant the logo
+       and the sign-in chip jumped every time you opened or closed a coin;
+       1560 is what the chart-plus-rail needs, so the board takes it too. */
+    .wrap { max-width: 1560px; margin: 0 auto; padding: 20px 16px 70px; }
 
     header {
       display: flex; align-items: center; justify-content: space-between;
@@ -222,6 +226,10 @@
     tbody tr:hover { background: var(--hover); }
     tbody td { padding: 11px 14px; text-align: right; font-size: 12.5px; white-space: nowrap; }
     tbody td:first-child { text-align: left; }
+    /* Numeric columns are all nowrap, so at 1560 the table dumped every spare
+       pixel into the token column and left a hole before MC. Capping column
+       one spreads it across the numbers instead. */
+    thead th:first-child, tbody td:first-child { width: 22%; }
 
     .tok { display: flex; align-items: center; gap: 10px; }
     .tok img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; background: var(--field); flex-shrink: 0; }
@@ -749,7 +757,6 @@ function showView(name) {
     brand.classList.toggle('clickable', canGoBack);
     brand.onclick = canGoBack ? () => showView('board') : null;
   }
-  document.body.classList.toggle('wideview', name === 'detail');
   VIEWS.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = (id === name) ? 'block' : 'none';
