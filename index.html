@@ -299,23 +299,6 @@
        trick paints them as blank panels. Flex items grow to fill whatever row
        they land on, so there's never dead space. Hairlines come from cell
        borders, with the trailing edges clipped by the container. */
-    .wins { display: flex; gap: 6px; margin-bottom: 10px; }
-    .win { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 7px 10px;
-           font: inherit; cursor: pointer; background: var(--field); color: var(--dim);
-           border: 1px solid var(--line); border-radius: 7px; text-align: left; }
-    .win.on { border-color: var(--dim); background: var(--hover); }
-    .win .wl { font-size: 10px; color: var(--dimmer); letter-spacing: .08em; }
-    .win.on .wl { color: var(--fg); }
-    .win .wp { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
-
-    .flow { display: flex; flex-wrap: wrap; gap: 26px; padding: 12px 15px;
-            border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; }
-    .flow .f { display: flex; flex-direction: column; gap: 3px; }
-    .flow .f .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em;
-                  text-transform: uppercase; }
-    .flow .f .v { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
-    .flow .sub { color: var(--dimmer); font-weight: 400; }
-
     .tier { margin-bottom: 12px; }
     .th { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em;
           text-transform: uppercase; margin-bottom: 6px; display: flex; gap: 8px; }
@@ -883,24 +866,16 @@ function renderDetail() {
     <div class="chartwrap">
       <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
     </div>
-    <div class="wins">
-      ${['1m','5m','1h','24h'].map(w => {
-        const d = (c.windows || {})[w] || {};
-        return `<button class="win${w === winTF ? ' on' : ''}" data-win="${w}">
-          <span class="wl">${w}</span>
-          <span class="wp ${pcClass(d.pc)}">${d.pc == null ? '—' : (d.pc > 0 ? '+' : '') + d.pc.toFixed(2) + '%'}</span>
-        </button>`; }).join('')}
-    </div>
-
-    <div class="flow" id="flow">${flowRow(c)}</div>
-
     <div class="tier">
       <div class="stats">
+        <div class="stat"><div class="k">5m volume</div><div class="v ${volClass(c.vol_5m)}" data-f="v5">${money(c.vol_5m)}</div></div>
+        <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs"><span class="up">${(c.buys_5m||0).toLocaleString()}</span> / <span class="down">${(c.sells_5m||0).toLocaleString()}</span></div></div>
+        <div class="stat"><div class="k">B/S</div><div class="v" data-f="volr">${bsRatio(c)}</div></div>
         <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders||0).toLocaleString()}</div></div>
         <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart||0} / ${c.kol||0}</div></div>
         <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
       </div>
-    </div></div>
+    </div>
 
     <div class="tier slow">
       <div class="stats">
@@ -918,12 +893,6 @@ function renderDetail() {
     <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
     <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.</div>
   `;
-  document.querySelectorAll('.win').forEach(b => b.onclick = () => {
-    winTF = b.dataset.win;
-    document.querySelectorAll('.win').forEach(x => x.classList.toggle('on', x === b));
-    const cur = findCoin(openMint);
-    if (cur) document.getElementById('flow').innerHTML = flowRow(cur);
-  });
   if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
   else document.getElementById('glbtn').onclick = () => greenlight(c);
 }
@@ -1039,26 +1008,6 @@ function renderBand(c) {
 
 /** GMGN's abbreviation — enough of both ends to recognise, short enough to sit
     inline. Clicking it copies the full address, so there's no separate button. */
-let winTF = '5m';
-
-function pcClass(v) { return v == null ? '' : (v >= 0 ? 'up' : 'down'); }
-
-/** Volume, who was doing it, and the net — for whichever window is selected.
-    Net is the money figure (buy volume minus sell volume), not a count of
-    transactions: a thousand small buys against ten large sells is a net SELL,
-    and only the dollar version says so. */
-function flowRow(c) {
-  const d = (c.windows || {})[winTF] || {};
-  const f = (k, v, cls) => `<div class="f"><span class="k">${k}</span>` +
-                           `<span class="v ${cls || ''}">${v}</span></div>`;
-  if (d.vol == null) return '';
-  const net = d.net || 0;
-  return f('Vol', money(d.vol), volClass(d.vol))
-       + f('Buys', `${(d.buys||0).toLocaleString()}<span class="sub">/${money(d.buy_vol)}</span>`, 'up')
-       + f('Sells', `${(d.sells||0).toLocaleString()}<span class="sub">/${money(d.sell_vol)}</span>`, 'down')
-       + f('Net', (net >= 0 ? '+' : '−') + money(Math.abs(net)), net >= 0 ? 'up' : 'down');
-}
-
 function shortCA(m) { return m.slice(0, 4) + '…' + m.slice(-4); }
 
 function copyCA(el, mint) {
@@ -1100,8 +1049,7 @@ function setLive(c) {
   set('bs', `<span class="up">${(c.buys_5m||0).toLocaleString()}</span> / ` +
             `<span class="down">${(c.sells_5m||0).toLocaleString()}</span>`);
   set('volr', c.volr == null ? '—' : Number(c.volr).toFixed(2));
-  const fl = document.getElementById('flow');
-  if (fl) fl.innerHTML = flowRow(c);
+  set('v5', money(c.vol_5m));
   const v5 = document.querySelector('#detail [data-f="v5"]');
   if (v5) v5.className = ('v ' + volClass(c.vol_5m)).trim();
 }
@@ -1118,8 +1066,7 @@ function updateDetail(c) {
   set('pc5', pct(c.pc5));
   set('pc1h', pct(c.pc1h));
   set('holders', (c.holders || 0).toLocaleString());
-  const fl = document.getElementById('flow');
-  if (fl) fl.innerHTML = flowRow(c);
+  set('v5', money(c.vol_5m));
   const v5 = document.querySelector('#detail [data-f="v5"]');
   if (v5) v5.className = ('v ' + volClass(c.vol_5m)).trim();
   set('vol1h', money(c.vol_1h));
