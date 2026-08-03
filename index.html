@@ -285,12 +285,25 @@
     .dvol .l { font-size: 10px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; }
     /* The chart is the point of opening a coin — give it room and let it fill
        the frame instead of floating in padding. */
+    .chartbar { display: flex; justify-content: space-between; align-items: center;
+                margin-bottom: 8px; }
+    .tfs { display: flex; gap: 4px; }
+    .tf { padding: 4px 10px; font: inherit; font-size: 11px; cursor: pointer;
+          background: var(--field); color: var(--dim);
+          border: 1px solid var(--line); border-radius: 5px; }
+    .tf.on { color: var(--fg); border-color: var(--dim); }
+    .legend { display: flex; gap: 13px; font-size: 10px; color: var(--dimmer); }
+    .lg::before { content: "—"; margin-right: 4px; font-weight: 700; }
+    .lg-dip::before { color: var(--amber); }
+    .lg-rec::before { color: var(--green); }
+    .lg-buy::before { color: #7aa2ff; }
+    #chart { width: 100%; height: 100%; }
     .chartwrap {
       position: relative; width: 100%; height: 62vh; min-height: 420px; max-height: 760px;
       border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
       margin-bottom: 16px; background: var(--panel);
     }
-    .chartwrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+    .chartwrap #chart { position: absolute; inset: 0; }
     /* Flex, not grid: a grid leaves empty cells on the last row and the gap
        trick paints them as blank panels. Flex items grow to fill whatever row
        they land on, so there's never dead space. Hairlines come from cell
@@ -314,7 +327,9 @@
     .stat .v { font-size: 14px; font-weight: 500; }
     .mintline { font-size: 11px; color: var(--dimmer); margin-top: 9px;
                 display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-    .mintline code { color: var(--dim); word-break: break-all; }
+    .mintline code.ca { color: var(--dim); cursor: pointer; padding: 2px 6px;
+                        border: 1px solid var(--line); border-radius: 5px; }
+    .mintline code.ca:hover { color: var(--fg); border-color: var(--dim); }
     .mintline button, .mintline a {
       background: none; border: 1px solid var(--line); color: var(--dim);
       font-family: inherit; font-size: 10.5px; padding: 4px 9px; border-radius: 5px;
@@ -845,31 +860,34 @@ function renderDetail() {
         <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}
           <span class="dage" data-f="age">${age(c.age_secs)}</span></h2>
         <div class="mintline">
-          <code>${esc(c.mint)}</code>
-          <button onclick="navigator.clipboard.writeText('${esc(c.mint)}');this.textContent='copied'">copy</button>
+          <code class="ca" title="Click to copy the full address"
+                onclick="copyCA(this,'${esc(c.mint)}')">${shortCA(c.mint)}</code>
           <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank" rel="noopener">GMGN ↗</a>
           ${links(c)}
         </div>
       </div>
-      <div class="dvol"><div class="v" data-f="vol">${money(c.vol_5m)}</div><div class="l">5m volume</div></div>
+      <div class="dvol"><div class="v" data-f="hmc">${money(c.mcap)}</div><div class="l">market cap</div></div>
     </div>
-    <div class="chartwrap">
-      <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
+    <div class="chartbar">
+      <div class="tfs">${['1m','5m','15m','1h'].map(t =>
+        `<button class="tf${t === chartTF ? ' on' : ''}" data-tf="${t}">${t}</button>`).join('')}</div>
+      <div class="legend">
+        <span class="lg lg-dip">dip line</span>
+        <span class="lg lg-rec">reclaim</span>
+        <span class="lg lg-buy">your fill</span>
+      </div>
     </div>
+    <div class="chartwrap"><div id="chart"></div></div>
     <div class="tier">
-      <div class="th">Live<span class="tage" id="tage"></span></div>
       <div class="stats">
-        <div class="stat"><div class="k">Market cap</div><div class="v" data-f="mcap">${money(c.mcap)}</div></div>
         <div class="stat"><div class="k">5m volume</div><div class="v" data-f="v5">${money(c.vol_5m)}</div></div>
         <div class="stat"><div class="k">Buys / sells</div><div class="v" data-f="bs"><span class="up">${(c.buys_5m||0).toLocaleString()}</span> / <span class="down">${(c.sells_5m||0).toLocaleString()}</span></div></div>
-        <div class="stat"><div class="k">Net</div><div class="v" data-f="net">${netTx(c)}</div></div>
         <div class="stat"><div class="k">B/S</div><div class="v" data-f="volr">${bsRatio(c)}</div></div>
         <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders||0).toLocaleString()}</div></div>
       </div>
     </div>
 
     <div class="tier slow">
-      <div class="th">Every 15s</div>
       <div class="stats">
         <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
         <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
@@ -887,8 +905,127 @@ function renderDetail() {
     <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
     <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.</div>
   `;
+  startChart(c.mint);
   if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
   else document.getElementById('glbtn').onclick = () => greenlight(c);
+}
+
+
+/* ── the chart ─────────────────────────────────────────────────────────────
+   Ours, not an embed, for one reason: we draw the bot's reasoning on it. The
+   dip it's waiting for, the reclaim that fires the buy, and where it actually
+   filled. "In range but it never bought" should be obvious at a glance rather
+   than something you squint at a number panel to work out. */
+let chartTF = '1m';
+let chartObj = null, candleSeries = null, volSeries = null, chartMint = null;
+let chartTimer = null;
+const priceLines = [];
+
+function chartColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = n => cs.getPropertyValue(n).trim();
+  return { fg: v('--fg'), dim: v('--dim'), line: v('--line'),
+           green: v('--green'), red: v('--red'), amber: v('--amber') };
+}
+
+function buildChart(mint) {
+  const host = document.getElementById('chart');
+  if (!host || !window.LightweightCharts) return;
+  host.innerHTML = '';
+  const k = chartColors();
+  chartObj = LightweightCharts.createChart(host, {
+    // autoSize handles the case a manual width can't: a chart created while its
+    // container is still zero-width — mid-transition, or a panel that hasn't
+    // laid out — would otherwise stay at the library's 300x150 default forever
+    // and render nothing, with no error to explain it.
+    autoSize: true,
+    layout: { background: { color: 'transparent' }, textColor: k.dim, fontSize: 11,
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
+    grid: { vertLines: { color: k.line }, horzLines: { color: k.line } },
+    rightPriceScale: { borderColor: k.line, scaleMargins: { top: 0.08, bottom: 0.26 } },
+    timeScale: { borderColor: k.line, timeVisible: true, secondsVisible: false },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    handleScale: { axisPressedMouseMove: false },
+  });
+  candleSeries = chartObj.addCandlestickSeries({
+    upColor: k.green, downColor: k.red, borderVisible: false,
+    wickUpColor: k.green, wickDownColor: k.red,
+  });
+  // Volume shares the pane, pinned to the bottom quarter — same as every
+  // terminal, and it costs no vertical space.
+  volSeries = chartObj.addHistogramSeries({
+    priceFormat: { type: 'volume' }, priceScaleId: 'vol',
+    color: 'rgba(255,255,255,0.16)',
+  });
+  chartObj.priceScale('vol').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+  chartMint = mint;
+  window.__chart = chartObj;      // so a broken layout can be inspected live
+}
+
+async function loadCandles(mint, keepView) {
+  try {
+    const d = await api(`/api/candles/${mint}?tf=${chartTF}&minutes=${chartTF === '1m' ? 180 : 1440}`);
+    if (openMint !== mint || !candleSeries) return;
+    candleSeries.setData(d.candles);
+    volSeries.setData(d.candles.map(c => ({
+      time: c.time, value: c.value,
+      color: c.close >= c.open ? 'rgba(124,255,160,0.25)' : 'rgba(255,107,107,0.25)' })));
+    if (!keepView) chartObj.timeScale().fitContent();
+    drawBotLines();
+  } catch (e) { /* leave the last good chart up */ }
+}
+
+/* The lines that explain the bot. Redrawn whenever its state changes. */
+function drawBotLines() {
+  if (!candleSeries) return;
+  priceLines.forEach(l => { try { candleSeries.removePriceLine(l); } catch (e) {} });
+  priceLines.length = 0;
+
+  const r = botStatus[openMint];
+  const b = r && r.band;
+  const k = chartColors();
+  const add = (price, color, title, style) => {
+    if (!price || !isFinite(price)) return;
+    priceLines.push(candleSeries.createPriceLine({
+      price, color, lineWidth: 1, lineStyle: style ?? 2,
+      axisLabelVisible: true, title }));
+  };
+
+  // The band arrives as formatted market caps; the chart is in price. The
+  // ratio between them is fixed for a coin, so convert with the pair we have.
+  const c = findCoin(openMint) || {};
+  const mc = Number(c.mcap) || 0, px = Number(c.price) || 0;
+  const toPrice = v => (mc && px && v) ? (v / mc) * px : null;
+
+  if (b) {
+    add(toPrice(parseMoney(b.hi)), k.dim, 'high', 3);
+    if (!b.dipped) {
+      add(toPrice(parseMoney(b.buy_from)), k.amber, 'needs a dip to here');
+    } else {
+      add(toPrice(parseMoney(b.buy_from)), k.green, 'buys above');
+      add(toPrice(parseMoney(b.buy_to)), k.green, 'buys below');
+    }
+  }
+  if (r && r.targets) {
+    add(toPrice(parseMoney(r.targets.entry)), '#7aa2ff', 'your fill', 0);
+    (r.targets.tps || []).forEach((t, i) => add(toPrice(parseMoney(t)), k.green, `TP${i + 1}`));
+    add(toPrice(parseMoney(r.targets.stop)), k.red, 'stop');
+  }
+}
+
+function startChart(mint) {
+  buildChart(mint);
+  loadCandles(mint, false);
+  clearInterval(chartTimer);
+  chartTimer = setInterval(() => {
+    if (view !== 'detail' || openMint !== mint) return;
+    loadCandles(mint, true);
+  }, 5000);
+  document.querySelectorAll('.tf').forEach(btn => btn.onclick = () => {
+    chartTF = btn.dataset.tf;
+    document.querySelectorAll('.tf').forEach(b => b.classList.toggle('on', b === btn));
+    loadCandles(mint, false);
+  });
 }
 
 /** The bot's state for the coin you're looking at, above the greenlight. */
@@ -999,13 +1136,22 @@ function renderBand(c) {
     `Projected from the current market cap. Once you greenlight, the bot measures from the high it sees.</div>`;
 }
 
-/** Buys minus sells over 5 minutes, by transaction count. */
+/** GMGN's abbreviation — enough of both ends to recognise, short enough to sit
+    inline. Clicking it copies the full address, so there's no separate button. */
+function shortCA(m) { return m.slice(0, 4) + '…' + m.slice(-4); }
+
+function copyCA(el, mint) {
+  navigator.clipboard.writeText(mint);
+  const was = el.textContent;
+  el.textContent = 'copied';
+  setTimeout(() => (el.textContent = was), 1200);
+}
+
 /** A wallet-quality percentage, reddened past the point it starts to matter.
-    No threshold means "just show the number" — Top 10 is context, not a warning. */
+    No threshold means "just show the number". */
 function wpct(v, warn) {
   if (v == null) return '—';
-  const bad = warn != null && v >= warn;
-  return `<span class="${bad ? 'down' : ''}">${v}%</span>`;
+  return `<span class="${warn != null && v >= warn ? 'down' : ''}">${v}%</span>`;
 }
 
 function netTx(c) {
@@ -1021,6 +1167,21 @@ function bsRatio(c) {
   return v == null ? '—' : Number(v).toFixed(2);
 }
 
+/** The handful of figures that move every second. */
+function setLive(c) {
+  const set = (f, v) => {
+    const el = document.querySelector(`#detail [data-f="${f}"]`);
+    if (el && el.innerHTML !== v) el.innerHTML = v;
+  };
+  set('hmc', money(c.mcap));
+  set('mcap', money(c.mcap));
+  set('holders', (c.holders || 0).toLocaleString());
+  set('bs', `<span class="up">${(c.buys_5m||0).toLocaleString()}</span> / ` +
+            `<span class="down">${(c.sells_5m||0).toLocaleString()}</span>`);
+  set('volr', c.volr == null ? '—' : Number(c.volr).toFixed(2));
+  set('v5', money(c.vol_5m));
+}
+
 function updateDetail(c) {
   const el = document.getElementById('detail');
   const set = (f, html) => { const n = el.querySelector(`[data-f="${f}"]`); if (n) n.innerHTML = html; };
@@ -1029,12 +1190,11 @@ function updateDetail(c) {
   set('ath', money(c.ath_mcap));
   set('liq', money(c.liq));
   set('bs', `<span class="up">${c.buys_5m || 0}</span> / <span class="down">${c.sells_5m || 0}</span>`);
-  set('volr', bsRatio(c));
+  set('volr', c.volr == null ? '—' : Number(c.volr).toFixed(2));
   set('pc5', pct(c.pc5));
   set('pc1h', pct(c.pc1h));
   set('holders', (c.holders || 0).toLocaleString());
   set('v5', money(c.vol_5m));
-  set('net', netTx(c));
   set('vol1h', money(c.vol_1h));
   set('top10', wpct(c.top10_pct));
   set('bundler', wpct(c.bundler_pct, 30));
@@ -1224,7 +1384,7 @@ async function openJournal() {
     <div class="jcell"><div class="k">Greenlights</div><div class="v">${s.greenlights ?? 0}</div></div>
     <div class="jcell"><div class="k">Entered</div><div class="v">${s.entered ?? 0}</div></div>
     <div class="jcell"><div class="k">Win rate</div><div class="v">${s.win_rate == null ? '—' : (s.win_rate * 100).toFixed(0) + '%'}</div></div>
-    <div class="jcell"><div class="k">Net</div><div class="v ${cls(s.net_sol)}">${(s.net_sol ?? 0).toFixed(3)} SOL</div></div>
+    <div class="jcell"><div class="k">Net txs</div><div class="v ${cls(s.net_sol)}">${(s.net_sol ?? 0).toFixed(3)} SOL</div></div>
     <div class="jcell"><div class="k">Avg win</div><div class="v up">${pct(s.avg_win)}</div></div>
     <div class="jcell"><div class="k">Avg loss</div><div class="v down">${pct(s.avg_loss)}</div></div>
     <div class="jcell"><div class="k">Avg peak after tap</div><div class="v">${s.avg_peak_after_tap ?? '—'}x</div></div>
@@ -1645,6 +1805,27 @@ function start() {
   refresh();
   clearInterval(timer);
   timer = setInterval(refresh, 10000);
+  // Market cap has to keep up with the chart, and the board's 10s tick is far
+  // too slow for that. While a coin is open, re-read just that coin every 1.5s
+  // — one request, and it's the same cadence the live layer runs at.
+  clearInterval(mcTimer);
+  // One request a second for the coin that's open, straight from GMGN — the
+  // same source as the chart, so market cap tracks it, and the same B/S they
+  // print (a buy/sell VOLUME ratio, not a transaction count). The 15s board
+  // cadence exists because it needs ~29 calls; one coin needs one.
+  mcTimer = setInterval(async () => {
+    if (view !== 'detail' || !openMint) return;
+    const mint = openMint;
+    try {
+      const d = await api(`/api/coin/${mint}/live`);
+      if (view !== 'detail' || openMint !== mint) return;   // they moved on
+      const merged = { ...(extraCoins[mint] || {}), ...d, mint };
+      extraCoins[mint] = merged;
+      const c = findCoin(mint) || merged;
+      Object.assign(c, d);
+      setLive(c);
+    } catch (e) { /* next tick */ }
+  }, 1000);
 }
 /* The board is public. Anyone can watch it work before deciding to trade on it
    — you can't judge a signal feed you're not allowed to see. Signing in is what
@@ -1655,6 +1836,7 @@ setInterval(refreshChip, 30000);
 start();
 </script>
 
+<script src="/lightweight-charts.js"></script>
 <script type="module">
 /* Privy, kept to itself. The rest of the terminal is a plain script and stays
    that way; this module hands it the three things it needs and nothing more.
