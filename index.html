@@ -290,15 +290,24 @@
     .back { background: none; border: 0; color: var(--dim); font-family: inherit;
             font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 16px; }
     .back:hover { color: var(--fg); }
-    .dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    /* Same two columns as .dgrid, with the header living entirely in the first
+       one — that puts market cap on the chart's right edge rather than the
+       page's, so it reads as the chart's number. */
+    .dhead { display: grid; grid-template-columns: minmax(0, 1fr) 320px;
+             gap: 12px; margin-bottom: 12px; }
+    @media (max-width: 980px) { .dhead { grid-template-columns: minmax(0, 1fr); } }
+    .dheadmain { display: flex; justify-content: space-between; align-items: flex-start;
+                 gap: 20px; min-width: 0; }
+    .dmc { text-align: right; flex-shrink: 0; }
+    .dmc .l { font-size: 9px; color: var(--dimmer); letter-spacing: .1em;
+              text-transform: uppercase; margin-bottom: 2px; }
+    .dmc .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums;
+              line-height: 1.15; }
     .dtitle { min-width: 0; }
     .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: baseline; gap: 11px; }
     .dhead h2 img { align-self: center; }
     .dage { font-size: 12px; font-weight: 400; color: var(--dimmer); }
     .dhead h2 img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
-    .dvol { text-align: right; }
-    .dvol .v { font-size: 26px; font-weight: 600; color: var(--green); }
-    .dvol .l { font-size: 10px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; }
     /* The chart is the point of opening a coin — give it room and let it fill
        the frame instead of floating in padding.  The trigger panel and the
        greenlight sit beside it; the stat rows stay full width underneath. */
@@ -339,8 +348,6 @@
     .stat .v { font-size: 12.5px; font-weight: 500; font-variant-numeric: tabular-nums; }
     .mintline { font-size: 11px; color: var(--dimmer); margin-top: 9px;
                 display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-    .hmc { font-size: 20px; font-weight: 600; color: var(--fg); margin-left: 12px;
-           font-variant-numeric: tabular-nums; }
     .mintline code.ca { color: var(--dim); cursor: pointer; }
     .mintline code.ca:hover { color: var(--fg); }
     .mintline button, .mintline a {
@@ -871,10 +878,10 @@ function renderDetail() {
 
   el.innerHTML = `
     <div class="dhead">
+      <div class="dheadmain">
       <div class="dtitle">
         <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}
-          <span class="dage" data-f="age">${age(c.age_secs)}</span>
-          <span class="hmc" data-f="hmc">${money(c.mcap)}</span></h2>
+          <span class="dage" data-f="age">${age(c.age_secs)}</span></h2>
         <div class="mintline">
           <code class="ca" title="Click to copy the full address"
                 onclick="copyCA(this,'${esc(c.mint)}')">${shortCA(c.mint)}</code>
@@ -882,7 +889,11 @@ function renderDetail() {
           ${links(c)}
         </div>
       </div>
-
+      <div class="dmc">
+        <div class="l">Market cap</div>
+        <div class="v" data-f="hmc">${money(c.mcap)}</div>
+      </div>
+      </div>
     </div>
     <div class="dgrid">
       <div class="dmain">
