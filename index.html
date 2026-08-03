@@ -296,9 +296,7 @@
     .dhead { display: grid; grid-template-columns: minmax(0, 1fr) 320px;
              gap: 12px; margin-bottom: 12px; }
     @media (max-width: 980px) { .dhead { grid-template-columns: minmax(0, 1fr); } }
-    /* flex-end, so market cap drops to the links row and sits just above the
-       chart rather than floating up level with the token name. */
-    .dheadmain { display: flex; justify-content: space-between; align-items: flex-end;
+    .dheadmain { display: flex; justify-content: space-between; align-items: flex-start;
                  gap: 20px; min-width: 0; }
     .dmc { text-align: right; flex-shrink: 0; }
     .dmc .l { font-size: 9px; color: var(--dimmer); letter-spacing: .1em;
@@ -900,7 +898,10 @@ function renderDetail() {
     <div class="dgrid">
       <div class="dmain">
       <div class="chartwrap">
-        <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
+        <!-- interval=1S: at the default 1m the last drawn bar can be a full
+           minute old while the header is live off the pool, so the two
+           disagreed by however much the coin moved in that minute. -->
+      <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}?interval=1S" title="chart" referrerpolicy="no-referrer"></iframe>
       </div>
       <div class="tier">
       <div class="stats">
