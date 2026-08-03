@@ -278,99 +278,112 @@
     .back { background: none; border: 0; color: var(--dim); font-family: inherit;
             font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 16px; }
     .back:hover { color: var(--fg); }
-    .dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    .dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; }
     .dtitle { min-width: 0; }
-    .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: baseline; gap: 11px; }
+    .dhead h2 { font-size: 18px; font-weight: 600; display: flex; align-items: baseline; gap: 9px; }
     .dhead h2 img { align-self: center; }
-    .dage { font-size: 12px; font-weight: 400; color: var(--dimmer); }
-    .dhead h2 img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
+    .dage { font-size: 11px; font-weight: 400; color: var(--dimmer); }
+    .dhead h2 img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; }
     .dvol { text-align: right; }
     .dvol .v { font-size: 26px; font-weight: 600; color: var(--green); }
     .dvol .l { font-size: 10px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; }
     /* The chart is the point of opening a coin — give it room and let it fill
        the frame instead of floating in padding. */
     .chartwrap {
-      position: relative; width: 100%; height: 62vh; min-height: 420px; max-height: 760px;
-      border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
-      margin-bottom: 16px; background: var(--panel);
+      position: relative; width: 100%; height: 70vh; min-height: 420px; max-height: 760px;
+      border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+      background: var(--panel);
     }
     .chartwrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
     /* Flex, not grid: a grid leaves empty cells on the last row and the gap
        trick paints them as blank panels. Flex items grow to fill whatever row
        they land on, so there's never dead space. Hairlines come from cell
        borders, with the trailing edges clipped by the container. */
-    .wins { display: flex; gap: 6px; margin-bottom: 10px; }
-    .win { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 7px 10px;
+    /* Chart left, everything else in a narrow rail on the right — the shape
+       GMGN and Fomo both use. Stacked full-width, ten stat cells across 1450px
+       left half the row empty no matter how small the type got; the dead space
+       was the looseness, not the font sizes. */
+    .dgrid {
+      display: grid; grid-template-columns: minmax(0, 1fr) 312px;
+      gap: 10px; align-items: start; margin-bottom: 10px;
+    }
+    @media (max-width: 900px) { .dgrid { grid-template-columns: minmax(0, 1fr); } }
+    .rail { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .wins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+    .win { display: flex; flex-direction: column; gap: 1px; padding: 4px 9px;
            font: inherit; cursor: pointer; background: var(--field); color: var(--dim);
-           border: 1px solid var(--line); border-radius: 7px; text-align: left; }
+           border: 1px solid var(--line); border-radius: 5px; text-align: left;
+           line-height: 1.25; }
     .win.on { border-color: var(--dim); background: var(--hover); }
-    .win .wl { font-size: 10px; color: var(--dimmer); letter-spacing: .08em; }
+    .win .wl { font-size: 9px; color: var(--dimmer); letter-spacing: .06em; }
     .win.on .wl { color: var(--fg); }
-    .win .wp { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .win .wp { font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-    .flow { display: flex; flex-wrap: wrap; gap: 26px; padding: 12px 15px;
-            border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; }
-    .flow .f { display: flex; flex-direction: column; gap: 3px; }
-    .flow .f .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em;
+    .flow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 7px 10px; padding: 8px 11px;
+            border: 1px solid var(--line); border-radius: 5px; }
+    .flow .f { display: flex; flex-direction: column; gap: 1px; line-height: 1.25;
+               min-width: 0; }
+    .flow .f .k { font-size: 9px; color: var(--dimmer); letter-spacing: .06em;
                   text-transform: uppercase; }
-    .flow .f .v { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .flow .f .v { font-size: 11.5px; font-weight: 500; font-variant-numeric: tabular-nums; }
     .flow .sub { color: var(--dimmer); font-weight: 400; }
-
-    .tier { margin-bottom: 12px; }
     .th { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em;
           text-transform: uppercase; margin-bottom: 6px; display: flex; gap: 8px; }
     .tier.slow .th { opacity: .7; }
     .tage { color: var(--green); }
+    /* Grid, not wrapping flex. Flex stretches whatever lands on the last row,
+       so ten cells gave a tidy first row and two enormous boxes underneath.
+       auto-fill keeps every cell the same width and leaves the tail empty. */
     .stats {
-      display: flex; flex-wrap: wrap;
-      border: 1px solid var(--line); border-radius: 10px;
-      overflow: hidden; margin-bottom: 16px;
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
     }
     .stat {
-      flex: 1 1 112px; min-width: 112px; padding: 12px 14px;
+      padding: 6px 11px;
       border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
       margin-right: -1px; margin-bottom: -1px;
     }
-    .stat .k { font-size: 9.5px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
-    .stat .v { font-size: 14px; font-weight: 500; }
-    .mintline { font-size: 11px; color: var(--dimmer); margin-top: 9px;
-                display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-    .hmc { font-size: 20px; font-weight: 600; color: var(--fg); margin-left: 12px;
+    .stat .k { font-size: 9px; color: var(--dimmer); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 1px; }
+    .stat .v { font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .mintline { font-size: 10.5px; color: var(--dimmer); margin-top: 6px;
+                display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .hmc { font-size: 17px; font-weight: 600; color: var(--fg); margin-left: 10px;
            font-variant-numeric: tabular-nums; }
     .mintline code.ca { color: var(--dim); cursor: pointer; }
     .mintline code.ca:hover { color: var(--fg); }
     .mintline button, .mintline a {
       background: none; border: 1px solid var(--line); color: var(--dim);
-      font-family: inherit; font-size: 10.5px; padding: 4px 9px; border-radius: 5px;
+      font-family: inherit; font-size: 10px; padding: 3px 8px; border-radius: 5px;
       cursor: pointer; text-decoration: none;
     }
     .mintline button:hover, .mintline a:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
     #dband:empty { display: none; }
     #dband {
-      margin-bottom: 12px; padding: 12px 15px; border: 1px solid var(--line);
-      border-radius: 9px; font-size: 12px; color: var(--dim); line-height: 1.75;
+      padding: 9px 11px; border: 1px solid var(--line);
+      border-radius: 6px; font-size: 11.5px; color: var(--dim); line-height: 1.7;
     }
+    #dband .step { display: block; margin-right: 0; }
     #dband b { color: var(--fg); font-weight: 600; }
     #dband .bk { color: var(--dimmer); font-size: 10px; letter-spacing: .1em;
                  text-transform: uppercase; display: block; margin-bottom: 5px; }
-    #dband .step { display: inline-block; margin-right: 16px; }
 
     #dstatus:empty { display: none; }
     #dstatus {
-      display: flex; align-items: center; gap: 11px; margin-bottom: 12px;
-      padding: 12px 15px; border: 1px solid var(--line); border-radius: 9px;
-      font-size: 12.5px;
+      display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+      padding: 9px 11px; border: 1px solid var(--line); border-radius: 6px;
+      font-size: 11.5px;
     }
     #dstatus .actdot { width: 8px; height: 8px; }
     #dstatus b { font-weight: 600; }
     #dstatus .when { margin-left: auto; color: var(--dimmer); font-size: 11px; }
 
-    .glbtn { width: 100%; background: var(--green); color: #000; border: 0; padding: 16px;
-             font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 9px;
+    .glbtn { width: 100%; background: var(--green); color: #000; border: 0; padding: 13px;
+             font-family: inherit; font-size: 13px; font-weight: 700; border-radius: 6px;
              cursor: pointer; letter-spacing: .04em; }
     .glbtn:hover:not(:disabled) { opacity: .88; }
     .glbtn:disabled { background: rgba(255,255,255,.07); color: var(--dimmer); cursor: not-allowed; }
-    .glnote { font-size: 11.5px; color: var(--dimmer); text-align: center; margin-top: 10px; line-height: 1.6; }
+    .glnote { font-size: 10.5px; color: var(--dimmer); text-align: center; margin-top: 2px; line-height: 1.55; }
     .glnote.warn { color: var(--amber); }
 
     /* ── trade journal ── */
@@ -880,43 +893,40 @@ function renderDetail() {
       </div>
 
     </div>
+    <div class="dgrid">
     <div class="chartwrap">
       <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
     </div>
-    <div class="wins">
-      ${['1m','5m','1h','24h'].map(w => {
-        const d = (c.windows || {})[w] || {};
-        return `<button class="win${w === winTF ? ' on' : ''}" data-win="${w}">
-          <span class="wl">${w}</span>
-          <span class="wp ${pcClass(d.pc)}">${d.pc == null ? '—' : (d.pc > 0 ? '+' : '') + d.pc.toFixed(2) + '%'}</span>
-        </button>`; }).join('')}
-    </div>
-
-    <div class="flow" id="flow">${flowRow(c)}</div>
-
-    <div class="tier">
-      <div class="stats">
-        <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders||0).toLocaleString()}</div></div>
-        <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart||0} / ${c.kol||0}</div></div>
-        <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
+    <aside class="rail">
+      <div class="wins">
+        ${['1m','5m','1h','24h'].map(w => {
+          const d = (c.windows || {})[w] || {};
+          return `<button class="win${w === winTF ? ' on' : ''}" data-win="${w}">
+            <span class="wl">${w}</span>
+            <span class="wp ${pcClass(d.pc)}">${d.pc == null ? '—' : (d.pc > 0 ? '+' : '') + d.pc.toFixed(1) + '%'}</span>
+          </button>`; }).join('')}
       </div>
-    </div></div>
+      <div class="flow" id="flow">${flowRow(c)}</div>
 
-    <div class="tier slow">
       <div class="stats">
-        <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
-        <div class="stat"><div class="k">1h volume</div><div class="v" data-f="vol1h">${money(c.vol_1h)}</div></div>
-        <div class="stat"><div class="k">Top 10</div><div class="v" data-f="top10">${wpct(c.top10_pct)}</div></div>
-        <div class="stat"><div class="k">Bundler</div><div class="v" data-f="bundler">${wpct(c.bundler_pct, 30)}</div></div>
-        <div class="stat"><div class="k">Bot degen</div><div class="v" data-f="botdegen">${wpct(c.botdegen_pct, 40)}</div></div>
-        <div class="stat"><div class="k">Insiders</div><div class="v" data-f="insiders">${wpct(c.insiders_pct, 5)}</div></div>
-        <div class="stat"><div class="k">Phishing</div><div class="v" data-f="phishing">${wpct(c.phishing_pct, 10)}</div></div>
+      <div class="stat"><div class="k">Holders</div><div class="v" data-f="holders">${(c.holders||0).toLocaleString()}</div></div>
+      <div class="stat"><div class="k">Smart / KOL</div><div class="v" data-f="sk">${c.smart||0} / ${c.kol||0}</div></div>
+      <div class="stat"><div class="k">Liquidity</div><div class="v" data-f="liq">${money(c.liq)}</div></div>
+      <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
+      <div class="stat"><div class="k">1h vol</div><div class="v" data-f="vol1h">${money(c.vol_1h)}</div></div>
+      <div class="stat"><div class="k">Top 10</div><div class="v" data-f="top10">${wpct(c.top10_pct)}</div></div>
+      <div class="stat"><div class="k">Bundler</div><div class="v" data-f="bundler">${wpct(c.bundler_pct, 30)}</div></div>
+      <div class="stat"><div class="k">Bot degen</div><div class="v" data-f="botdegen">${wpct(c.botdegen_pct, 40)}</div></div>
+      <div class="stat"><div class="k">Insiders</div><div class="v" data-f="insiders">${wpct(c.insiders_pct, 5)}</div></div>
+      <div class="stat"><div class="k">Phishing</div><div class="v" data-f="phishing">${wpct(c.phishing_pct, 10)}</div></div>
       </div>
+
+      <div id="dstatus"></div>
+      <div id="dband"></div>
+      <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
+      <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.</div>
+    </aside>
     </div>
-    <div id="dstatus"></div>
-    <div id="dband"></div>
-    <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
-    <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.</div>
   `;
   document.querySelectorAll('.win').forEach(b => b.onclick = () => {
     winTF = b.dataset.win;
