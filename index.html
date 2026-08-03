@@ -1071,15 +1071,20 @@ function netTx(c) {
     under two seconds. The bot still gates on GMGN's volume-weighted ratio,
     which is slower and better — so this is for reading, not for deciding. */
 function bsRatio(c) {
-  const v = c.bs_count != null ? c.bs_count : c.volr;
-  return v == null ? '—' : Number(v).toFixed(2);
+  return c.volr == null ? '—' : Number(c.volr).toFixed(2);
 }
 
 /* Above 1 means more was bought than sold, so it reads like the board's
    column. One helper for the first paint and both live updaters — they used
    to write the number three different ways and only the board was coloured. */
 function bsHTML(c) {
-  const v = c.bs_count != null ? c.bs_count : c.volr;
+  /* volr only. bs_count was DexScreener's ratio of trade COUNTS; volr is
+     GMGN's buy volume over sell volume. They are not the same measurement and
+     they disagreed in direction — 1.44 against 0.782 on the same coin in the
+     same second, so the coin page read bullish while the board read bearish.
+     volr is also what the bot's entry gate keys on, so the screen and the
+     trade now reference one number. */
+  const v = c.volr;
   if (v == null) return '—';
   return `<span class="volr ${Number(v) >= 1 ? 'good' : 'bad'}">${Number(v).toFixed(2)}</span>`;
 }
