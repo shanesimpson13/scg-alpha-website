@@ -898,10 +898,7 @@ function renderDetail() {
     <div class="dgrid">
       <div class="dmain">
       <div class="chartwrap">
-        <!-- interval=1S: at the default 1m the last drawn bar can be a full
-           minute old while the header is live off the pool, so the two
-           disagreed by however much the coin moved in that minute. -->
-      <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}?interval=1S" title="chart" referrerpolicy="no-referrer"></iframe>
+        <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
       </div>
       <div class="tier">
       <div class="stats">
