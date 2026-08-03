@@ -296,7 +296,9 @@
     .dhead { display: grid; grid-template-columns: minmax(0, 1fr) 320px;
              gap: 12px; margin-bottom: 12px; }
     @media (max-width: 980px) { .dhead { grid-template-columns: minmax(0, 1fr); } }
-    .dheadmain { display: flex; justify-content: space-between; align-items: flex-start;
+    /* flex-end, so market cap drops to the links row and sits just above the
+       chart rather than floating up level with the token name. */
+    .dheadmain { display: flex; justify-content: space-between; align-items: flex-end;
                  gap: 20px; min-width: 0; }
     .dmc { text-align: right; flex-shrink: 0; }
     .dmc .l { font-size: 9px; color: var(--dimmer); letter-spacing: .1em;
@@ -1486,6 +1488,12 @@ function closeWallet() {
 }
 
 let walletPoll = null;
+/* Declared, because start() did `clearInterval(mcTimer)` before ever assigning
+   it — reading an undeclared binding throws, and since start() is async the
+   ReferenceError surfaced as an unhandled rejection with nothing in the
+   console. Everything after that line, including the whole per-second live
+   poll, had never run. */
+let mcTimer = null;
 async function loadWallet() {
   try {
     const a = await api('/api/account');          // creates it on first call
