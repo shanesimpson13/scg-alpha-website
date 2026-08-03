@@ -205,6 +205,14 @@
 
     /* ── table ── */
     .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+    /* The board is a scan-a-list surface, so width works against it — at 1760
+       your eye crosses the whole monitor to get from the token to its 5m move.
+       The coin page keeps the full width; a chart actually uses pixels.
+       Header stays edge-to-edge; the footer matches the board.
+       Left-aligned, not centred: the board's left edge then matches the logo,
+       the slack collects on the right where the eye never goes, and clicking
+       into a coin only extends the right edge instead of moving both. */
+    #board, footer { max-width: 1400px; margin-left: 0; margin-right: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 860px; }
     thead th {
       text-align: right; font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase;
