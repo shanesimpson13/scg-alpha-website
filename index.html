@@ -166,8 +166,6 @@
     }
     #gate button:hover { opacity: .88; }
     .err { color: var(--red); font-size: 12px; margin-top: 12px; min-height: 16px; }
-    .gate-foot { margin-top: 20px; font-size: 11.5px; color: var(--dimmer); }
-    .gate-foot a { color: var(--dim); }
 
     /* ── controls ── */
     .bar {
@@ -1062,18 +1060,6 @@ function wpct(v, warn) {
   return `<span class="${warn != null && v >= warn ? 'down' : ''}">${v}%</span>`;
 }
 
-function netTx(c) {
-  const n = (c.buys_5m || 0) - (c.sells_5m || 0);
-  return `<span class="${n >= 0 ? 'up' : 'down'}">${n >= 0 ? '+' : '−'}${Math.abs(n).toLocaleString()}</span>`;
-}
-
-/** The live B/S is a transaction-COUNT ratio, because that's what updates in
-    under two seconds. The bot still gates on GMGN's volume-weighted ratio,
-    which is slower and better — so this is for reading, not for deciding. */
-function bsRatio(c) {
-  return c.volr == null ? '—' : Number(c.volr).toFixed(2);
-}
-
 /* Above 1 means more was bought than sold, so it reads like the board's
    column. One helper for the first paint and both live updaters — they used
    to write the number three different ways and only the board was coloured. */
@@ -1379,10 +1365,6 @@ function insights(s) {
   return out;
 }
 
-function closeJournal() {
-  showView('board');
-  renderBoard();
-}
 document.getElementById('openjournal').onclick = e => { e.preventDefault(); openJournal(); };
 
 /* ── settings ───────────────────────────────────────────────────────────── */
@@ -1678,11 +1660,6 @@ function applyTp2() {
 }
 
 document.getElementById('opensettings').onclick = e => { e.preventDefault(); openSettings(); };
-
-function closeSettings() {
-  showView('board');
-  renderBoard();
-}
 
 function collect() {
   const body = { use_tp2: useTp2 ? 1 : 0 };
