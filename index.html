@@ -285,25 +285,12 @@
     .dvol .l { font-size: 10px; color: var(--dimmer); letter-spacing: .1em; text-transform: uppercase; }
     /* The chart is the point of opening a coin — give it room and let it fill
        the frame instead of floating in padding. */
-    .chartbar { display: flex; justify-content: space-between; align-items: center;
-                margin-bottom: 8px; }
-    .tfs { display: flex; gap: 4px; }
-    .tf { padding: 4px 10px; font: inherit; font-size: 11px; cursor: pointer;
-          background: var(--field); color: var(--dim);
-          border: 1px solid var(--line); border-radius: 5px; }
-    .tf.on { color: var(--fg); border-color: var(--dim); }
-    .legend { display: flex; gap: 13px; font-size: 10px; color: var(--dimmer); }
-    .lg::before { content: "—"; margin-right: 4px; font-weight: 700; }
-    .lg-dip::before { color: var(--amber); }
-    .lg-rec::before { color: var(--green); }
-    .lg-buy::before { color: #7aa2ff; }
-    #chart { width: 100%; height: 100%; }
     .chartwrap {
       position: relative; width: 100%; height: 62vh; min-height: 420px; max-height: 760px;
       border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
       margin-bottom: 16px; background: var(--panel);
     }
-    .chartwrap #chart { position: absolute; inset: 0; }
+    .chartwrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
     /* Flex, not grid: a grid leaves empty cells on the last row and the gap
        trick paints them as blank panels. Flex items grow to fill whatever row
        they land on, so there's never dead space. Hairlines come from cell
@@ -868,16 +855,9 @@ function renderDetail() {
       </div>
       <div class="dvol"><div class="v" data-f="hmc">${money(c.mcap)}</div><div class="l">market cap</div></div>
     </div>
-    <div class="chartbar">
-      <div class="tfs">${['1m','5m','15m','1h'].map(t =>
-        `<button class="tf${t === chartTF ? ' on' : ''}" data-tf="${t}">${t}</button>`).join('')}</div>
-      <div class="legend">
-        <span class="lg lg-dip">dip line</span>
-        <span class="lg lg-rec">reclaim</span>
-        <span class="lg lg-buy">your fill</span>
-      </div>
+    <div class="chartwrap">
+      <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
     </div>
-    <div class="chartwrap"><div id="chart"></div></div>
     <div class="tier">
       <div class="stats">
         <div class="stat"><div class="k">5m volume</div><div class="v" data-f="v5">${money(c.vol_5m)}</div></div>
@@ -905,128 +885,10 @@ function renderDetail() {
     <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
     <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.</div>
   `;
-  startChart(c.mint);
   if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
   else document.getElementById('glbtn').onclick = () => greenlight(c);
 }
 
-
-/* ── the chart ─────────────────────────────────────────────────────────────
-   Ours, not an embed, for one reason: we draw the bot's reasoning on it. The
-   dip it's waiting for, the reclaim that fires the buy, and where it actually
-   filled. "In range but it never bought" should be obvious at a glance rather
-   than something you squint at a number panel to work out. */
-let chartTF = '1m';
-let chartObj = null, candleSeries = null, volSeries = null, chartMint = null;
-let chartTimer = null;
-const priceLines = [];
-
-function chartColors() {
-  const cs = getComputedStyle(document.documentElement);
-  const v = n => cs.getPropertyValue(n).trim();
-  return { fg: v('--fg'), dim: v('--dim'), line: v('--line'),
-           green: v('--green'), red: v('--red'), amber: v('--amber') };
-}
-
-function buildChart(mint) {
-  const host = document.getElementById('chart');
-  if (!host || !window.LightweightCharts) return;
-  host.innerHTML = '';
-  const k = chartColors();
-  chartObj = LightweightCharts.createChart(host, {
-    // autoSize handles the case a manual width can't: a chart created while its
-    // container is still zero-width — mid-transition, or a panel that hasn't
-    // laid out — would otherwise stay at the library's 300x150 default forever
-    // and render nothing, with no error to explain it.
-    autoSize: true,
-    layout: { background: { color: 'transparent' }, textColor: k.dim, fontSize: 11,
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
-    grid: { vertLines: { color: k.line }, horzLines: { color: k.line } },
-    rightPriceScale: { borderColor: k.line, scaleMargins: { top: 0.08, bottom: 0.26 } },
-    timeScale: { borderColor: k.line, timeVisible: true, secondsVisible: false },
-    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    handleScale: { axisPressedMouseMove: false },
-  });
-  candleSeries = chartObj.addCandlestickSeries({
-    upColor: k.green, downColor: k.red, borderVisible: false,
-    wickUpColor: k.green, wickDownColor: k.red,
-  });
-  // Volume shares the pane, pinned to the bottom quarter — same as every
-  // terminal, and it costs no vertical space.
-  volSeries = chartObj.addHistogramSeries({
-    priceFormat: { type: 'volume' }, priceScaleId: 'vol',
-    color: 'rgba(255,255,255,0.16)',
-  });
-  chartObj.priceScale('vol').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
-  chartMint = mint;
-  window.__chart = chartObj;      // so a broken layout can be inspected live
-}
-
-async function loadCandles(mint, keepView) {
-  try {
-    const d = await api(`/api/candles/${mint}?tf=${chartTF}&minutes=${chartTF === '1m' ? 180 : 1440}`);
-    if (openMint !== mint || !candleSeries) return;
-    candleSeries.setData(d.candles);
-    volSeries.setData(d.candles.map(c => ({
-      time: c.time, value: c.value,
-      color: c.close >= c.open ? 'rgba(124,255,160,0.25)' : 'rgba(255,107,107,0.25)' })));
-    if (!keepView) chartObj.timeScale().fitContent();
-    drawBotLines();
-  } catch (e) { /* leave the last good chart up */ }
-}
-
-/* The lines that explain the bot. Redrawn whenever its state changes. */
-function drawBotLines() {
-  if (!candleSeries) return;
-  priceLines.forEach(l => { try { candleSeries.removePriceLine(l); } catch (e) {} });
-  priceLines.length = 0;
-
-  const r = botStatus[openMint];
-  const b = r && r.band;
-  const k = chartColors();
-  const add = (price, color, title, style) => {
-    if (!price || !isFinite(price)) return;
-    priceLines.push(candleSeries.createPriceLine({
-      price, color, lineWidth: 1, lineStyle: style ?? 2,
-      axisLabelVisible: true, title }));
-  };
-
-  // The band arrives as formatted market caps; the chart is in price. The
-  // ratio between them is fixed for a coin, so convert with the pair we have.
-  const c = findCoin(openMint) || {};
-  const mc = Number(c.mcap) || 0, px = Number(c.price) || 0;
-  const toPrice = v => (mc && px && v) ? (v / mc) * px : null;
-
-  if (b) {
-    add(toPrice(parseMoney(b.hi)), k.dim, 'high', 3);
-    if (!b.dipped) {
-      add(toPrice(parseMoney(b.buy_from)), k.amber, 'needs a dip to here');
-    } else {
-      add(toPrice(parseMoney(b.buy_from)), k.green, 'buys above');
-      add(toPrice(parseMoney(b.buy_to)), k.green, 'buys below');
-    }
-  }
-  if (r && r.targets) {
-    add(toPrice(parseMoney(r.targets.entry)), '#7aa2ff', 'your fill', 0);
-    (r.targets.tps || []).forEach((t, i) => add(toPrice(parseMoney(t)), k.green, `TP${i + 1}`));
-    add(toPrice(parseMoney(r.targets.stop)), k.red, 'stop');
-  }
-}
-
-function startChart(mint) {
-  buildChart(mint);
-  loadCandles(mint, false);
-  clearInterval(chartTimer);
-  chartTimer = setInterval(() => {
-    if (view !== 'detail' || openMint !== mint) return;
-    loadCandles(mint, true);
-  }, 5000);
-  document.querySelectorAll('.tf').forEach(btn => btn.onclick = () => {
-    chartTF = btn.dataset.tf;
-    document.querySelectorAll('.tf').forEach(b => b.classList.toggle('on', b === btn));
-    loadCandles(mint, false);
-  });
-}
 
 /** The bot's state for the coin you're looking at, above the greenlight. */
 function renderDetailStatus() {
@@ -1836,7 +1698,6 @@ setInterval(refreshChip, 30000);
 start();
 </script>
 
-<script src="/lightweight-charts.js"></script>
 <script type="module">
 /* Privy, kept to itself. The rest of the terminal is a plain script and stays
    that way; this module hands it the three things it needs and nothing more.
