@@ -73,8 +73,13 @@
     a:hover { color: var(--fg); }
     .status a { color: var(--dimmer); }
 
+    /* A grey plate on hover, which is what makes an unlabelled icon read as a
+       button. Slightly wider than the glyph so the shading has room. */
     .icobtn { display: inline-flex; align-items: center; justify-content: center;
-              width: 22px; height: 22px; padding: 0; }
+              flex: 0 0 26px; width: 26px; height: 26px; padding: 0;
+              border-radius: 6px; transition: background .12s, color .12s; }
+    .icobtn:hover { background: rgba(0, 0, 0, 0.07); color: var(--fg); }
+    .icobtn:active { background: rgba(0, 0, 0, 0.12); }
     .icobtn svg { width: 14px; height: 14px; display: block; }
     /* .status a dims every link in the header; the balance shouldn't be dim. */
 
