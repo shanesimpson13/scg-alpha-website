@@ -118,7 +118,44 @@
     .glbtn.solbtn:disabled { opacity: .45; filter: none; }
 
     /* ── wallet panel ── */
-    #wallet { max-width: 520px; }
+    /* ── wallet modal ── */
+    .modal { position: fixed; inset: 0; z-index: 90; display: flex;
+             align-items: center; justify-content: center; padding: 20px;
+             background: rgba(0,0,0,.62); backdrop-filter: blur(3px); }
+    .modal-card { position: relative; width: 100%; max-width: 420px;
+                  max-height: 88vh; overflow-y: auto;
+                  background: var(--bg); border: 1px solid var(--line);
+                  border-radius: 12px; padding: 26px 24px 20px; }
+    .modal-x { position: absolute; top: 10px; right: 12px; background: none;
+               border: 0; color: var(--dimmer); font-size: 22px; line-height: 1;
+               cursor: pointer; padding: 4px 8px; font-family: inherit; }
+    .modal-x:hover { color: var(--fg); }
+
+    .wbal { text-align: center; margin-bottom: 20px; }
+    .wbal-k { font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+              color: var(--dimmer); margin-bottom: 4px; }
+    .wbal-v { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .wtabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+             background: var(--field); border: 1px solid var(--line);
+             border-radius: 8px; padding: 3px; margin-bottom: 18px; }
+    .wtab { background: none; border: 0; border-radius: 6px; padding: 8px;
+            font-family: inherit; font-size: 12px; color: var(--dim);
+            cursor: pointer; }
+    .wtab.on { background: var(--panel); color: var(--fg); }
+
+    .qrbox { display: flex; justify-content: center; margin-bottom: 14px; }
+    /* white plate behind the code — scanners need the quiet zone and the
+       contrast, and in dark mode the page background gives neither. */
+    #wqr { background: #fff; padding: 12px; border-radius: 8px; line-height: 0; }
+    #wqr img, #wqr canvas { display: block; width: 168px; height: 168px;
+                            image-rendering: pixelated; }
+    .wtip { font-size: 11px; color: var(--dimmer); line-height: 1.6;
+            text-align: center; margin-bottom: 12px; }
+    .wfoot { display: flex; justify-content: space-between; margin-top: 18px;
+             padding-top: 14px; border-top: 1px solid var(--hair); }
+    .wfoot a { font-size: 11px; color: var(--dimmer); text-decoration: none; }
+    .wfoot a:hover { color: var(--fg); }
     #wallet h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
     #wallet .lede { font-size: 12px; color: var(--dim); line-height: 1.7; margin-bottom: 26px; }
     .wrow {
@@ -339,7 +376,6 @@
     .th { font-size: 9px; color: var(--dimmer); letter-spacing: .1em;
           text-transform: uppercase; margin-bottom: 4px; display: flex; gap: 8px; }
     .tier.slow .th { opacity: .7; }
-    .tage { color: var(--green); }
     .stats {
       display: flex; flex-wrap: wrap;
       border: 1px solid var(--line); border-radius: 7px;
@@ -556,53 +592,66 @@
     </div>
   </div>
 
-  <div id="wallet" style="display:none">
+  <!-- Wallet is a modal, not a page. Depositing is something you do mid-flow,
+       usually because you just tried to greenlight something — sending people
+       to another screen loses their place. -->
+  <div id="wmodal" class="modal" style="display:none">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Wallet">
+      <button class="modal-x" id="wclose" aria-label="Close">&times;</button>
 
-    <div id="wsignin">
-      <h2>Sign in</h2>
-      <p class="lede">Your email, and nothing else. We can trade your wallet;
-        only you can take money out of it —
-        <a href="/safety">how that's enforced</a>.</p>
-      <div id="wemail">
-        <div class="wlabel">EMAIL</div>
-        <input id="wemailin" type="email" autocomplete="email" placeholder="you@example.com">
-        <div class="wbtns"><button class="glbtn solbtn" id="wsend">Send code</button></div>
-      </div>
-      <div id="wcode" style="display:none">
-        <div class="wlabel">CODE SENT TO <span id="wsentto"></span></div>
-        <input id="wcodein" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
-        <div class="wbtns">
-          <button class="glbtn solbtn" id="wverify">Sign in</button>
-          <button class="ghost" id="wother">Different email</button>
+      <div id="wsignin">
+        <h2>Sign in</h2>
+        <p class="lede">Your email, and nothing else. We can trade your wallet;
+          only you can take money out of it —
+          <a href="/safety">how that's enforced</a>.</p>
+        <div id="wemail">
+          <div class="wlabel">EMAIL</div>
+          <input id="wemailin" type="email" autocomplete="email" placeholder="you@example.com">
+          <div class="wbtns"><button class="glbtn solbtn" id="wsend">Send code</button></div>
         </div>
-      </div>
-      <div class="wmsg" id="wauthmsg"></div>
-    </div>
-
-    <div id="wfunded" style="display:none">
-      <h2>Your wallet</h2>
-      <p class="lede">You own it. We can trade it and nothing else —
-        <a href="/safety">how that's enforced</a>.</p>
-
-      <div class="wrow"><span class="k">Tradeable</span><span class="v" id="wbal">—</span></div>
-      <div class="wrow"><span class="k">Held for fees</span><span class="v" id="wgas">—</span></div>
-
-      <div id="wpos"></div>
-
-      <div class="wlabel">DEPOSIT — SEND SOL HERE</div>
-      <div class="waddr" id="waddr">…</div>
-      <div class="wbtns">
-        <button class="ghost" id="wcopy">Copy</button>
-        <button class="ghost" id="wrefresh">Refresh</button>
+        <div id="wcode" style="display:none">
+          <div class="wlabel">CODE SENT TO <span id="wsentto"></span></div>
+          <input id="wcodein" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
+          <div class="wbtns">
+            <button class="glbtn solbtn" id="wverify">Sign in</button>
+            <button class="ghost" id="wother">Different email</button>
+          </div>
+        </div>
+        <div class="wmsg" id="wauthmsg"></div>
       </div>
 
-      <div class="wlabel">WITHDRAW</div>
-      <input id="wdest" placeholder="Your Solana address" spellcheck="false">
-      <div class="wbtns"><button class="ghost" id="wwithdraw">Withdraw everything</button></div>
-      <div class="wmsg" id="wmsg"></div>
+      <div id="wfunded" style="display:none">
+        <div class="wbal">
+          <div class="wbal-k">Balance</div>
+          <div class="wbal-v" id="wbal">—</div>
+        </div>
 
-      <div class="wfoot">
-        <a href="#" id="wsignout">Sign out</a>
+        <div class="wtabs">
+          <button class="wtab on" data-pane="wdep">Deposit</button>
+          <button class="wtab" data-pane="wwd">Withdraw</button>
+        </div>
+
+        <div class="wpane" id="wdep">
+          <div class="qrbox"><div id="wqr"></div></div>
+          <p class="wtip">Send SOL to this address. It shows up here on its own.</p>
+          <div class="waddr" id="waddr">…</div>
+          <div class="wbtns"><button class="ghost" id="wcopy">Copy address</button></div>
+        </div>
+
+        <div class="wpane" id="wwd" style="display:none">
+          <div class="wlabel">SEND TO</div>
+          <input id="wdest" placeholder="Your Solana address" spellcheck="false">
+          <div class="wbtns"><button class="glbtn solbtn" id="wwithdraw">Withdraw everything</button></div>
+          <p class="wtip">Goes out from your wallet, signed by you. We can't do this for you and we can't stop it.</p>
+        </div>
+
+        <div id="wpos"></div>
+        <div class="wmsg" id="wmsg"></div>
+
+        <div class="wfoot">
+          <a href="#" id="wrefresh">Refresh</a>
+          <a href="#" id="wsignout">Sign out</a>
+        </div>
       </div>
     </div>
   </div>
@@ -628,6 +677,7 @@
   </footer>
 </div>
 
+<script src="/qr.js"></script>
 <script>
 const API = 'https://api.scgalpha.com';
 let KEY = localStorage.getItem('edgelvl_key') || '';
@@ -768,7 +818,7 @@ function renderBoard() {
 /* Exactly one of these is visible at a time. Five separate places used to
    toggle display, each hiding a different subset, which is why panels stacked
    and why the refresh could yank you off the one you were reading. */
-const VIEWS = ['board', 'detail', 'journal', 'settings', 'wallet'];
+const VIEWS = ['board', 'detail', 'journal', 'settings'];
 let view = 'board';
 
 function showView(name) {
@@ -1125,8 +1175,6 @@ function updateDetail(c) {
   set('bundler', wpct(c.bundler_pct, 30));
   set('botdegen', wpct(c.botdegen_pct, 40));
   set('phishing', wpct(c.phishing_pct, 10));
-  const t = document.getElementById('tage');
-  if (t) t.textContent = c.fast_age == null ? '' : ` · ${c.fast_age}s ago`;
   set('sk', `${c.smart || 0} / ${c.kol || 0}`);
   renderBand(c);
   set('age', age(c.age_secs));
@@ -1474,15 +1522,33 @@ async function refreshChip() {
 }
 
 function openWallet() {
-  showView('wallet');
-  window.scrollTo(0, 0);
+  document.getElementById('wmodal').style.display = 'flex';
   document.getElementById('wsignin').style.display = KEY ? 'none' : 'block';
   document.getElementById('wfunded').style.display = KEY ? 'block' : 'none';
   if (KEY) loadWallet();
 }
 
 function closeWallet() {
-  showView('board');
+  document.getElementById('wmodal').style.display = 'none';
+  clearInterval(walletPoll);          // nothing to watch while it's shut
+}
+
+/* Scanning is the point of the QR — if it renders wrong someone sends money
+   nowhere, so the encoder is a vendored, independently cross-checked one
+   rather than something hand-rolled. */
+function paintQR(addr) {
+  const box = document.getElementById('wqr');
+  if (!box || !window.qrcode) return;
+  try {
+    const q = qrcode(0, 'M');
+    q.addData(addr);
+    q.make();
+    box.innerHTML = q.createImgTag(4, 0);
+    const img = box.querySelector('img');
+    if (img) { img.alt = 'Deposit address QR code'; img.style.width = img.style.height = '168px'; }
+  } catch (e) {
+    box.innerHTML = '';        // address text below is still there to copy
+  }
 }
 
 let walletPoll = null;
@@ -1492,31 +1558,40 @@ let walletPoll = null;
    console. Everything after that line, including the whole per-second live
    poll, had never run. */
 let mcTimer = null;
+/* Everything the wallet holds, as one figure. */
+function setBal(bal) {
+  const total = (bal.wsol || 0) + (bal.unwrapped || 0);
+  const el = document.getElementById('wbal');
+  if (el) el.textContent = sol4(total) + ' SOL';
+  paintChip(bal.wsol);
+}
+
 async function loadWallet() {
   try {
     const a = await api('/api/account');          // creates it on first call
     document.getElementById('waddr').textContent = a.address;
-    document.getElementById('wbal').textContent = sol4(a.balances.wsol);
-    document.getElementById('wgas').textContent = sol4(Math.min(a.balances.sol, a.gas_reserve_sol));
-    paintChip(a.balances.wsol);
+    paintQR(a.address);
+    /* One number. Whether a lamport is currently wrapped, reserved for fees or
+       sitting as plain SOL is our problem, not something to explain on screen. */
+    setBal(a.balances);
     loadPositions();
 
     // A deposit lands whenever it lands. Watch for it rather than making
     // someone press refresh and wonder whether it worked.
     clearInterval(walletPoll);
     walletPoll = setInterval(async () => {
-      if (view !== 'wallet') return;   // stop polling once they leave
+      if (document.getElementById('wmodal').style.display !== 'flex') return;
       try {
         const b = await api('/api/account');
         if (b.balances.unwrapped > 0.0005) {
-          wsay('wmsg', 'Deposit spotted — making it tradeable…');
+          // A plain-SOL deposit has to be converted before it can trade. That
+          // is plumbing; say a deposit arrived and get on with it.
+          wsay('wmsg', 'Deposit received…');
           const w = await api('/api/account/wrap', { method: 'POST' });
-          document.getElementById('wbal').textContent = sol4(w.balances.wsol);
-          paintChip(w.balances.wsol);
-          wsay('wmsg', 'Ready to trade.', 'good');
+          setBal(w.balances);
+          wsay('wmsg', 'Deposit added.', 'good');
         } else {
-          document.getElementById('wbal').textContent = sol4(b.balances.wsol);
-          paintChip(b.balances.wsol);
+          setBal(b.balances);
         }
       } catch (e) { /* transient — next tick retries */ }
     }, 6000);
@@ -1580,7 +1655,21 @@ async function sellPosition(btn) {
 }
 
 document.getElementById('walletchip').onclick = e => { e.preventDefault(); openWallet(); };
-document.getElementById('wrefresh').onclick = () => loadWallet();
+document.querySelectorAll('.wtab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.wtab').forEach(x => x.classList.toggle('on', x === t));
+  document.querySelectorAll('.wpane').forEach(p =>
+    p.style.display = p.id === t.dataset.pane ? '' : 'none');
+  wsay('wmsg', '');
+});
+document.getElementById('wclose').onclick = () => closeWallet();
+document.getElementById('wmodal').onclick = e => {
+  if (e.target.id === 'wmodal') closeWallet();     // click the backdrop to dismiss
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('wmodal').style.display === 'flex')
+    closeWallet();
+});
+document.getElementById('wrefresh').onclick = e => { e.preventDefault(); loadWallet(); };
 document.getElementById('wcopy').onclick = async () => {
   await navigator.clipboard.writeText(document.getElementById('waddr').textContent);
   const b = document.getElementById('wcopy');
