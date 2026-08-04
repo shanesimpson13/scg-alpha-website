@@ -78,6 +78,11 @@
     .icobtn { display: inline-flex; align-items: center; justify-content: center;
               flex: 0 0 26px; width: 26px; height: 26px; padding: 0;
               border-radius: 6px; transition: background .12s, color .12s; }
+    /* The icons are one group, so they sit tighter to each other than to the
+       text and the chip either side. The row's 13px gap is pulled back to 3px
+       between adjacent buttons, which still leaves clear space between the
+       hover plates. */
+    .icobtn + .icobtn { margin-left: -10px; }
     .icobtn:hover { background: rgba(0, 0, 0, 0.07); color: var(--fg); }
     .icobtn:active { background: rgba(0, 0, 0, 0.12); }
     .icobtn svg { width: 14px; height: 14px; display: block; }
