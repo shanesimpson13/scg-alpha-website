@@ -11,23 +11,8 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    /* One theme. The accents are the darker set, so they read against white. */
     :root {
-      --bg: #000;
-      --panel: #0a0a0a;
-      --fg: #fff;
-      --line: rgba(255, 255, 255, 0.08);
-      --hair: rgba(255, 255, 255, 0.045);
-      --dim: rgba(255, 255, 255, 0.55);
-      --dimmer: rgba(255, 255, 255, 0.32);
-      --field: rgba(255, 255, 255, 0.04);
-      --hover: rgba(255, 255, 255, 0.028);
-      --green: #7cffa0;
-      --amber: #ffc46b;
-      --red: #ff6b6b;
-    }
-    /* Light theme. Same hierarchy, inverted surfaces — the accents darken so
-       they still read against white. */
-    :root[data-theme="light"] {
       --bg: #fbfbfa;
       --panel: #f2f2f0;
       --fg: #14140f;
@@ -92,8 +77,6 @@
               width: 22px; height: 22px; padding: 0; }
     .icobtn svg { width: 14px; height: 14px; display: block; }
     /* .status a dims every link in the header; the balance shouldn't be dim. */
-    #themetoggle { text-decoration: none; font-size: 14px; }
-    #themetoggle:hover { color: var(--fg); }
 
 
 
@@ -411,10 +394,13 @@
     @media (max-width: 980px) { .dgrid { grid-template-columns: minmax(0, 1fr); } }
     .dmain { min-width: 0; }
     .drail { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+    /* The chart stays dark. It's GMGN's embed and it renders dark regardless,
+       so the container matches it — otherwise you get a light frame around a
+       dark chart, and a light flash in the hole before the iframe paints. */
     .chartwrap {
       position: relative; width: 100%; height: 62vh; min-height: 420px; max-height: 760px;
-      border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
-      background: var(--panel);
+      border: 1px solid rgba(0, 0, 0, 0.16); border-radius: 10px; overflow: hidden;
+      background: #0d0d0d;
     }
     .chartwrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
     /* Flex, not grid: a grid leaves empty cells on the last row and the gap
@@ -583,7 +569,6 @@
     <div class="status">
       <div class="live" id="livewrap"><div class="dot"></div><span id="livetxt">live</span></div>
       <span id="updated"></span>
-      <a href="#" id="themetoggle" title="Light / dark">◐</a>
       <a href="#" id="openjournal">journal</a>
       <a href="#" id="opensettings" class="icobtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.331.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
       <a href="#" class="chip" id="walletchip">sign in</a>
@@ -813,18 +798,6 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
 const VOL_WARM = 25000, VOL_HOT = 100000;
 const volClass = v => 'vol' + ((v || 0) >= VOL_HOT ? ' hot' : (v || 0) >= VOL_WARM ? ' warm' : '');
 
-/* ── theme ──────────────────────────────────────────────────────────────── */
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  localStorage.setItem('edgelvl_theme', t);
-  const b = document.getElementById('themetoggle');
-  if (b) b.textContent = t === 'light' ? '☾' : '◐';
-}
-applyTheme(localStorage.getItem('edgelvl_theme') || 'dark');
-document.getElementById('themetoggle').onclick = e => {
-  e.preventDefault();
-  applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
-};
 
 async function api(path, opts = {}) {
   const r = await fetch(API + path, {

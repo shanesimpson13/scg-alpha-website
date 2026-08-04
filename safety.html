@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,13 +14,6 @@
   /* Same palette and type as the board. A page about custody that looks like a
      different product invites the question of whose page it is. */
   :root {
-    --bg: #000; --panel: #0a0a0a; --fg: #fff;
-    --line: rgba(255,255,255,0.08); --hair: rgba(255,255,255,0.045);
-    --dim: rgba(255,255,255,0.55); --dimmer: rgba(255,255,255,0.32);
-    --field: rgba(255,255,255,0.04);
-    --green: #7cffa0; --red: #ff6b6b;
-  }
-  :root[data-theme="light"] {
     --bg: #fbfbfa; --panel: #f2f2f0; --fg: #14140f;
     --line: rgba(0,0,0,0.11); --hair: rgba(0,0,0,0.06);
     --dim: rgba(0,0,0,0.58); --dimmer: rgba(0,0,0,0.38);
@@ -65,14 +58,6 @@
   footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--line);
            font-size: 11px; color: var(--dimmer); line-height: 1.8; }
 </style>
-<script>
-  /* Whatever theme they picked on the board, before first paint so it never
-     flashes the wrong one. */
-  try {
-    document.documentElement.setAttribute(
-      'data-theme', localStorage.getItem('edgelvl_theme') || 'dark');
-  } catch (e) {}
-</script>
 </head>
 <body>
 <div class="wrap">
