@@ -55,7 +55,10 @@
     /* One width for every view. Widening only the coin page meant the logo
        and the sign-in chip jumped every time you opened or closed a coin;
        the chart-plus-rail sets the floor, and the board takes the same. */
-    .wrap { max-width: 1320px; margin: 0 auto; padding: 20px 16px 70px; }
+    /* Column layout so the footer can sit at the bottom of a short page via
+       margin-top:auto, rather than floating mid-screen under the board. */
+    .wrap { max-width: 1320px; margin: 0 auto; padding: 20px 16px 24px;
+            min-height: 100vh; display: flex; flex-direction: column; }
 
     header {
       display: flex; align-items: center; justify-content: space-between;
@@ -136,28 +139,69 @@
               color: var(--dimmer); margin-bottom: 4px; }
     .wbal-v { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-    .wtabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
-             background: var(--field); border: 1px solid var(--line);
-             border-radius: 8px; padding: 3px; margin-bottom: 18px; }
-    .wtab { background: none; border: 0; border-radius: 6px; padding: 8px;
-            font-family: inherit; font-size: 12px; color: var(--dim);
-            cursor: pointer; }
-    .wtab.on { background: var(--panel); color: var(--fg); }
+    /* Equal halves, and each half carries its own border so it reads as a
+       real segmented control rather than two words with a highlight. */
+    .wtabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+             margin-bottom: 18px; }
+    .wtab { background: var(--field); border: 1px solid var(--line);
+            border-radius: 9px; padding: 11px 8px; font-family: inherit;
+            font-size: 12.5px; color: var(--dim); cursor: pointer;
+            transition: border-color .12s, color .12s, background .12s; }
+    .wtab:hover { color: var(--fg); }
+    .wtab.on { background: var(--panel); border-color: var(--fg); color: var(--fg);
+               font-weight: 600; }
 
-    .qrbox { display: flex; justify-content: center; margin-bottom: 14px; }
+    /* Both panes are the same height so switching tabs doesn't resize the
+       dialog under the cursor. */
+    .wpane { min-height: 348px; display: flex; flex-direction: column; }
+
+    .netrow { display: flex; align-items: center; justify-content: center; gap: 8px;
+              border: 1px solid var(--line); border-radius: 9px;
+              padding: 10px; margin-bottom: 14px; font-size: 12.5px; }
+    .netrow svg { display: block; }
+
+    .qrbox { display: flex; justify-content: center; margin-bottom: 12px; }
     /* white plate behind the code — scanners need the quiet zone and the
        contrast, and in dark mode the page background gives neither. */
-    #wqr { background: #fff; padding: 12px; border-radius: 8px; line-height: 0; }
-    #wqr img, #wqr canvas { display: block; width: 168px; height: 168px;
+    #wqr { background: #fff; padding: 12px; border-radius: 10px; line-height: 0; }
+    #wqr img, #wqr canvas { display: block; width: 156px; height: 156px;
                             image-rendering: pixelated; }
     .wtip { font-size: 11px; color: var(--dimmer); line-height: 1.6;
-            text-align: center; margin-bottom: 12px; }
+            text-align: center; margin-bottom: 10px; }
+
+    .field { margin-bottom: 12px; }
+    .field input[type=text], .field input:not([type]) {
+      width: 100%; background: var(--field); border: 1px solid var(--line);
+      border-radius: 9px; padding: 13px 14px; color: var(--fg);
+      font-family: inherit; font-size: 12.5px; }
+    .field input::placeholder { color: var(--dimmer); }
+    .field input:focus { outline: none; border-color: var(--dim); }
+
+    .amt { background: var(--field); border: 1px solid var(--line);
+           border-radius: 9px; padding: 13px 14px; }
+    .amt-head { display: flex; justify-content: space-between; align-items: baseline;
+                margin-bottom: 10px; }
+    .amt-k { font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+             color: var(--dimmer); }
+    .amt-pct { font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .amt-sol { margin-top: 10px; font-size: 15px; font-weight: 600;
+               font-variant-numeric: tabular-nums; text-align: right; }
+    input[type=range] { -webkit-appearance: none; appearance: none; width: 100%;
+                        height: 3px; border-radius: 2px; background: var(--line);
+                        outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+      width: 15px; height: 15px; border-radius: 50%; cursor: pointer;
+      background: linear-gradient(96deg, #9945FF 0%, #14F195 100%); }
+    input[type=range]::-moz-range-thumb { width: 15px; height: 15px; border: 0;
+      border-radius: 50%; cursor: pointer;
+      background: linear-gradient(96deg, #9945FF 0%, #14F195 100%); }
+    #wwithdraw { margin-top: auto; }
     .wfoot { display: flex; justify-content: space-between; margin-top: 18px;
              padding-top: 14px; border-top: 1px solid var(--hair); }
     .wfoot a { font-size: 11px; color: var(--dimmer); text-decoration: none; }
     .wfoot a:hover { color: var(--fg); }
-    #wallet h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
-    #wallet .lede { font-size: 12px; color: var(--dim); line-height: 1.7; margin-bottom: 26px; }
+    .modal-card h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
+    .modal-card .lede { font-size: 12px; color: var(--dim); line-height: 1.7; margin-bottom: 26px; }
     .wrow {
       display: flex; justify-content: space-between; align-items: baseline;
       padding: 11px 0; border-bottom: 1px solid var(--hair); font-size: 12.5px;
@@ -166,16 +210,22 @@
     .wrow .k { color: var(--dim); }
     .wrow .v { font-variant-numeric: tabular-nums; font-size: 14px; }
     .wlabel { font-size: 11px; color: var(--dimmer); margin: 22px 0 7px; }
+    .waddr:hover { border-color: var(--dim); color: var(--fg); }
+    .waddr::after { content: 'Click to copy'; display: block; font-size: 10px;
+                    color: var(--dimmer); margin-top: 5px; letter-spacing: .04em; }
+    .waddr:hover::after { content: 'Copy'; color: var(--fg); }
+    .waddr.copied::after { content: 'Copied'; color: var(--green); }
     .waddr {
       font-family: inherit; font-size: 11.5px; word-break: break-all; line-height: 1.6;
-      background: var(--field); border: 1px solid var(--line); border-radius: 6px;
-      padding: 11px 12px; color: var(--fg);
+      background: var(--field); border: 1px solid var(--line); border-radius: 9px;
+      padding: 12px 13px; color: var(--dim); cursor: pointer; text-align: center;
+      transition: border-color .12s, color .12s;
     }
-    #wallet input {
+    .modal-card input {
       width: 100%; padding: 10px 12px; background: var(--field); color: var(--fg);
       border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 13px;
     }
-    #wallet input:focus { outline: none; border-color: var(--dim); }
+    .modal-card input:focus { outline: none; border-color: var(--dim); }
     .wbtns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
     .wmsg { font-size: 11.5px; color: var(--dim); margin-top: 11px; min-height: 15px; }
     .wmsg.bad { color: var(--red); }
@@ -191,8 +241,6 @@
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
     footer a { color: var(--dim); text-decoration: none; }
     footer a:hover { color: var(--fg); text-decoration: underline; }
-    footer .fnote { margin-left: auto; color: var(--dimmer); }
-    @media (max-width: 700px) { footer .fnote { margin-left: 0; flex-basis: 100%; } }
 
     /* ── gate ── */
     #gate { max-width: 420px; margin: 12vh auto; text-align: center; }
@@ -514,7 +562,7 @@
     .ghost:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
     #setmsg { font-size: 12px; }
     footer { display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-             margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
+             margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line);
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
 
     @media (max-width: 700px) {
@@ -632,17 +680,29 @@
         </div>
 
         <div class="wpane" id="wdep">
+          <div class="netrow" id="netrow-dep"></div>
           <div class="qrbox"><div id="wqr"></div></div>
-          <p class="wtip">Send SOL to this address. It shows up here on its own.</p>
-          <div class="waddr" id="waddr">…</div>
-          <div class="wbtns"><button class="ghost" id="wcopy">Copy address</button></div>
+          <p class="wtip">Send SOL on the Solana network to this address.</p>
+          <div class="waddr" id="waddr" role="button" tabindex="0"
+               title="Click to copy">…</div>
         </div>
 
         <div class="wpane" id="wwd" style="display:none">
-          <div class="wlabel">SEND TO</div>
-          <input id="wdest" placeholder="Your Solana address" spellcheck="false">
-          <div class="wbtns"><button class="glbtn solbtn" id="wwithdraw">Withdraw everything</button></div>
-          <p class="wtip">Goes out from your wallet, signed by you. We can't do this for you and we can't stop it.</p>
+          <div class="netrow" id="netrow-wd"></div>
+          <div class="field">
+            <input id="wdest" placeholder="Solana wallet address" spellcheck="false"
+                   autocomplete="off" autocapitalize="off">
+          </div>
+          <div class="field amt">
+            <div class="amt-head">
+              <span class="amt-k">Amount</span>
+              <span class="amt-pct" id="wpctlbl">100%</span>
+            </div>
+            <input type="range" id="wpct" min="0" max="100" step="1" value="100"
+                   aria-label="Percentage to withdraw">
+            <div class="amt-sol"><span id="wamt">—</span> SOL</div>
+          </div>
+          <button class="glbtn solbtn" id="wwithdraw">Withdraw</button>
         </div>
 
         <div id="wpos"></div>
@@ -672,8 +732,6 @@
   <footer>
     <a href="/terms">Terms</a>
     <a href="/privacy">Privacy</a>
-    <a href="/safety">How your money is held</a>
-    <span class="fnote">Trading memecoins can lose you everything. Nothing here is financial advice.</span>
   </footer>
 </div>
 
@@ -1472,6 +1530,18 @@ function wsay(id, text, kind = '') {
 /* Solana's mark, inline. An <img> would be a second request for 400 bytes, and
    inline means it can pick up the gradient rather than shipping two files for
    light and dark. */
+/* A function, not a constant: two copies of the same markup meant two
+   elements with the same gradient id, which is invalid and silently breaks
+   the second one if the first ever leaves the DOM. */
+const SOL_NET = (id) => `<svg width="17" height="14" viewBox="0 0 397.7 311.7" aria-hidden="true">
+  <linearGradient id="${id}" x1="360.9" y1="-37.5" x2="141.2" y2="383.3"
+    gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9945FF"/>
+    <stop offset="1" stop-color="#14F195"/></linearGradient>
+  <path fill="url(#${id})" d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z"/>
+  <path fill="url(#${id})" d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z"/>
+  <path fill="url(#${id})" d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
+</svg>`;
+
 const SOL_MARK = `<svg width="11" height="9" viewBox="0 0 397.7 311.7" aria-hidden="true">
   <linearGradient id="sg" x1="360.9" y1="-37.5" x2="141.2" y2="383.3"
     gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9945FF"/>
@@ -1559,11 +1629,23 @@ let walletPoll = null;
    poll, had never run. */
 let mcTimer = null;
 /* Everything the wallet holds, as one figure. */
+let walletTotal = 0;
 function setBal(bal) {
-  const total = (bal.wsol || 0) + (bal.unwrapped || 0);
+  walletTotal = (bal.wsol || 0) + (bal.unwrapped || 0);
   const el = document.getElementById('wbal');
-  if (el) el.textContent = sol4(total) + ' SOL';
+  if (el) el.textContent = sol4(walletTotal) + ' SOL';
   paintChip(bal.wsol);
+  paintAmount();
+}
+
+/* The slider is a share of the balance, shown in SOL so nobody has to do the
+   percentage in their head before signing. */
+function paintAmount() {
+  const pct = Number(document.getElementById('wpct')?.value ?? 100);
+  const lbl = document.getElementById('wpctlbl');
+  const amt = document.getElementById('wamt');
+  if (lbl) lbl.textContent = pct + '%';
+  if (amt) amt.textContent = sol4(walletTotal * pct / 100);
 }
 
 async function loadWallet() {
@@ -1571,6 +1653,8 @@ async function loadWallet() {
     const a = await api('/api/account');          // creates it on first call
     document.getElementById('waddr').textContent = a.address;
     paintQR(a.address);
+    document.querySelectorAll('.netrow').forEach((r, i) =>
+      r.innerHTML = SOL_NET('sgn' + i) + '<span>Solana network</span>');
     /* One number. Whether a lamport is currently wrapped, reserved for fees or
        sitting as plain SOL is our problem, not something to explain on screen. */
     setBal(a.balances);
@@ -1661,6 +1745,17 @@ document.querySelectorAll('.wtab').forEach(t => t.onclick = () => {
     p.style.display = p.id === t.dataset.pane ? '' : 'none');
   wsay('wmsg', '');
 });
+const copyAddr = async () => {
+  const el = document.getElementById('waddr');
+  try { await navigator.clipboard.writeText(el.textContent.trim()); } catch (e) { return; }
+  el.classList.add('copied');
+  setTimeout(() => el.classList.remove('copied'), 1400);
+};
+document.getElementById('waddr').onclick = copyAddr;
+document.getElementById('waddr').onkeydown = e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copyAddr(); }
+};
+document.getElementById('wpct').oninput = paintAmount;
 document.getElementById('wclose').onclick = () => closeWallet();
 document.getElementById('wmodal').onclick = e => {
   if (e.target.id === 'wmodal') closeWallet();     // click the backdrop to dismiss
@@ -1670,11 +1765,6 @@ document.addEventListener('keydown', e => {
     closeWallet();
 });
 document.getElementById('wrefresh').onclick = e => { e.preventDefault(); loadWallet(); };
-document.getElementById('wcopy').onclick = async () => {
-  await navigator.clipboard.writeText(document.getElementById('waddr').textContent);
-  const b = document.getElementById('wcopy');
-  b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy'), 1400);
-};
 document.getElementById('wsignout').onclick = async e => {
   e.preventDefault();
   localStorage.removeItem('edgelvl_key');
@@ -1942,11 +2032,20 @@ $('wverify').onclick = async () => {
 $('wwithdraw').onclick = async () => {
   const destination = $('wdest').value.trim();
   if (!destination) return window.wsay('wmsg', 'Where should it go?', 'bad');
+  const pct = Number($('wpct').value);
+  if (pct <= 0) return window.wsay('wmsg', 'Pick an amount.', 'bad');
+  /* At 100% send null and let the server sweep. Computing the figure here
+     would miss the rent the closed wrapped-SOL account refunds and the network
+     fee it has to leave behind, so a "100%" number is always slightly wrong in
+     one direction or the other — and wrong high just fails. */
+  const body = pct >= 100
+    ? { destination }
+    : { destination, amount_sol: Number((walletTotal * pct / 100).toFixed(6)) };
   $('wwithdraw').disabled = true;
   try {
     window.wsay('wmsg', 'Preparing…');
     const built = await window.api('/api/withdraw', {
-      method: 'POST', body: JSON.stringify({ destination }),
+      method: 'POST', body: JSON.stringify(body),
     });
     // Signed here, by them. Our key cannot produce this transaction at all.
     window.wsay('wmsg', `Signing ${Number(built.amount_sol).toFixed(4)} SOL…`);
