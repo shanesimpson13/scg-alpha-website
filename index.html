@@ -1637,7 +1637,10 @@ function setBal(bal) {
   walletTotal = (bal.wsol || 0) + (bal.unwrapped || 0);
   const el = document.getElementById('wbal');
   if (el) el.textContent = sol4(walletTotal) + ' SOL';
-  paintChip(bal.wsol);
+  /* Total, not just the wrapped part. Wrapped-vs-native is our plumbing; to
+     the person who just deposited it is one balance, and showing only the
+     wrapped half made a fresh deposit look like it never arrived. */
+  paintChip(walletTotal);
   paintAmount();
 }
 
