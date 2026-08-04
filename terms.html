@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EdgeLvl — Terms of Service</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Same palette and type as the board. A page about custody that looks like a
+     different product invites the question of whose page it is. */
+  :root {
+    --bg: #000; --panel: #0a0a0a; --fg: #fff;
+    --line: rgba(255,255,255,0.08); --hair: rgba(255,255,255,0.045);
+    --dim: rgba(255,255,255,0.55); --dimmer: rgba(255,255,255,0.32);
+    --field: rgba(255,255,255,0.04);
+    --green: #7cffa0; --red: #ff6b6b;
+  }
+  :root[data-theme="light"] {
+    --bg: #fbfbfa; --panel: #f2f2f0; --fg: #14140f;
+    --line: rgba(0,0,0,0.11); --hair: rgba(0,0,0,0.06);
+    --dim: rgba(0,0,0,0.58); --dimmer: rgba(0,0,0,0.38);
+    --field: rgba(0,0,0,0.03);
+    --green: #12924b; --red: #c0362c;
+  }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 13px/1.75 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 22px 26px 90px; }
+  header { display: flex; align-items: center; gap: 12px; padding-bottom: 16px;
+           border-bottom: 1px solid var(--line); margin-bottom: 34px; }
+  header .wordmark { height: 15px; width: auto; display: block; color: var(--fg);
+                     aspect-ratio: 180.303 / 39.203; }
+  header a { color: var(--dimmer); font-size: 11px; text-decoration: none; }
+  header a:hover { color: var(--fg); }
+  h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 12px; }
+  h2 { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+       color: var(--dimmer); margin: 38px 0 12px; }
+  p { color: var(--dim); margin-bottom: 13px; }
+  p.lead { color: var(--fg); font-size: 14px; line-height: 1.8; margin-bottom: 4px; }
+  strong, b { color: var(--fg); font-weight: 600; }
+  em { font-style: normal; color: var(--fg); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+          padding: 6px 16px; margin: 14px 0; }
+  ul { margin: 0 0 13px; padding-left: 18px; color: var(--dim); }
+  li { margin-bottom: 9px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 11px 0; border-bottom: 1px solid var(--hair); vertical-align: top;
+       color: var(--dim); }
+  td:last-child { text-align: right; white-space: nowrap; padding-left: 16px; }
+  tr:last-child td { border-bottom: 0; }
+  .yes { color: var(--green); }
+  .no { color: var(--red); }
+  code { background: var(--field); border: 1px solid var(--line); border-radius: 4px;
+         padding: 1px 5px; font-size: 12px; color: var(--fg); }
+  a { color: var(--dim); }
+  a:hover { color: var(--fg); }
+  footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--line);
+           font-size: 11px; color: var(--dimmer); line-height: 1.8; }
+</style>
+<script>
+  /* Whatever theme they picked on the board, before first paint so it never
+     flashes the wrong one. */
+  try {
+    document.documentElement.setAttribute(
+      'data-theme', localStorage.getItem('edgelvl_theme') || 'dark');
+  } catch (e) {}
+</script>
+
+<style>
+  h2 { margin-top: 34px; }
+  h3 { font-size: 13px; font-weight: 600; margin: 22px 0 8px; color: var(--fg); }
+  ol { margin: 0 0 13px; padding-left: 20px; color: var(--dim); }
+  ol li { margin-bottom: 9px; }
+  .updated { font-size: 11px; color: var(--dimmer); margin-bottom: 30px; }
+  .callout { background: var(--panel); border: 1px solid var(--line);
+             border-left: 2px solid var(--amber, #e0b341); border-radius: 6px;
+             padding: 14px 16px; margin: 18px 0; }
+  .callout p { margin-bottom: 0; }
+  nav.legal { display: flex; gap: 16px; font-size: 11px; margin-top: 6px; }
+  nav.legal a { color: var(--dimmer); text-decoration: none; }
+  nav.legal a:hover, nav.legal a[aria-current] { color: var(--fg); }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg class="wordmark" viewBox="97.350 166.297 180.303 39.203" fill="currentColor" role="img" aria-label="EDGE"><g transform="translate(93.427734,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g><g transform="translate(140.461163,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 35.28125 -39.203125 L 35.28125 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 0 Z M 35.28125 -7.84375 L 35.28125 -31.359375 L 43.125 -31.359375 L 43.125 -7.84375 Z M 35.28125 -7.84375 "/></g><g transform="translate(187.494592,205.499987)"><path d="M 11.765625 0 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 -15.6875 L 19.59375 -15.6875 L 19.59375 -23.515625 L 43.125 -23.515625 L 43.125 0 Z M 3.921875 -7.84375 L 3.921875 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 Z M 11.765625 -31.359375 L 11.765625 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 Z M 11.765625 -31.359375 "/></g><g transform="translate(234.528021,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g></svg>
+    <a href="/">← back to the terminal</a>
+  </header>
+  <nav class="legal"><a href="/terms" aria-current='page'>Terms</a> <a href="/privacy">Privacy</a> <a href="/safety">How your money is held</a></nav>
+
+  <h1>Terms of Service</h1>
+  <p class="updated">Last updated 4 August 2026</p>
+
+  <p class="lead">
+    EdgeLvl is a trading terminal and an automation you point at coins yourself.
+    We are not a broker, an exchange, a custodian, or an investment adviser, and
+    we never take possession of your money.
+  </p>
+
+  <p>
+    By using EdgeLvl you agree to what follows. If you don't, don't use it.
+  </p>
+
+  <h2>1. Who can use it</h2>
+  <p>You must be at least 18 and legally able to enter a contract. You must not be:</p>
+  <ul>
+    <li>a resident of, or located in, a jurisdiction subject to comprehensive sanctions;</li>
+    <li>listed on any sanctions or restricted-party list;</li>
+    <li>barred from using services like this under the law that applies to you.</li>
+  </ul>
+  <p>
+    Using a VPN or any other tool to get around these restrictions is a breach of
+    these terms.
+  </p>
+
+  <h2>2. Your wallet, and what we can do with it</h2>
+  <p>
+    Signing in creates a Solana wallet that <strong>you</strong> own. The keys are
+    held by <a href="https://privy.io" target="_blank" rel="noopener">Privy</a>
+    inside hardware that only signs transactions matching a rule set attached to
+    the wallet. We are registered as an additional signer on that wallet, limited
+    to swaps.
+  </p>
+  <p>
+    Concretely: we can trade with your funds. We <strong>cannot</strong> send them
+    anywhere — not to you, not to ourselves, not to anyone. That isn't a promise
+    we're making, it's a restriction we are technically unable to lift. Only your
+    own sign-in can move funds out. <a href="/safety">The detail is here</a>, and
+    the tests behind it ship in our bot repository so you can run them yourself.
+  </p>
+  <p>
+    You are responsible for the email address you sign in with. Whoever controls
+    that inbox can reach the wallet. Use one with two-factor authentication.
+  </p>
+
+  <h2>3. How trading works, and what you're directing</h2>
+  <p>
+    Nothing trades unless you greenlight a specific coin. When you do, the
+    automation watches that coin and buys and sells it according to parameters you
+    set — the dip it waits for, the bounce that confirms it, your take-profit and
+    stop levels.
+  </p>
+  <div class="callout">
+    <p>
+      <strong>This is a tool you operate, not a fund we manage.</strong> We
+      exercise no discretion over which coins you trade or when you enter. Every
+      position starts because you chose that coin and pressed the button. We do
+      not select assets for you, and we do not manage a portfolio on your behalf.
+    </p>
+  </div>
+  <p>
+    The board shows coins that meet mechanical filters. That is a list, not a
+    recommendation, and an appearance on it is not an opinion that a coin is
+    worth buying.
+  </p>
+
+  <h2>4. Risk</h2>
+  <p>Plainly, because this part matters more than the rest of this document:</p>
+  <ol>
+    <li>
+      <strong>You can lose everything.</strong> These are memecoins. Most go to
+      zero. Many are created specifically to take money from people who buy them.
+    </li>
+    <li>
+      <strong>Automation does not reduce that.</strong> A stop-loss is an
+      instruction to sell, not a guarantee of a price. On an illiquid coin, or
+      during a collapse, it can fill far below where it triggered, or not fill.
+    </li>
+    <li>
+      <strong>Past results say nothing about future ones.</strong> Any figure we
+      publish is a record of what happened, not a forecast.
+    </li>
+    <li>
+      <strong>Things break.</strong> Transactions fail, the network congests,
+      liquidity vanishes, prices gap. Some of that costs money and none of it is
+      within our control.
+    </li>
+  </ol>
+  <p>Only put in money you can lose entirely without it changing your life.</p>
+
+  <h2>5. We do not give advice</h2>
+  <p>
+    Nothing in EdgeLvl — the board, the filters, the trigger levels, the journal,
+    anything we write or say — is financial, investment, tax, or legal advice. No
+    advisory or fiduciary relationship exists between us. Decisions are yours, and
+    so are the outcomes.
+  </p>
+
+  <h2>6. Availability</h2>
+  <p>
+    We don't guarantee uptime. We may change, suspend, or discontinue any part of
+    the service. If our systems stop, <strong>open positions stop being
+    managed</strong> — stops and take-profits will not fire while we're down. Your
+    ability to withdraw does not depend on us being up.
+  </p>
+
+  <h2>7. Third parties</h2>
+  <p>
+    EdgeLvl depends on services we don't control: Privy for sign-in and key
+    custody, the Solana network, decentralised exchanges and routers that execute
+    trades, and market-data providers. Their outages, errors, fees, and failures
+    are not ours, and we're not liable for losses caused by them.
+  </p>
+
+  <h2>8. Fees</h2>
+  <p>
+    Subscription pricing is shown before you pay. Separately, every trade incurs
+    Solana network fees and whatever the exchange or router charges — those go to
+    the network and the venue, not to us, and they apply whether a trade wins or
+    loses. Fees can change; we'll tell you before a change to ours takes effect.
+  </p>
+
+  <h2>9. Things you must not do</h2>
+  <ul>
+    <li>Manipulate a market, wash trade, or coordinate to move a price.</li>
+    <li>Scrape, resell, or redistribute our data or signals.</li>
+    <li>Attack, probe, or overload our systems, or work around rate limits.</li>
+    <li>Use the service for money laundering, sanctions evasion, or any crime.</li>
+    <li>Share your account, or use someone else's.</li>
+  </ul>
+
+  <h2>10. Tax</h2>
+  <p>
+    Your trades may create tax obligations. Working out what you owe and reporting
+    it is entirely yours. We do not provide tax forms or tax advice.
+  </p>
+
+  <h2>11. Our intellectual property</h2>
+  <p>
+    The software, interface, and written material are ours. Your subscription buys
+    you the right to use the service, not to copy, resell, or rebuild it.
+  </p>
+
+  <h2>12. Warranties and liability</h2>
+  <p>
+    The service is provided <strong>as is</strong>, without warranty of any kind,
+    to the fullest extent the law allows. We do not warrant that it will be
+    uninterrupted, error-free, or profitable.
+  </p>
+  <p>
+    To the fullest extent permitted by law, we are not liable for trading losses,
+    lost profits, or indirect or consequential damages. Where liability cannot be
+    excluded, it is limited to the greater of the fees you paid us in the three
+    months before the claim, or one hundred US dollars. Nothing here excludes
+    liability for fraud or anything else that cannot lawfully be excluded.
+  </p>
+
+  <h2>13. Ending it</h2>
+  <p>
+    Cancel any time; access runs to the end of the period you've paid for. We may
+    suspend or close an account that breaches these terms. Either way,
+    <strong>your wallet and its contents remain yours</strong> and you can
+    withdraw — that path doesn't run through us.
+  </p>
+
+  <h2>14. Disputes and governing law</h2>
+  <p>
+    These terms are governed by the laws of the State of Delaware, without regard
+    to conflict-of-law rules. Before starting formal proceedings, both sides agree
+    to try to resolve the dispute directly for 30 days by writing to the address
+    below.
+  </p>
+
+  <h2>15. Changes</h2>
+  <p>
+    We may update these terms. If a change materially affects you we'll tell you
+    by email or in the terminal before it takes effect. Continuing to use EdgeLvl
+    after that means you accept the change.
+  </p>
+
+  <footer>
+    Questions about any of this: <a href="mailto:shane@simpsoncapitalgroup.com">shane@simpsoncapitalgroup.com</a>
+  </footer>
+</div>
+</body>
+</html>

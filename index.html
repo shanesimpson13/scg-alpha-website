@@ -84,6 +84,10 @@
     a { color: var(--dim); }
     a:hover { color: var(--fg); }
     .status a { color: var(--dimmer); }
+
+    .icobtn { display: inline-flex; align-items: center; justify-content: center;
+              width: 22px; height: 22px; padding: 0; }
+    .icobtn svg { width: 14px; height: 14px; display: block; }
     /* .status a dims every link in the header; the balance shouldn't be dim. */
     #themetoggle { text-decoration: none; font-size: 14px; }
     #themetoggle:hover { color: var(--fg); }
@@ -148,6 +152,10 @@
     .posrow button { padding: 5px 12px; font-size: 11px; }
     .wfoot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--hair);
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
+    footer a { color: var(--dim); text-decoration: none; }
+    footer a:hover { color: var(--fg); text-decoration: underline; }
+    footer .fnote { margin-left: auto; color: var(--dimmer); }
+    @media (max-width: 700px) { footer .fnote { margin-left: 0; flex-basis: 100%; } }
 
     /* ── gate ── */
     #gate { max-width: 420px; margin: 12vh auto; text-align: center; }
@@ -411,6 +419,12 @@
     #jrows .dayrow span { text-transform: none; letter-spacing: 0; font-size: 11px; }
 
     #settings { max-width: 660px; }
+    .signedout { border: 1px solid var(--line); border-radius: 8px; padding: 26px;
+                 text-align: center; }
+    .signedout p { font-size: 13px; margin-bottom: 6px; }
+    .signedout p.sub { font-size: 12px; color: var(--dim); line-height: 1.7;
+                       max-width: 380px; margin: 0 auto 18px; }
+    .signedout .glbtn { width: auto; padding: 11px 26px; }
     .sethead { margin-bottom: 26px; }
     .sethead h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
     .sethead p { font-size: 12px; color: var(--dim); line-height: 1.7; }
@@ -463,7 +477,8 @@
     }
     .ghost:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
     #setmsg { font-size: 12px; }
-    footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
+    footer { display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+             margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
 
     @media (max-width: 700px) {
@@ -482,7 +497,7 @@
       <span id="updated"></span>
       <a href="#" id="themetoggle" title="Light / dark">◐</a>
       <a href="#" id="openjournal">journal</a>
-      <a href="#" id="opensettings">settings</a>
+      <a href="#" id="opensettings" class="icobtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.331.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
       <a href="#" class="chip" id="walletchip">sign in</a>
     </div>
   </header>
@@ -606,12 +621,10 @@
   </div>
 
   <footer>
-    Volume, transactions, Smart/KOL and B/S are GMGN's own trailing-5-minute figures, refreshed every 15 seconds.
-    <b>B/S</b> is buy volume ÷ sell volume over that window — above 1 means more was bought than sold.
-    Showing coins over $25K 5m volume and $50K market cap, under 60 days old.
-    Greenlighting hands the coin to the bot to work. It trades your wallet and
-    <b>cannot</b> move funds out of it — only you can withdraw, and we can't change that.
-    <a href="/safety">How your money is held →</a>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/safety">How your money is held</a>
+    <span class="fnote">Trading memecoins can lose you everything. Nothing here is financial advice.</span>
   </footer>
 </div>
 
@@ -1586,6 +1599,22 @@ async function openSettings() {
   showView('settings');
   window.scrollTo(0, 0);
   setMsg('');
+  /* Settings are stored against your account, so with nobody signed in there
+     is nothing to load and nothing Save could write. Showing the controls
+     anyway just produces a form that silently fails. */
+  const bar = document.querySelector('#settings .setbar');
+  if (!KEY) {
+    document.getElementById('setbody').innerHTML =
+      '<div class="signedout">' +
+      '<p>Sign in to set your strategy.</p>' +
+      '<p class="sub">Your dip, bounce and take-profit levels are saved to your ' +
+      'account, so the bot uses the same rules wherever you sign in.</p>' +
+      '<button class="glbtn solbtn" id="setsignin">Sign in</button></div>';
+    if (bar) bar.style.display = 'none';
+    document.getElementById('setsignin').onclick = () => openWallet();
+    return;
+  }
+  if (bar) bar.style.display = '';
   try {
     const d = await api('/api/settings');
     bounds = d.bounds || {};
