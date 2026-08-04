@@ -42,6 +42,11 @@
   ],
   "redirects": [
     {
+      "source": "/playbook",
+      "destination": "https://app.notion.com/p/34d87d5dcb90818aba20c4cd256c4d61",
+      "permanent": false
+    },
+    {
       "source": "/terminal",
       "destination": "/",
       "permanent": false
