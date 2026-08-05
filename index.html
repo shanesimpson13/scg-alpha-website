@@ -560,17 +560,37 @@
     #jrows .dayrow span { text-transform: none; letter-spacing: 0; font-size: 11px; }
 
     #settings { max-width: 660px; }
-    /* An empty state shouldn't span the full page. Stretched to 1320px the
-       card was mostly border around a thimble of text, which reads as a
-       layout that failed rather than a prompt. Constrained and centred, with
-       the same radius and rhythm as the sign-in card. */
-    .signedout {
-      border: 1px solid var(--line); border-radius: 14px; padding: 40px 32px 34px;
-      text-align: center; max-width: 420px; margin: 8px auto 0; background: var(--bg);
+    /* ── Locked preview ───────────────────────────────────────────────────
+       A lone card in an empty page tells you nothing about what you'd get.
+       Showing the real thing behind a blur does: you can see the shape of the
+       journal or the strategy form, just not read it. The blurred layer is
+       sample data, never anyone's actual numbers. */
+    .locked { position: relative; }
+    .locked .lockedbg {
+      filter: blur(4px); opacity: .55; pointer-events: none; user-select: none;
     }
-    .signedout p { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
-    .signedout p.sub { font-size: 12.5px; color: var(--dim); line-height: 1.75;
-                       margin: 0 auto 26px; }
+    /* Pinned near the top of the locked region, not centred in it. The
+       journal and the strategy form are both taller than the viewport, so
+       dead-centre puts the only actionable thing on the page below the fold. */
+    .locked .lockedover {
+      position: absolute; inset: 0; display: flex; align-items: flex-start;
+      justify-content: center; padding: 76px 20px 20px;
+    }
+    /* Sits above the blur rather than being blurred with it. The gradient
+       fade keeps the bottom of the preview from ending in a hard line. */
+    .locked .lockedover::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(180deg,
+        rgba(251,251,250,.45) 0%, rgba(251,251,250,.82) 45%, rgba(251,251,250,.97) 100%);
+    }
+    .signedout {
+      position: relative; border: 1px solid var(--line); border-radius: 14px;
+      padding: 34px 32px 30px; text-align: center; max-width: 400px;
+      background: var(--bg); box-shadow: 0 12px 34px rgba(0,0,0,.09);
+    }
+    .signedout p { font-size: 14.5px; font-weight: 600; margin-bottom: 8px; }
+    .signedout p.sub { font-size: 12.5px; color: var(--dim); line-height: 1.7;
+                       margin: 0 auto 24px; }
     .signedout .glbtn { width: 100%; padding: 15px 16px; border-radius: 13px;
                         font-size: 14px; }
     .sethead { margin-bottom: 26px; }
@@ -695,6 +715,8 @@
       <h2>Trade journal</h2>
       <p>Every coin you greenlit, and what it did.</p>
     </div>
+    <div id="jlock">
+      <div id="jbody">
     <div id="jsummary"></div>
     <div id="jinsights"></div>
     <div class="tbl-wrap" id="jtable" style="margin-top:18px">
@@ -706,6 +728,8 @@
         </tr></thead>
         <tbody id="jrows"></tbody>
       </table>
+    </div>
+      </div>
     </div>
   </div>
 
@@ -790,7 +814,7 @@
       <h2>Your strategy</h2>
       <p>Applies to the next coin you greenlight, never to an open trade.</p>
     </div>
-    <div id="setbody"></div>
+    <div id="setlock"><div id="setbody"></div></div>
     <div class="setbar">
       <button class="glbtn" id="savesettings">Save changes</button>
       <button class="ghost" id="resetsettings">Reset to defaults</button>
@@ -1464,36 +1488,85 @@ async function refreshActivity() {
 }
 
 
+/* ── locked preview ─────────────────────────────────────────────────────────
+   Signed out, both of these pages showed a lone card in an empty page, which
+   tells a stranger nothing about what they'd be signing in FOR. Instead the
+   real layout renders with sample numbers, blurred, and the prompt sits on
+   top. The blurred layer is never anyone's actual data. */
+function lockView(lockId, bodyId, html, onSignIn) {
+  const lock = document.getElementById(lockId);
+  document.getElementById(bodyId).classList.add('lockedbg');
+  lock.classList.add('locked');
+  let over = lock.querySelector('.lockedover');
+  if (!over) {
+    over = document.createElement('div');
+    over.className = 'lockedover';
+    lock.appendChild(over);
+  }
+  over.innerHTML = html;
+  const btn = over.querySelector('button');
+  if (btn) btn.onclick = onSignIn;
+}
+
+function unlockView(lockId, bodyId) {
+  const lock = document.getElementById(lockId);
+  document.getElementById(bodyId).classList.remove('lockedbg');
+  lock.classList.remove('locked');
+  const over = lock.querySelector('.lockedover');
+  if (over) over.remove();
+}
+
+/* Plausible but obviously not yours — it exists to show the SHAPE of the
+   journal through a blur, nothing more. */
+const SAMPLE_JOURNAL = {
+  summary: { greenlights: 34, entered: 21, win_rate: 0.57, net_sol: 0.412,
+             avg_win: 0.48, avg_loss: -0.29, avg_peak_after_tap: 1.62 },
+  trades: [
+    { ts: '2026-08-04T19:42:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol:  0.0104, peak_after_tap: 2.10 },
+    { ts: '2026-08-04T17:15:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol: -0.0058, peak_after_tap: 1.14 },
+    { ts: '2026-08-04T14:08:00', name: 'SAMPLE', entered: false, spent_sol: 0,    pnl_sol: 0,       peak_after_tap: 1.31 },
+    { ts: '2026-08-03T22:51:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol:  0.0173, peak_after_tap: 2.84 },
+    { ts: '2026-08-03T20:30:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol: -0.0061, peak_after_tap: 1.09 },
+    { ts: '2026-08-03T16:02:00', name: 'SAMPLE', entered: false, spent_sol: 0,    pnl_sol: 0,       peak_after_tap: 1.47 },
+  ],
+};
+
+/* The shipped defaults, so the locked form shows the real controls at real
+   values rather than empty boxes. */
+const SAMPLE_SETTINGS = {
+  size_sol: 0.05, dip: 0.15, bounce: 1.04, volr_min: 1.0,
+  tp1: 1.5, frac1: 0.7, tp2: 2.0, kill: 0.5,
+  entry_timeout: 3600, max_hold: 21600, use_tp2: 1,
+};
+
 /* ── trade journal ──────────────────────────────────────────────────────── */
 async function openJournal() {
   showView('journal');
   window.scrollTo(0, 0);
 
-  const table = document.getElementById('jtable');
-  const insightBox = document.getElementById('jinsights');   // NOT `insights` — that's the function below
-
-  /* Signed out isn't a failure. The API 401s, the catch below fired, and the
-     page said "Couldn't load your journal" over an empty table — which reads
-     as a broken product to someone who has simply never signed in. */
+  /* Signed out isn't a failure. The API 401s, so this used to fall into the
+     catch below and say "Couldn't load your journal" over an empty table —
+     which reads as broken to someone who has simply never signed in. */
   if (!KEY) {
-    document.getElementById('jsummary').innerHTML =
+    paintJournal(SAMPLE_JOURNAL);
+    lockView('jlock', 'jbody',
       '<div class="signedout">' +
-      '<p>Sign in to see your trade journal.</p>' +
-      '<p class="sub">Every coin you greenlight is recorded here with what it ' +
-      'did next, so you can see which calls were actually working.</p>' +
-      '<button class="glbtn solbtn" id="jsignin">Sign in</button></div>';
-    insightBox.innerHTML = '';
-    if (table) table.style.display = 'none';
-    document.getElementById('jsignin').onclick = () => openWallet();
+      '<p>Sign in to see your journal.</p>' +
+      '<p class="sub">Every coin you greenlight, and what it did next.</p>' +
+      '<button class="glbtn solbtn">Sign in</button></div>',
+      () => openWallet());
     return;
   }
-  if (table) table.style.display = '';
+  unlockView('jlock', 'jbody');
 
   let d;
   try { d = await api('/api/trades?limit=500'); }
   catch (e) { document.getElementById('jsummary').innerHTML =
     `<div class="empty">Couldn't load your journal.</div>`; return; }
+  paintJournal(d);
+}
 
+function paintJournal(d) {
   const s = d.summary || {};
   const pct = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(0)}%`;
   const cls = v => v == null ? '' : (v >= 0 ? 'up' : 'down');
@@ -1885,21 +1958,19 @@ async function openSettings() {
      anyway just produces a form that silently fails. */
   const bar = document.querySelector('#settings .setbar');
   if (!KEY) {
-    document.getElementById('setbody').innerHTML =
+    // The real controls at their default values, blurred. Save is hidden
+    // rather than disabled — there is no account for it to write to.
+    renderSettings(SAMPLE_SETTINGS);
+    lockView('setlock', 'setbody',
       '<div class="signedout">' +
       '<p>Sign in to set your strategy.</p>' +
-      '<p class="sub">Your dip, bounce and take-profit levels are saved to your ' +
-      'account, so the bot uses the same rules wherever you sign in.</p>' +
-      '<button class="glbtn solbtn" id="setsignin">Sign in</button></div>';
+      '<p class="sub">Your dip, bounce and take-profit levels, saved to your account.</p>' +
+      '<button class="glbtn solbtn">Sign in</button></div>',
+      () => openWallet());
     if (bar) bar.style.display = 'none';
-    /* #settings is a 660px left-aligned column for the FORM. An empty state
-       centred inside it lands 120px in from its own heading, which reads as a
-       mistake — so it borrows the full page width, matching the journal's. */
-    document.getElementById('settings').style.maxWidth = 'none';
-    document.getElementById('setsignin').onclick = () => openWallet();
     return;
   }
-  document.getElementById('settings').style.maxWidth = '';
+  unlockView('setlock', 'setbody');
   if (bar) bar.style.display = '';
   try {
     const d = await api('/api/settings');
