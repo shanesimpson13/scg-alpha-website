@@ -226,33 +226,54 @@
        ISN'T here — no heading, no explainer, no links out — not from inverting
        the theme. Scoped to .signin because the card is one element that also
        serves the wallet panes. */
-    .modal-card.signin { padding: 40px 30px 22px; max-width: 380px; }
-    .simark { height: 30px; width: auto; display: block; margin: 4px auto 16px;
+    /* Spacing here is deliberately looser than the rest of the app. Everywhere
+       else is dense because it's data you scan; this is one decision, and the
+       air around it is what makes it read as considered rather than cramped. */
+    .modal-card.signin {
+      padding: 46px 36px 34px; max-width: 396px; border-radius: 18px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.04);
+    }
+    .modal-card.signin .modal-x { top: 14px; right: 14px; }
+    .simark { height: 26px; width: auto; display: block; margin: 0 auto 18px;
               color: var(--fg); aspect-ratio: 180.303 / 39.203; }
-    .silede { font-size: 13px; color: var(--dim); text-align: center;
-              margin-bottom: 26px; }
+    .silede { font-size: 12.5px; color: var(--dim); text-align: center;
+              letter-spacing: .01em; margin-bottom: 34px; }
+
+    /* Taller than the app's inputs and centred, so the field reads as the
+       subject of the screen rather than a row in a form. */
     .modal-card.signin input {
-      width: 100%; padding: 14px 15px; border-radius: 11px; font-size: 14px;
-      text-align: center;
+      width: 100%; padding: 15px 16px; border-radius: 13px; font-size: 14px;
+      text-align: center; background: var(--field); border: 1px solid var(--line);
+      transition: border-color .14s, background .14s;
+    }
+    .modal-card.signin input:hover { border-color: rgba(0,0,0,.18); }
+    .modal-card.signin input:focus {
+      border-color: var(--fg); background: var(--bg); outline: none;
     }
     /* Full-width and unmissable: there is exactly one thing to do on this
        screen, so it should not look like one option among several. */
     .sibtn {
-      display: block; width: 100%; margin-top: 10px; padding: 14px 15px;
-      background: var(--fg); color: var(--bg); border: 0; border-radius: 11px;
-      font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: opacity .12s;
+      display: block; width: 100%; margin-top: 12px; padding: 15px 16px;
+      background: var(--fg); color: var(--bg); border: 0; border-radius: 13px;
+      font: inherit; font-size: 14px; font-weight: 600; letter-spacing: .01em;
+      cursor: pointer; transition: transform .12s, opacity .12s;
     }
-    .sibtn:hover { opacity: .86; }
-    .sibtn:disabled { opacity: .45; cursor: default; }
+    .sibtn:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+    .sibtn:active:not(:disabled) { transform: translateY(0); }
+    .sibtn:disabled { opacity: .38; cursor: default; }
     .silink {
-      display: block; width: 100%; margin-top: 14px; background: none; border: 0;
-      color: var(--dimmer); font: inherit; font-size: 12px; cursor: pointer; padding: 0;
+      display: block; width: 100%; margin-top: 18px; background: none; border: 0;
+      color: var(--dimmer); font: inherit; font-size: 12px; cursor: pointer;
+      padding: 0; transition: color .12s;
     }
     .silink:hover { color: var(--fg); }
-    .sisent { font-size: 12px; color: var(--dim); text-align: center; margin-bottom: 12px; }
+    .sisent { font-size: 12.5px; color: var(--dim); text-align: center;
+              margin-bottom: 18px; line-height: 1.6; word-break: break-word; }
     .sisent span { color: var(--fg); }
-    .modal-card.signin .wmsg { text-align: center; }
+    /* Empty by default — reserving a row for it would leave a permanent gap
+       under the button on the screen that can least afford one. */
+    .modal-card.signin .wmsg { text-align: center; min-height: 0; margin-top: 0; }
+    .modal-card.signin .wmsg:not(:empty) { margin-top: 14px; }
     .wmsg { font-size: 11.5px; color: var(--dim); margin-top: 11px; min-height: 15px; }
     .wmsg.bad { color: var(--red); }
     .wmsg.good { color: var(--green); }
@@ -1634,6 +1655,14 @@ function openWallet() {
   /* One card, two states. Signed out it's the brand screen and goes dark;
      signed in it's the wallet and stays with the rest of the app. */
   document.querySelector('#wmodal .modal-card').classList.toggle('signin', !KEY);
+  if (!KEY) {
+    // reopening after a bail-out should be the first step again, not a stale
+    // "enter your code" for an email they may no longer be looking at
+    document.getElementById('wemail').style.display = 'block';
+    document.getElementById('wcode').style.display = 'none';
+    document.querySelector('.silede').style.display = '';
+    window.wsay && window.wsay('wauthmsg', '');
+  }
   if (KEY) loadWallet();
 }
 
@@ -2044,6 +2073,9 @@ $('wsend').onclick = async () => {
     $('wsentto').textContent = email;
     $('wemail').style.display = 'none';
     $('wcode').style.display = 'block';
+    /* The pitch line has done its job by now, and leaving it stacked above
+       "Code sent to…" gives the step two competing headers. */
+    document.querySelector('.silede').style.display = 'none';
     window.wsay('wauthmsg', '');
     $('wcodein').focus();
   } catch (e) { window.wsay('wauthmsg', friendly(e), 'bad'); }
@@ -2053,6 +2085,7 @@ $('wsend').onclick = async () => {
 $('wother').onclick = () => {
   $('wcode').style.display = 'none';
   $('wemail').style.display = 'block';
+  document.querySelector('.silede').style.display = '';
   window.wsay('wauthmsg', '');
 };
 
