@@ -1875,6 +1875,16 @@ async function loadWallet() {
    for a declaration those are the same binding. */
 window.refreshChip = refreshChip;
 window.setKey = t => { KEY = t; localStorage.setItem('edgelvl_key', t); };
+
+/* Signing in has to update the page you're already standing on. The journal
+   and the strategy form decide whether to show their locked preview when the
+   view OPENS, so without this you would sign in, close the modal, and still be
+   looking at a blurred page until you navigated away and back. Sign-out has
+   never needed it — that path reloads. */
+window.syncAuthView = () => {
+  if (view === 'journal') openJournal();
+  else if (view === 'settings') openSettings();
+};
 window.resumePending = () => {
   if (!pendingCoin) return;
   const mint = pendingCoin.mint;
@@ -2213,8 +2223,8 @@ $('wverify').onclick = async () => {
     window.setKey(await window.EdgeAuth.loginWithCode(email, code));
     $('wsignin').style.display = 'none';
     $('wfunded').style.display = 'block';
-    // drop the dark brand treatment: this is the wallet now, not the door
     document.querySelector('#wmodal .modal-card').classList.remove('signin');
+    window.syncAuthView();          // unblur whatever page is behind the modal
     await window.loadWallet();
     window.resumePending();
   } catch (e) { window.wsay('wauthmsg', friendly(e), 'bad'); }
