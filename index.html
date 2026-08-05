@@ -222,28 +222,24 @@
     .wbtns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 
     /* ── Sign in ──────────────────────────────────────────────────────────
-       The one dark surface in a light app, on purpose: it's the first thing a
-       stranger sees and it echoes the chart, which is the thing they came for.
-       Scoped to .signin so the wallet panes behind it stay light — the card is
-       one element serving both states. */
-    .modal-card.signin { background: #0d0d0d; border-color: #232323;
-                         padding: 40px 30px 30px; max-width: 380px; }
-    .modal-card.signin .modal-x { color: #5c5c5c; }
-    .modal-card.signin .modal-x:hover { color: #fff; }
-    .simark { height: 30px; width: auto; display: block; margin: 4px auto 30px;
-              color: #fff; aspect-ratio: 180.303 / 39.203; }
+       Same light surface as the rest of the app. The impact comes from what
+       ISN'T here — no heading, no explainer, no links out — not from inverting
+       the theme. Scoped to .signin because the card is one element that also
+       serves the wallet panes. */
+    .modal-card.signin { padding: 40px 30px 22px; max-width: 380px; }
+    .simark { height: 30px; width: auto; display: block; margin: 4px auto 16px;
+              color: var(--fg); aspect-ratio: 180.303 / 39.203; }
+    .silede { font-size: 13px; color: var(--dim); text-align: center;
+              margin-bottom: 26px; }
     .modal-card.signin input {
-      width: 100%; padding: 14px 15px; background: #171717; color: #fff;
-      border: 1px solid #2b2b2b; border-radius: 11px; font: inherit; font-size: 14px;
-      text-align: center; transition: border-color .12s;
+      width: 100%; padding: 14px 15px; border-radius: 11px; font-size: 14px;
+      text-align: center;
     }
-    .modal-card.signin input::placeholder { color: #5c5c5c; }
-    .modal-card.signin input:focus { outline: none; border-color: #4a4a4a; }
     /* Full-width and unmissable: there is exactly one thing to do on this
        screen, so it should not look like one option among several. */
     .sibtn {
       display: block; width: 100%; margin-top: 10px; padding: 14px 15px;
-      background: #fff; color: #000; border: 0; border-radius: 11px;
+      background: var(--fg); color: var(--bg); border: 0; border-radius: 11px;
       font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
       transition: opacity .12s;
     }
@@ -251,12 +247,12 @@
     .sibtn:disabled { opacity: .45; cursor: default; }
     .silink {
       display: block; width: 100%; margin-top: 14px; background: none; border: 0;
-      color: #7a7a7a; font: inherit; font-size: 12px; cursor: pointer; padding: 0;
+      color: var(--dimmer); font: inherit; font-size: 12px; cursor: pointer; padding: 0;
     }
-    .silink:hover { color: #fff; }
-    .sisent { font-size: 12px; color: #7a7a7a; text-align: center; margin-bottom: 12px; }
-    .sisent span { color: #fff; }
-    .modal-card.signin .wmsg { text-align: center; color: #7a7a7a; }
+    .silink:hover { color: var(--fg); }
+    .sisent { font-size: 12px; color: var(--dim); text-align: center; margin-bottom: 12px; }
+    .sisent span { color: var(--fg); }
+    .modal-card.signin .wmsg { text-align: center; }
     .wmsg { font-size: 11.5px; color: var(--dim); margin-top: 11px; min-height: 15px; }
     .wmsg.bad { color: var(--red); }
     .wmsg.good { color: var(--green); }
@@ -695,9 +691,11 @@
       <div id="wsignin">
         <svg class="wordmark simark" viewBox="97.350 166.297 180.303 39.203" fill="currentColor" role="img" aria-label="EDGE"><g transform="translate(93.427734,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g><g transform="translate(140.461163,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 35.28125 -39.203125 L 35.28125 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 0 Z M 35.28125 -7.84375 L 35.28125 -31.359375 L 43.125 -31.359375 L 43.125 -7.84375 Z M 35.28125 -7.84375 "/></g><g transform="translate(187.494592,205.499987)"><path d="M 11.765625 0 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 -15.6875 L 19.59375 -15.6875 L 19.59375 -23.515625 L 43.125 -23.515625 L 43.125 0 Z M 3.921875 -7.84375 L 3.921875 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 Z M 11.765625 -31.359375 L 11.765625 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 Z M 11.765625 -31.359375 "/></g><g transform="translate(234.528021,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g></svg>
 
+        <p class="silede">Sign in and start systematic trading.</p>
+
         <div id="wemail">
           <input id="wemailin" type="email" autocomplete="email" placeholder="Email">
-          <button class="sibtn" id="wsend">Continue</button>
+          <button class="sibtn" id="wsend">Send code</button>
         </div>
         <div id="wcode" style="display:none">
           <div class="sisent">Code sent to <span id="wsentto"></span></div>
