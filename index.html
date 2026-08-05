@@ -567,7 +567,7 @@
        sample data, never anyone's actual numbers. */
     .locked { position: relative; }
     .locked .lockedbg {
-      filter: blur(4px); opacity: .55; pointer-events: none; user-select: none;
+      filter: blur(2px); opacity: .8; pointer-events: none; user-select: none;
     }
     /* Pinned near the top of the locked region, not centred in it. The
        journal and the strategy form are both taller than the viewport, so
@@ -581,7 +581,7 @@
     .locked .lockedover::before {
       content: ''; position: absolute; inset: 0;
       background: linear-gradient(180deg,
-        rgba(251,251,250,.45) 0%, rgba(251,251,250,.82) 45%, rgba(251,251,250,.97) 100%);
+        rgba(251,251,250,.10) 0%, rgba(251,251,250,.38) 55%, rgba(251,251,250,.66) 100%);
     }
     .signedout {
       position: relative; border: 1px solid var(--line); border-radius: 14px;
