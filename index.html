@@ -230,19 +230,19 @@
        else is dense because it's data you scan; this is one decision, and the
        air around it is what makes it read as considered rather than cramped. */
     .modal-card.signin {
-      padding: 46px 36px 34px; max-width: 396px; border-radius: 18px;
+      padding: 58px 36px 44px; max-width: 396px; border-radius: 18px;
       box-shadow: 0 18px 50px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.04);
     }
     .modal-card.signin .modal-x { top: 14px; right: 14px; }
-    .simark { height: 26px; width: auto; display: block; margin: 0 auto 18px;
+    .simark { height: 26px; width: auto; display: block; margin: 0 auto 22px;
               color: var(--fg); aspect-ratio: 180.303 / 39.203; }
     .silede { font-size: 12.5px; color: var(--dim); text-align: center;
-              letter-spacing: .01em; margin-bottom: 34px; }
+              letter-spacing: .01em; margin-bottom: 42px; }
 
     /* Taller than the app's inputs and centred, so the field reads as the
        subject of the screen rather than a row in a form. */
     .modal-card.signin input {
-      width: 100%; padding: 15px 16px; border-radius: 13px; font-size: 14px;
+      width: 100%; padding: 17px 16px; border-radius: 13px; font-size: 14px;
       text-align: center; background: var(--field); border: 1px solid var(--line);
       transition: border-color .14s, background .14s;
     }
@@ -251,16 +251,19 @@
       border-color: var(--fg); background: var(--bg); outline: none;
     }
     /* Full-width and unmissable: there is exactly one thing to do on this
-       screen, so it should not look like one option among several. */
+       screen, so it should not look like one option among several. Same Solana
+       gradient the SOL actions use elsewhere, so signing in reads as part of
+       the same app rather than a separate front door. */
     .sibtn {
-      display: block; width: 100%; margin-top: 12px; padding: 15px 16px;
-      background: var(--fg); color: var(--bg); border: 0; border-radius: 13px;
+      display: block; width: 100%; margin-top: 14px; padding: 17px 16px;
+      background: linear-gradient(96deg, #9945FF 0%, #14F195 100%);
+      color: #08110c; border: 0; border-radius: 13px;
       font: inherit; font-size: 14px; font-weight: 600; letter-spacing: .01em;
-      cursor: pointer; transition: transform .12s, opacity .12s;
+      cursor: pointer; transition: transform .12s, filter .12s;
     }
-    .sibtn:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+    .sibtn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
     .sibtn:active:not(:disabled) { transform: translateY(0); }
-    .sibtn:disabled { opacity: .38; cursor: default; }
+    .sibtn:disabled { opacity: .45; filter: none; cursor: default; }
     .silink {
       display: block; width: 100%; margin-top: 18px; background: none; border: 0;
       color: var(--dimmer); font: inherit; font-size: 12px; cursor: pointer;
@@ -557,12 +560,19 @@
     #jrows .dayrow span { text-transform: none; letter-spacing: 0; font-size: 11px; }
 
     #settings { max-width: 660px; }
-    .signedout { border: 1px solid var(--line); border-radius: 8px; padding: 26px;
-                 text-align: center; }
-    .signedout p { font-size: 13px; margin-bottom: 6px; }
-    .signedout p.sub { font-size: 12px; color: var(--dim); line-height: 1.7;
-                       max-width: 380px; margin: 0 auto 18px; }
-    .signedout .glbtn { width: auto; padding: 11px 26px; }
+    /* An empty state shouldn't span the full page. Stretched to 1320px the
+       card was mostly border around a thimble of text, which reads as a
+       layout that failed rather than a prompt. Constrained and centred, with
+       the same radius and rhythm as the sign-in card. */
+    .signedout {
+      border: 1px solid var(--line); border-radius: 14px; padding: 40px 32px 34px;
+      text-align: center; max-width: 420px; margin: 8px auto 0; background: var(--bg);
+    }
+    .signedout p { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .signedout p.sub { font-size: 12.5px; color: var(--dim); line-height: 1.75;
+                       margin: 0 auto 26px; }
+    .signedout .glbtn { width: 100%; padding: 15px 16px; border-radius: 13px;
+                        font-size: 14px; }
     .sethead { margin-bottom: 26px; }
     .sethead h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
     .sethead p { font-size: 12px; color: var(--dim); line-height: 1.7; }
@@ -687,7 +697,7 @@
     </div>
     <div id="jsummary"></div>
     <div id="jinsights"></div>
-    <div class="tbl-wrap" style="margin-top:18px">
+    <div class="tbl-wrap" id="jtable" style="margin-top:18px">
       <table>
         <thead><tr>
           <th>Coin</th><th>Result</th><th>P&amp;L</th>
@@ -1458,6 +1468,27 @@ async function refreshActivity() {
 async function openJournal() {
   showView('journal');
   window.scrollTo(0, 0);
+
+  const table = document.getElementById('jtable');
+  const insightBox = document.getElementById('jinsights');   // NOT `insights` — that's the function below
+
+  /* Signed out isn't a failure. The API 401s, the catch below fired, and the
+     page said "Couldn't load your journal" over an empty table — which reads
+     as a broken product to someone who has simply never signed in. */
+  if (!KEY) {
+    document.getElementById('jsummary').innerHTML =
+      '<div class="signedout">' +
+      '<p>Sign in to see your trade journal.</p>' +
+      '<p class="sub">Every coin you greenlight is recorded here with what it ' +
+      'did next, so you can see which calls were actually working.</p>' +
+      '<button class="glbtn solbtn" id="jsignin">Sign in</button></div>';
+    insightBox.innerHTML = '';
+    if (table) table.style.display = 'none';
+    document.getElementById('jsignin').onclick = () => openWallet();
+    return;
+  }
+  if (table) table.style.display = '';
+
   let d;
   try { d = await api('/api/trades?limit=500'); }
   catch (e) { document.getElementById('jsummary').innerHTML =
@@ -1861,9 +1892,14 @@ async function openSettings() {
       'account, so the bot uses the same rules wherever you sign in.</p>' +
       '<button class="glbtn solbtn" id="setsignin">Sign in</button></div>';
     if (bar) bar.style.display = 'none';
+    /* #settings is a 660px left-aligned column for the FORM. An empty state
+       centred inside it lands 120px in from its own heading, which reads as a
+       mistake — so it borrows the full page width, matching the journal's. */
+    document.getElementById('settings').style.maxWidth = 'none';
     document.getElementById('setsignin').onclick = () => openWallet();
     return;
   }
+  document.getElementById('settings').style.maxWidth = '';
   if (bar) bar.style.display = '';
   try {
     const d = await api('/api/settings');
