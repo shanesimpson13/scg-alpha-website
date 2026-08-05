@@ -786,6 +786,11 @@
           <p class="wtip">Send SOL on the Solana network to this address.</p>
           <div class="waddr" id="waddr" role="button" tabindex="0"
                title="Click to copy">…</div>
+          <!-- Deposits land on their own schedule, so the watcher fires no
+               matter which tab is open. It used to write into the shared
+               #wmsg, which put "Deposit received…" under the Withdraw
+               button. Its own element, inside its own pane. -->
+          <div class="wmsg" id="wdepmsg"></div>
         </div>
 
         <div class="wpane" id="wwd" style="display:none">
@@ -1888,10 +1893,10 @@ async function loadWallet() {
         if (b.balances.unwrapped > 0.0005) {
           // A plain-SOL deposit has to be converted before it can trade. That
           // is plumbing; say a deposit arrived and get on with it.
-          wsay('wmsg', 'Deposit received…');
+          wsay('wdepmsg', 'Deposit received…');
           const w = await api('/api/account/wrap', { method: 'POST' });
           setBal(w.balances);
-          wsay('wmsg', 'Deposit added.', 'good');
+          wsay('wdepmsg', 'Deposit added.', 'good');
         } else {
           setBal(b.balances);
         }
@@ -1972,6 +1977,7 @@ document.querySelectorAll('.wtab').forEach(t => t.onclick = () => {
   document.querySelectorAll('.wpane').forEach(p =>
     p.style.display = p.id === t.dataset.pane ? '' : 'none');
   wsay('wmsg', '');
+  wsay('wdepmsg', '');
 });
 const copyAddr = async () => {
   const el = document.getElementById('waddr');
