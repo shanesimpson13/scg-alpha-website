@@ -911,12 +911,47 @@ const VOL_WARM = 25000, VOL_HOT = 100000;
 const volClass = v => 'vol' + ((v || 0) >= VOL_HOT ? ' hot' : (v || 0) >= VOL_WARM ? ' warm' : '');
 
 
-async function api(path, opts = {}) {
+/* Renewing the access token, at most once at a time.
+
+   A Privy ACCESS token lasts about an hour; the SESSION behind it lasts far
+   longer, and getAccessToken() mints a fresh access token from it. Only the
+   page-load restore ever called it, so an hour into a visit the stored token
+   went stale, every request 401'd, and the app deleted the key and demanded a
+   fresh sign-in — while the session was still perfectly good.
+
+   Single-flighted because the poll loop has several requests in the air at
+   once and they would otherwise all try to renew at the same moment. */
+let _renewing = null;
+function renewToken() {
+  if (!window.EdgeAuth) return Promise.resolve(null);
+  if (!_renewing) {
+    _renewing = window.EdgeAuth.getToken().catch(() => null);
+    _renewing.finally(() => { _renewing = null; });
+  }
+  return _renewing;
+}
+
+async function api(path, opts = {}, renewed = false) {
   const r = await fetch(API + path, {
     ...opts,
     headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', ...(opts.headers || {}) }
   });
-  if (r.status === 401 || r.status === 403) throw new Error('bad-key');
+  if (r.status === 401 || r.status === 403) {
+    // Try once with a renewed token. Only a session that genuinely can't be
+    // renewed counts as signed out.
+    if (!renewed && KEY) {
+      const fresh = await renewToken();
+      // Retry on ANY token we get back, even one another in-flight call has
+      // already stored. Skipping when it matched KEY meant that during a burst
+      // the first caller renewed and succeeded while its siblings threw
+      // bad-key — and the poll loop reads bad-key as "sign this person out".
+      if (fresh) {
+        if (fresh !== KEY) window.setKey(fresh);
+        return api(path, opts, true);
+      }
+    }
+    throw new Error('bad-key');
+  }
   if (!r.ok) {
     // Surface why, not just that it failed — the server explains itself.
     let detail = '';
