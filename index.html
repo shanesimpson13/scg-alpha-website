@@ -1248,7 +1248,13 @@ function renderBand(c) {
     // that fell hard: the dip branch swallows every price under hi×(1-DIP) and
     // returns before the reclaim is even checked, so a bounce off a deep low
     // does nothing until price climbs back above that line.
-    const warm = b.warmup_left > 0 ? ` · ${b.warmup_left}s of warmup left` : '';
+    /* The band arrives every 2s, so a raw warmup_left sat still and then
+       jumped. Count it down locally from when it arrived so it ticks once a
+       second like a clock, which is what a countdown has to look like to be
+       worth showing at all. */
+    const age = r.ts ? Math.max(0, (Date.now() / 1000) - r.ts) : 0;
+    const left = Math.max(0, Math.round((b.warmup_left || 0) - age));
+    const warm = left > 0 ? ` · ${left}s of warmup left` : '';
     const now = Number(c.mcap) || 0;
     const fromNum = parseMoney(b.buy_from);
 
@@ -1446,6 +1452,7 @@ const STATE_UI = {
   tp2:          ["closed",   "TP2",                             false],
   stopped:      ["closed",   "Stopped out",                     false],
   "stood down": ["closed",   "No setup appeared",               false],
+  "buy failed": ["closed",   "Buy failed on-chain",             false],
   unarmed:      ["closed",   "You dropped it",                  false],
 };
 
@@ -2189,6 +2196,7 @@ function start() {
       const c = findCoin(mint) || merged;
       Object.assign(c, d);
       setLive(c);
+      renderBand(c);        // 1s, so the warmup counts down like a clock
     } catch (e) { /* next tick */ }
   }, 1000);
 }
