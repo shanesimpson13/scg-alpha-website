@@ -1279,6 +1279,13 @@ function renderBand(c) {
       } else if (toNum && now > toNum) {
         gap = `<div style="color:var(--amber);font-size:11px;margin-top:5px">` +
               `Currently ${money(now)} — above the window; waiting for a lower entry.</div>`;
+      } else if (b.holding_for) {
+        // Price is in the window but a filter is refusing. Saying "buys on the
+        // next tick" here was simply untrue — five gates run after the reclaim
+        // and each can hold the trade indefinitely without anything on screen
+        // changing. Name the one that's holding.
+        gap = `<div style="color:var(--amber);font-size:11px;margin-top:5px">` +
+              `In the window, but holding — ${esc(b.holding_for)}.</div>`;
       } else {
         gap = `<div style="color:var(--green);font-size:11px;margin-top:5px">` +
               `In the window now — buys on the next confirmed tick.</div>`;
