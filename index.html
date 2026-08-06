@@ -1724,6 +1724,10 @@ const SECTIONS = [
     ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
     ["max_hold", "Max hold", "Force-exit a position after this.", 1 / 60, "min"],
   ]],
+  ["Execution", [
+    ["slippage", "Slippage", "How far price may move against you between quote and fill before the swap is abandoned. Too tight and buys fail during exactly the moves worth catching.", 100, "%"],
+    ["priority_fee", "Priority fee", "What you'll pay at most to land fast. Matters when the network is busy, which is when coins move.", 1, "SOL"],
+  ]],
 ];
 
 let bounds = {}, useTp2 = true;
