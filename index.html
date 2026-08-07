@@ -1190,7 +1190,47 @@ function renderDetail() {
     </div>
   `;
   if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
-  else document.getElementById('glbtn').onclick = () => greenlight(c);
+  else renderGreenlight(c);
+}
+
+/* The states in which the bot still has this coin. Greenlighting again while
+   it's watching queues a duplicate; while it's holding, it's simply wrong. */
+const BOT_BUSY = new Set(['watching', 'bought', 'tp1']);
+
+/** The button reflects what the bot is doing, not a timer.
+ *
+ *  It used to re-enable after a few seconds and print "greenlight again only
+ *  if you want to re-arm it" — asking you to remember state the app already
+ *  knows. Now it stays down until the session actually ends: sold, stopped,
+ *  stood down, or unarmed.
+ */
+function renderGreenlight(c) {
+  const btn = document.getElementById('glbtn');
+  const note = document.getElementById('glnote');
+  if (!btn) return;
+  const r = botStatus[c.mint];
+  const busy = r && BOT_BUSY.has(r.state);
+
+  if (busy) {
+    btn.disabled = true;
+    btn.textContent = r.state === 'watching' ? '👀 YOUR BOT HAS IT' : '📈 IN POSITION';
+    btn.onclick = null;
+    if (note) {
+      note.className = 'glnote';
+      note.textContent = r.state === 'watching'
+        ? 'Watching for the dip and reclaim. Unarm above if you want it back.'
+        : 'Holding. It sells at your take-profit or your stop, whichever comes first.';
+    }
+    return;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🟢 GREENLIGHT';
+  btn.onclick = () => greenlight(c);
+  if (note) {
+    note.className = 'glnote';
+    note.textContent = 'Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.';
+  }
 }
 
 
@@ -1205,6 +1245,9 @@ function renderDetailStatus() {
   el.innerHTML = `<div class="actdot ${dot}"></div><div>${stateLine(r)}</div>` +
                  `<div class="when">${ago(r.ts)}</div>` +
                  (canUnarm ? `<button class="unarmbtn" id="d_unarm">Unarm</button>` : '');
+  // the button tracks the same status this panel just rendered
+  const coin = findCoin(openMint);
+  if (coin) renderGreenlight(coin);
   const b = document.getElementById('d_unarm');
   if (b) b.onclick = async () => {
     b.disabled = true; b.textContent = 'Dropping…';
@@ -1398,19 +1441,10 @@ function markSent(c) {
   note.className = 'glnote';
   note.innerHTML = 'Your bot picks this up within 5 seconds.<br><b>Watch it work right here.</b>';
 
-  // Hand the button back so the coin can be greenlit again later.
-  const left = SENT_SHOW_MS - (Date.now() - (sent.get(c.mint) || 0));
-  setTimeout(() => {
-    if (openMint !== c.mint) return;               // you navigated away
-    const b = document.getElementById('glbtn');
-    if (!b) return;
-    b.disabled = false;
-    b.textContent = '🟢 GREENLIGHT';
-    b.onclick = () => greenlight(c);
-    const n = document.getElementById('glnote');
-    n.className = 'glnote';
-    n.innerHTML = 'Already handed to your bot. Greenlight again only if you want to re-arm it.';
-  }, Math.max(0, left));
+  // The button stays down until the bot is actually finished with the coin.
+  // It used to re-enable on a timer and tell you not to press it, which puts
+  // the burden of remembering state on you when the app already knows.
+  // renderGreenlight() below hands it back the moment the session ends.
 }
 
 async function greenlight(c) {
@@ -1466,7 +1500,12 @@ function stateLine(r) {
   const t = r.targets || {};
   if (r.state === 'bought') {
     const tps = (t.tps || []).map(x => esc(x)).join(' → ');
-    return `In position — entered <b>${esc(t.entry || r.mc || '—')}</b>` +
+    // The live mark, not just the entry. The bot reports every 2s while it
+    // holds; before that this line showed the fill price until the exit and
+    // an open position looked frozen.
+    const now = (r.mc && t.entry && r.mc !== t.entry)
+      ? ` · now <b>${esc(r.mc)}</b>${r.pnl != null ? ` ${pnl(r.pnl)}` : ''}` : '';
+    return `In position — entered <b>${esc(t.entry || r.mc || '—')}</b>${now}` +
            (tps ? ` · takes profit at ${tps}` : '') +
            (t.stop ? ` · stop ${esc(t.stop)}` : '');
   }
