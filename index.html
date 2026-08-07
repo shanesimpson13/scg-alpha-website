@@ -686,10 +686,10 @@
       <span style="letter-spacing:.1em">TRENDING · 5M</span>
       <div class="spacer"></div>
       <div class="fltgroup">
-        <label><span class="fk">5m vol</span><input id="f_vol" type="number" step="1000"><span class="fu">$</span></label>
-        <label><span class="fk">min MC</span><input id="f_mc" type="number" step="1000"><span class="fu">$</span></label>
+        <label><span class="fk">5m vol</span><input id="f_vol" type="number" min="25000" step="1000"><span class="fu">$</span></label>
+        <label><span class="fk">min MC</span><input id="f_mc" type="number" min="50000" step="1000"><span class="fu">$</span></label>
         <label><span class="fk">max age</span><input id="f_age" type="number" step="1"><span class="fu">d</span></label>
-        <label><span class="fk">min vol/MC</span><input id="f_volmc" type="number" step="1"><span class="fu">%</span></label>
+        <label><span class="fk">min vol/MC</span><input id="f_volmc" type="number" min="10" step="1"><span class="fu">%</span></label>
         <button id="f_reset" title="Back to defaults">reset</button>
       </div>
     </div>
@@ -876,8 +876,17 @@ let sortKey = 'vol_5m';
 // volmc: below about a tenth of market cap in five minutes, a coin isn't
 // really trading — there's nothing for a dip to be bought back by.
 const FILTER_DEFAULTS = { vol: 25000, mc: 50000, age: 60, volmc: 10 };
+/* Floors, not suggestions. Below these a coin is too quiet, too small, or too
+   thinly traded for the dip-and-reclaim setup to mean anything — the bot would
+   be buying a reclaim with nothing underneath it. Age has no floor: a coin
+   being old is a judgement call, not a structural problem. */
+const FILTER_FLOORS = { vol: 25000, mc: 50000, volmc: 10 };
 let filters = { ...FILTER_DEFAULTS };
 try { filters = { ...filters, ...JSON.parse(localStorage.getItem('edgelvl_filters') || '{}') }; } catch (e) {}
+// Anything saved before these floors existed gets pulled back up to them.
+for (const [k, min] of Object.entries({ vol: 25000, mc: 50000, volmc: 10 })) {
+  if (!(filters[k] >= min)) filters[k] = min;
+}
 // mint -> when it was queued. A confirmation, not a lock: the bot arms within
 // 5s, and after that you may well want to greenlight the same coin again (it
 // may have timed out, or you're re-entering). Re-arming an active coin is
@@ -1103,11 +1112,14 @@ function onFilterEdit() {
   // debounce: typing "25000" shouldn't fire five requests
   fltTimer = setTimeout(() => {
     filters = {
-      vol: Math.max(0, Number(f_vol.value) || 0),
-      mc: Math.max(0, Number(f_mc.value) || 0),
+      vol: Math.max(FILTER_FLOORS.vol, Number(f_vol.value) || 0),
+      mc: Math.max(FILTER_FLOORS.mc, Number(f_mc.value) || 0),
       age: Math.max(0, Number(f_age.value) || 0),
-      volmc: Math.max(0, Number(f_volmc.value) || 0),
+      volmc: Math.max(FILTER_FLOORS.volmc, Number(f_volmc.value) || 0),
     };
+    // Reflect the clamp back into the box. Storing 25000 while the field still
+    // reads 500 would leave the screen disagreeing with what's being filtered.
+    paintFilters();
     localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
     refresh();
   }, 450);
