@@ -699,11 +699,11 @@
         <thead>
           <tr>
             <th>Token</th>
-            <th class="sortable on" data-sort="vol_5m">5m Vol</th>
             <th class="sortable" data-sort="mcap">MC</th>
-            <th class="sortable" data-sort="volmc" title="5m volume as a percentage of market cap. 100% means the whole coin turned over in five minutes.">Vol / MC</th>
             <th class="sortable" data-sort="ath_mcap">ATH MC</th>
             <th class="sortable" data-sort="liq">Liq</th>
+            <th class="sortable on" data-sort="vol_5m">5m Vol</th>
+            <th class="sortable" data-sort="volmc" title="5m volume as a percentage of market cap. 100% means the whole coin turned over in five minutes.">Vol / MC</th>
             <th class="sortable" data-sort="swaps_5m">5m TXs</th>
             <th class="sortable" data-sort="smart">Smart / KOL</th>
             <th class="sortable" data-sort="volr" title="Buy volume ÷ sell volume over the last 5 minutes">B/S</th>
@@ -1011,11 +1011,11 @@ function rowHTML(c) {
         </div>
       </div>
     </td>
-    <td class="${volClass(c.vol_5m)}">${money(c.vol_5m)}</td>
     <td>${money(c.mcap)}</td>
-    <td class="vol ${vmCls}">${vm ? (vm * 100).toFixed(0) + '%' : '—'}</td>
     <td>${money(c.ath_mcap)}</td>
     <td>${money(c.liq)}</td>
+    <td class="${volClass(c.vol_5m)}">${money(c.vol_5m)}</td>
+    <td class="vol ${vmCls}">${vm ? (vm * 100).toFixed(0) + '%' : '—'}</td>
     <td class="txs">${(c.swaps_5m || 0).toLocaleString()}<br><b>${c.buys_5m || 0}</b>/<i>${c.sells_5m || 0}</i></td>
     <td class="sk">${c.smart || 0}<span>/${c.kol || 0}</span></td>
     <td class="volr ${volrCls}">${c.volr === null || c.volr === undefined ? '—' : c.volr.toFixed(2)}</td>
