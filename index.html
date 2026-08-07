@@ -598,6 +598,15 @@
                        margin: 0 auto 24px; }
     .signedout .glbtn { width: 100%; padding: 15px 16px; border-radius: 13px;
                         font-size: 14px; }
+    /* Windows the whole page, summary included — see openJournal. */
+    .jrange { display: flex; gap: 6px; margin: -12px 0 20px; }
+    .jrange button {
+      background: var(--field); border: 1px solid var(--line); color: var(--dim);
+      border-radius: 7px; padding: 6px 13px; font: inherit; font-size: 11.5px;
+      cursor: pointer; transition: color .12s, border-color .12s;
+    }
+    .jrange button:hover { color: var(--fg); }
+    .jrange button.on { background: var(--panel); border-color: var(--fg); color: var(--fg); }
     .sethead { margin-bottom: 26px; }
     .sethead h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
     .sethead p { font-size: 12px; color: var(--dim); line-height: 1.7; }
@@ -721,6 +730,12 @@
     <div class="sethead">
       <h2>Trade journal</h2>
       <p>Every coin you greenlit, and what it did.</p>
+    </div>
+    <div class="jrange" id="jrange">
+      <button data-days="1">1D</button>
+      <button data-days="7">7D</button>
+      <button data-days="30">30D</button>
+      <button data-days="" class="on">All</button>
     </div>
     <div id="jlock">
       <div id="jbody">
@@ -1692,9 +1707,20 @@ const SAMPLE_SETTINGS = {
 };
 
 /* ── trade journal ──────────────────────────────────────────────────────── */
+/* Which window the journal is showing. '' means everything. */
+let journalDays = '';
+
+document.querySelectorAll('#jrange button').forEach(b => b.onclick = () => {
+  journalDays = b.dataset.days;
+  document.querySelectorAll('#jrange button')
+    .forEach(x => x.classList.toggle('on', x === b));
+  openJournal();
+});
+
 async function openJournal() {
   showView('journal');
   window.scrollTo(0, 0);
+  const rng = document.getElementById('jrange');
 
   /* Signed out isn't a failure. The API 401s, so this used to fall into the
      catch below and say "Couldn't load your journal" over an empty table —
@@ -1707,12 +1733,16 @@ async function openJournal() {
       '<p class="sub">Every coin you greenlight, and what it did next.</p>' +
       '<button class="glbtn solbtn">Sign in</button></div>',
       () => openWallet());
+    if (rng) rng.style.display = 'none';   // nothing to filter behind a blur
     return;
   }
   unlockView('jlock', 'jbody');
+  if (rng) rng.style.display = '';
 
   let d;
-  try { d = await api('/api/trades?limit=500'); }
+  // The window goes to the SERVER so the summary is windowed too. Filtering
+  // rows here would leave an all-time win rate over a one-day table.
+  try { d = await api('/api/trades?limit=500' + (journalDays ? `&days=${journalDays}` : '')); }
   catch (e) { document.getElementById('jsummary').innerHTML =
     `<div class="empty">Couldn't load your journal.</div>`; return; }
   paintJournal(d);
