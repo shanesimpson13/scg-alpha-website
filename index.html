@@ -689,6 +689,7 @@
         <label><span class="fk">5m vol</span><input id="f_vol" type="number" step="1000"><span class="fu">$</span></label>
         <label><span class="fk">min MC</span><input id="f_mc" type="number" step="1000"><span class="fu">$</span></label>
         <label><span class="fk">max age</span><input id="f_age" type="number" step="1"><span class="fu">d</span></label>
+        <label><span class="fk">min vol/MC</span><input id="f_volmc" type="number" step="1"><span class="fu">%</span></label>
         <button id="f_reset" title="Back to defaults">reset</button>
       </div>
     </div>
@@ -698,10 +699,11 @@
         <thead>
           <tr>
             <th>Token</th>
+            <th class="sortable on" data-sort="vol_5m">5m Vol</th>
             <th class="sortable" data-sort="mcap">MC</th>
+            <th class="sortable" data-sort="volmc" title="5m volume as a percentage of market cap. 100% means the whole coin turned over in five minutes.">Vol / MC</th>
             <th class="sortable" data-sort="ath_mcap">ATH MC</th>
             <th class="sortable" data-sort="liq">Liq</th>
-            <th class="sortable on" data-sort="vol_5m">5m Vol</th>
             <th class="sortable" data-sort="swaps_5m">5m TXs</th>
             <th class="sortable" data-sort="smart">Smart / KOL</th>
             <th class="sortable" data-sort="volr" title="Buy volume ÷ sell volume over the last 5 minutes">B/S</th>
@@ -871,7 +873,9 @@ let sortKey = 'vol_5m';
 
 // Your filters, kept in this browser. Defaults match what the server would
 // apply anyway, so an untouched terminal behaves exactly as documented.
-const FILTER_DEFAULTS = { vol: 25000, mc: 50000, age: 60 };
+// volmc: below about a tenth of market cap in five minutes, a coin isn't
+// really trading — there's nothing for a dip to be bought back by.
+const FILTER_DEFAULTS = { vol: 25000, mc: 50000, age: 60, volmc: 10 };
 let filters = { ...FILTER_DEFAULTS };
 try { filters = { ...filters, ...JSON.parse(localStorage.getItem('edgelvl_filters') || '{}') }; } catch (e) {}
 // mint -> when it was queued. A confirmation, not a lock: the bot arms within
@@ -971,11 +975,30 @@ async function api(path, opts = {}, renewed = false) {
 
 /* ── board ── */
 function sorted() {
-  return coins.slice().sort((a, b) => (Number(b[sortKey]) || 0) - (Number(a[sortKey]) || 0));
+  // volmc isn't a field on the coin, it's a relationship between two of them
+  const key = c => sortKey === 'volmc' ? volMc(c) : (Number(c[sortKey]) || 0);
+  return coins
+    .filter(c => !filters.volmc || volMc(c) * 100 >= filters.volmc)
+    .slice()
+    .sort((a, b) => key(b) - key(a));
+}
+
+/** 5m volume as a fraction of market cap.
+ *
+ *  $60K of volume is a third of a $200K coin turning over in five minutes and
+ *  noise on a $40M one. This is that comparison, done for you.
+ */
+function volMc(c) {
+  const v = Number(c.vol_5m) || 0, m = Number(c.mcap) || 0;
+  return m > 0 ? v / m : 0;
 }
 
 function rowHTML(c) {
   const volrCls = c.volr === null || c.volr === undefined ? '' : (c.volr >= 1 ? 'good' : 'bad');
+  const vm = volMc(c);
+  // Same thresholds as the volume colours, in ratio terms: a coin turning over
+  // half its cap in five minutes is genuinely busy; under a tenth is asleep.
+  const vmCls = vm >= 0.5 ? 'hot' : vm >= 0.15 ? 'warm' : '';
   const ageCls = (c.age_secs || 0) > 86400 ? 'old' : '';
   return `
   <tr data-mint="${esc(c.mint)}">
@@ -988,10 +1011,11 @@ function rowHTML(c) {
         </div>
       </div>
     </td>
+    <td class="${volClass(c.vol_5m)}">${money(c.vol_5m)}</td>
     <td>${money(c.mcap)}</td>
+    <td class="vol ${vmCls}">${vm ? (vm * 100).toFixed(0) + '%' : '—'}</td>
     <td>${money(c.ath_mcap)}</td>
     <td>${money(c.liq)}</td>
-    <td class="${volClass(c.vol_5m)}">${money(c.vol_5m)}</td>
     <td class="txs">${(c.swaps_5m || 0).toLocaleString()}<br><b>${c.buys_5m || 0}</b>/<i>${c.sells_5m || 0}</i></td>
     <td class="sk">${c.smart || 0}<span>/${c.kol || 0}</span></td>
     <td class="volr ${volrCls}">${c.volr === null || c.volr === undefined ? '—' : c.volr.toFixed(2)}</td>
@@ -1003,7 +1027,7 @@ function renderBoard() {
   const tb = document.getElementById('rows');
   const list = sorted();
   if (!list.length) {
-    tb.innerHTML = `<tr><td colspan="9"><div class="empty">Nothing above that volume right now.</div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="10"><div class="empty">Nothing above that volume right now.</div></td></tr>`;
   } else {
     tb.innerHTML = list.map(rowHTML).join('');
     tb.querySelectorAll('tr').forEach(r => r.onclick = () => openDetail(r.dataset.mint));
@@ -1071,6 +1095,7 @@ function paintFilters() {
   f_vol.value = filters.vol;
   f_mc.value = filters.mc;
   f_age.value = filters.age;
+  f_volmc.value = filters.volmc;
 }
 let fltTimer = null;
 function onFilterEdit() {
@@ -1081,12 +1106,13 @@ function onFilterEdit() {
       vol: Math.max(0, Number(f_vol.value) || 0),
       mc: Math.max(0, Number(f_mc.value) || 0),
       age: Math.max(0, Number(f_age.value) || 0),
+      volmc: Math.max(0, Number(f_volmc.value) || 0),
     };
     localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
     refresh();
   }, 450);
 }
-['f_vol', 'f_mc', 'f_age'].forEach(id => { document.getElementById(id).oninput = onFilterEdit; });
+['f_vol', 'f_mc', 'f_age', 'f_volmc'].forEach(id => { document.getElementById(id).oninput = onFilterEdit; });
 document.getElementById('f_reset').onclick = () => {
   filters = { ...FILTER_DEFAULTS };
   localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
@@ -1194,8 +1220,16 @@ function renderDetail() {
 }
 
 /* The states in which the bot still has this coin. Greenlighting again while
-   it's watching queues a duplicate; while it's holding, it's simply wrong. */
-const BOT_BUSY = new Set(['watching', 'bought', 'tp1']);
+   it's watching queues a duplicate; while it's holding, it's simply wrong.
+   tp1 is the awkward one: it means "a rung fired", which is still holding when
+   part of the position rides to TP2, but finished when TP1 took everything.
+   open_pct is what tells them apart. */
+function botHasCoin(r) {
+  if (!r) return false;
+  if (r.state === 'watching' || r.state === 'bought') return true;
+  if (r.state === 'tp1') return (r.open_pct || 0) > 0;
+  return false;
+}
 
 /** The button reflects what the bot is doing, not a timer.
  *
@@ -1209,7 +1243,7 @@ function renderGreenlight(c) {
   const note = document.getElementById('glnote');
   if (!btn) return;
   const r = botStatus[c.mint];
-  const busy = r && BOT_BUSY.has(r.state);
+  const busy = botHasCoin(r);
 
   if (busy) {
     btn.disabled = true;
