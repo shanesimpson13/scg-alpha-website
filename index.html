@@ -1595,19 +1595,23 @@ async function refreshActivity() {
   } catch (e) {
     return;                       // never let this break the board
   }
+  // rows arrive newest first and a coin can now appear more than once —
+  // greenlighting it again starts a second session rather than erasing the
+  // first. The button and the detail panel want the CURRENT one, so take the
+  // first sighting of each mint and ignore the history behind it.
   botStatus = {};
-  rows.forEach(r => { botStatus[r.mint] = r; });
+  rows.forEach(r => { if (!botStatus[r.mint]) botStatus[r.mint] = r; });
   if (openMint) renderDetailStatus();
 
   const el = document.getElementById('activity');
   if (!rows.length) { el.innerHTML = ''; return; }
 
-  const live = rows.filter(r => ['watching', 'bought', 'tp1'].includes(r.state)).length;
+  const live = rows.filter(botHasCoin).length;
   el.innerHTML = `
     <div class="acthead">
       <span>Your bot${live ? ` · ${live} active` : ''}</span>
       <span>${rows.some(r => r.dry_run) ? 'dry run' : ''}</span>
-    </div>` + rows.slice(0, 6).map(r => {
+    </div>` + rows.slice(0, 10).map(r => {
     const [dot, , canUnarm] = STATE_UI[r.state] || ["closed", r.state, false];
     const what = stateLine(r);
     return `<div class="actrow" data-open="${esc(r.mint)}">
