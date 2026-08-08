@@ -1618,9 +1618,21 @@ async function refreshActivity() {
   // greenlighting it again starts a second session rather than erasing the
   // first. The button and the detail panel want the CURRENT one, so take the
   // first sighting of each mint and ignore the history behind it.
+  const was = botStatus;
   botStatus = {};
   rows.forEach(r => { if (!botStatus[r.mint]) botStatus[r.mint] = r; });
   if (openMint) renderDetailStatus();
+
+  /* A fill moves real money, so the header balance has to move with it.
+     It was only ever fetched on page load and on session restore, which meant
+     a take-profit could land and the chip would still show the pre-trade
+     figure until you reloaded — the one number on screen you'd check first. */
+  const MONEYED = new Set(['bought', 'tp1', 'tp2', 'tp', 'stopped']);
+  const moved = Object.keys(botStatus).some(m => {
+    const now = botStatus[m].state, before = was[m] && was[m].state;
+    return now !== before && (MONEYED.has(now) || MONEYED.has(before));
+  });
+  if (moved) refreshChip();
 
   const el = document.getElementById('activity');
   if (!rows.length) { el.innerHTML = ''; return; }
