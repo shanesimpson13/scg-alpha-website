@@ -759,6 +759,20 @@
     </div>
   </div>
 
+  <!-- Beta gate. See the note in checkBeta(): a doorway, not a lock. -->
+  <div id="betagate" class="modal" style="display:none;z-index:200">
+    <div class="modal-card signin" style="max-width:380px">
+      <svg class="wordmark simark" viewBox="97.350 166.297 180.303 39.203" fill="currentColor" role="img" aria-label="EDGE"><g transform="translate(93.427734,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g><g transform="translate(140.461163,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 35.28125 -39.203125 L 35.28125 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 0 Z M 35.28125 -7.84375 L 35.28125 -31.359375 L 43.125 -31.359375 L 43.125 -7.84375 Z M 35.28125 -7.84375 "/></g><g transform="translate(187.494592,205.499987)"><path d="M 11.765625 0 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 -15.6875 L 19.59375 -15.6875 L 19.59375 -23.515625 L 43.125 -23.515625 L 43.125 0 Z M 3.921875 -7.84375 L 3.921875 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 Z M 11.765625 -31.359375 L 11.765625 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 Z M 11.765625 -31.359375 "/></g><g transform="translate(234.528021,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g></svg>
+      <p class="silede">In private beta. Enter your tester password.</p>
+      <input id="betapw" type="password" autocomplete="off" placeholder="Password"
+             autocapitalize="off" spellcheck="false">
+      <button class="sibtn" id="betago">Enter</button>
+      <div class="wmsg" id="betamsg"></div>
+      <p class="silegal">Software and signals, not financial advice. Memecoin
+        trading is high risk and most participants lose money.</p>
+    </div>
+  </div>
+
   <!-- Wallet is a modal, not a page. Depositing is something you do mid-flow,
        usually because you just tried to greenlight something — sending people
        to another screen loses their place. -->
@@ -2335,6 +2349,48 @@ function start() {
     } catch (e) { /* next tick */ }
   }, 1000);
 }
+
+/* ── beta gate ─────────────────────────────────────────────────────────────
+   A doorway, not a lock. This check runs in the browser, so anyone who opens
+   devtools can step past it — storing the digest instead of the password only
+   keeps it out of view-source. That is the right trade for "we are in beta,
+   please don't wander in" and completely the wrong one for guarding money.
+   Everything that can move funds is gated server-side behind a Privy sign-in;
+   this only decides who gets to look. */
+const BETA_HASH = '4874d7d7e352c03655e6592f3cfd049cc72e3e093fbded3345a95418166ff78f';
+const BETA_KEY = 'edgelvl_beta_ok';
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function submitBeta() {
+  const input = document.getElementById('betapw');
+  const msg = document.getElementById('betamsg');
+  const got = await sha256Hex((input.value || '').trim());
+  if (got !== BETA_HASH) {
+    msg.className = 'wmsg bad';
+    msg.textContent = "That's not it.";
+    input.select();
+    return;
+  }
+  localStorage.setItem(BETA_KEY, '1');
+  document.getElementById('betagate').style.display = 'none';
+}
+
+function checkBeta() {
+  if (localStorage.getItem(BETA_KEY) === '1') return;
+  const gate = document.getElementById('betagate');
+  gate.style.display = 'flex';
+  document.getElementById('betago').onclick = submitBeta;
+  document.getElementById('betapw').onkeydown = e => {
+    if (e.key === 'Enter') submitBeta();
+  };
+  setTimeout(() => document.getElementById('betapw').focus(), 50);
+}
+checkBeta();
+
 /* The board is public. Anyone can watch it work before deciding to trade on it
    — you can't judge a signal feed you're not allowed to see. Signing in is what
    greenlighting requires, not what looking requires. */
