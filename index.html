@@ -1953,7 +1953,11 @@ async function refreshChip() {
   if (!KEY) return;
   try {
     const a = await api('/api/account');
-    paintChip(a.balances.wsol);
+    /* setBal, not paintChip(wsol) — almost the entire balance sits WRAPPED, so
+       painting the native half alone showed a funded wallet as empty. This is
+       the same one-number rule the modal uses; going through setBal keeps the
+       header, the modal and the size slider reading off a single definition. */
+    setBal(a.balances);
   } catch (e) {
     // A credential the wallet doesn't accept — an expired session, or a licence
     // key, which can read the board but has no wallet. Say "sign in" rather
