@@ -1585,6 +1585,10 @@ const STATE_UI = {
   "stood down": ["closed",   "No setup appeared",               false],
   "buy failed": ["closed",   "Buy failed on-chain",             false],
   unarmed:      ["closed",   "You dropped it",                  false],
+  // Sold by hand, or by anything that wasn't the bot. Deliberately not folded
+  // into "stopped": the stop did not fire, and labelling it as though it did
+  // would hide the one thing worth noticing.
+  "sold elsewhere": ["closed", "Sold outside the bot",          false],
 };
 
 /** What actually happened, in the terms you set the strategy in.
@@ -1619,6 +1623,12 @@ function stateLine(r) {
     return `${head}${open}${banked}${next}${from}`;
   }
   if (r.state === 'stopped') return `Stopped out${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
+  /* Say plainly that this wasn't the bot's exit. The P&L is real — read off
+     the chain — but attributing a hand-sell to the strategy would make the
+     record look like it worked when it didn't. */
+  if (r.state === 'sold elsewhere') {
+    return `Sold outside the bot${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
+  }
   return label;
 }
 
