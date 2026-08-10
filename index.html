@@ -1018,14 +1018,62 @@ async function api(path, opts = {}, renewed = false) {
 }
 
 
+/* ── hidden coins ─────────────────────────────────────────────────────────
+   Coins you never want to see again. Kept locally rather than server-side
+   because the board is public and unauthenticated — sending it through the API
+   would mean gating the whole board behind a sign-in to support one preference.
+
+   Stored as mints, not names: tickers are not unique and hiding "TOAD" once
+   would hide every future coin that calls itself TOAD. Hidden coins are
+   counted and restorable — a hide you cannot undo is a trap, not a filter. */
+const HIDDEN_KEY = 'edgelvl_hidden';
+
+function loadHidden() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]');
+    return new Set(Array.isArray(raw) ? raw : []);
+  } catch (e) {
+    return new Set();
+  }
+}
+
+let hidden = loadHidden();
+
+function saveHidden() {
+  try {
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hidden]));
+  } catch (e) { /* private mode — the hide still works for this session */ }
+}
+
+function hideCoin(mint) {
+  if (!mint) return;
+  hidden.add(mint);
+  saveHidden();
+  paint();
+}
+
+function unhideAll() {
+  hidden.clear();
+  saveHidden();
+  paint();
+}
+
 /* ── board ── */
 function sorted() {
   // volmc isn't a field on the coin, it's a relationship between two of them
   const key = c => sortKey === 'volmc' ? volMc(c) : (Number(c[sortKey]) || 0);
   return coins
+    .filter(c => !hidden.has(c.mint))
     .filter(c => !filters.volmc || volMc(c) * 100 >= filters.volmc)
     .slice()
     .sort((a, b) => key(b) - key(a));
+}
+
+/** How many of the coins currently on the board you've hidden. Counted from
+ *  the live feed, not from the stored list, so a coin that has since dropped
+ *  off the board doesn't inflate the number and make it look broken. */
+function hiddenNow() {
+  return coins.filter(c => hidden.has(c.mint)).length;
 }
 
 /** 5m volume as a fraction of market cap.
@@ -1622,14 +1670,13 @@ function stateLine(r) {
     const from = t.entry ? ` · from ${esc(t.entry)}` : '';
     return `${head}${open}${banked}${next}${from}`;
   }
-  if (r.state === 'stopped') return `Stopped out${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
-  /* Say plainly that this wasn't the bot's exit. The P&L is real — read off
-     the chain — but attributing a hand-sell to the strategy would make the
-     record look like it worked when it didn't. */
-  if (r.state === 'sold elsewhere') {
-    return `Sold outside the bot${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
-  }
-  return label;
+  /* Everything else — stopped out, sold outside the bot, and any state added
+     later — is "what happened, and what it made". Appending the P&L here
+     rather than in a branch per state is the point: the old fallback returned
+     the bare label, so a state without its own case silently dropped the one
+     number you look for. A closed position should never render without its
+     result just because nobody wrote a special case for it. */
+  return `${label}${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
 }
 
 /** Turn "$149.3K" back into a number so we can compare it to the live cap. */
