@@ -399,6 +399,23 @@
        was coloured in the table and plain on the coin page. */
     .vol.warm, .v.warm { font-weight: 600; color: var(--amber); }
     .vol.hot,  .v.hot  { font-weight: 700; color: var(--green); }
+    /* Hide control. Invisible until you're on the row, like the other icon
+       buttons — a permanent × on every row reads as clutter and invites the
+       misclick it can't easily undo. */
+    .hidecell { width: 26px; padding: 0 4px !important; text-align: right; }
+    .hidex {
+      border: 0; background: none; cursor: pointer; padding: 2px 5px;
+      font-size: 15px; line-height: 1; border-radius: 6px;
+      color: var(--dimmer); opacity: 0; transition: opacity .12s, background .12s;
+    }
+    tr:hover .hidex { opacity: 1; }
+    .hidex:hover { background: rgba(0,0,0,.07); color: var(--fg); }
+    .hidex:focus-visible { opacity: 1; outline: 2px solid var(--dim); }
+    .hiddenbtn {
+      font-size: 11.5px; color: var(--dim); background: none; border: 0;
+      cursor: pointer; padding: 3px 7px; border-radius: 6px;
+    }
+    .hiddenbtn:hover { background: rgba(0,0,0,.07); color: var(--fg); }
     .sk { color: var(--dim); }
     .sk span { color: var(--dimmer); }
     .txs { font-size: 10.5px; color: var(--dimmer); }
@@ -706,6 +723,7 @@
         <label><span class="fk">min MC</span><input id="f_mc" type="number" min="50000" step="1000"><span class="fu">$</span></label>
         <label><span class="fk">max age</span><input id="f_age" type="number" step="1"><span class="fu">d</span></label>
         <label><span class="fk">min vol/MC</span><input id="f_volmc" type="number" min="10" step="1"><span class="fu">%</span></label>
+        <button id="f_hidden" class="hiddenbtn" hidden></button>
         <button id="f_reset" title="Back to defaults">reset</button>
       </div>
     </div>
@@ -724,9 +742,10 @@
             <th class="sortable" data-sort="smart">Smart / KOL</th>
             <th class="sortable" data-sort="volr" title="Buy volume ÷ sell volume over the last 5 minutes">B/S</th>
             <th class="sortable" data-sort="pc5">5m</th>
+            <th class="hidecell"></th>
           </tr>
         </thead>
-        <tbody id="rows"><tr><td colspan="9"><div class="empty">Loading the board…</div></td></tr></tbody>
+        <tbody id="rows"><tr><td colspan="11"><div class="empty">Loading the board…</div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1049,13 +1068,13 @@ function hideCoin(mint) {
   if (!mint) return;
   hidden.add(mint);
   saveHidden();
-  paint();
+  renderBoard();
 }
 
 function unhideAll() {
   hidden.clear();
   saveHidden();
-  paint();
+  renderBoard();
 }
 
 /* ── board ── */
@@ -1124,6 +1143,8 @@ function rowHTML(c) {
     <td class="sk">${c.smart || 0}<span>/${c.kol || 0}</span></td>
     <td class="volr ${volrCls}">${c.volr === null || c.volr === undefined ? '—' : c.volr.toFixed(2)}</td>
     <td>${pct(c.pc5)}</td>
+    <td class="hidecell"><button class="hidex" data-hide="${esc(c.mint)}"
+      title="Hide this coin — it won't come back">&times;</button></td>
   </tr>`;
 }
 
@@ -1131,13 +1152,38 @@ function renderBoard() {
   const tb = document.getElementById('rows');
   const list = sorted();
   if (!list.length) {
-    tb.innerHTML = `<tr><td colspan="10"><div class="empty">Nothing above that volume right now.</div></td></tr>`;
+    const n = hiddenNow();
+    /* Distinguish "the market is quiet" from "you hid everything". Showing the
+       volume message when the board is empty because of your own hide list is
+       how you conclude the feed is broken. */
+    const why = n
+      ? `Nothing to show — ${n} ${n === 1 ? 'coin is' : 'coins are'} hidden.`
+      : 'Nothing above that volume right now.';
+    tb.innerHTML = `<tr><td colspan="11"><div class="empty">${why}</div></td></tr>`;
   } else {
     tb.innerHTML = list.map(rowHTML).join('');
     tb.querySelectorAll('tr').forEach(r => r.onclick = () => openDetail(r.dataset.mint));
+    tb.querySelectorAll('[data-hide]').forEach(b => b.onclick = ev => {
+      // the row itself opens the coin; hiding must not also open what it hid
+      ev.stopPropagation();
+      hideCoin(b.dataset.hide);
+    });
   }
+  paintHidden();
   document.querySelectorAll('thead th.sortable').forEach(th =>
     th.classList.toggle('on', th.dataset.sort === sortKey));
+}
+
+/** The undo. A hide with no way back is a trap, so the count is always on
+ *  screen while anything is hidden, and clicking it restores everything. */
+function paintHidden() {
+  const btn = document.getElementById('f_hidden');
+  if (!btn) return;
+  const n = hiddenNow();
+  btn.hidden = n === 0;
+  btn.textContent = `${n} hidden · show`;
+  btn.title = 'Bring hidden coins back to the board';
+  btn.onclick = unhideAll;
 }
 
 /* Exactly one of these is visible at a time. Five separate places used to
