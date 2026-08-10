@@ -394,8 +394,11 @@
     /* Volume heat — the number you're scanning for. Over $100K is where the
        real moves live; $25K is the floor for being worth a look at all. */
     .vol      { font-weight: 600; color: var(--dim); }
-    .vol.warm { font-weight: 600; color: var(--amber); }
-    .vol.hot  { font-weight: 700; color: var(--green); }
+    /* Also matched on .v so the coin page's Vol/MC reads the same as the
+       board's column. Scoping the heat to .vol alone meant the same number
+       was coloured in the table and plain on the coin page. */
+    .vol.warm, .v.warm { font-weight: 600; color: var(--amber); }
+    .vol.hot,  .v.hot  { font-weight: 700; color: var(--green); }
     .sk { color: var(--dim); }
     .sk span { color: var(--dimmer); }
     .txs { font-size: 10.5px; color: var(--dimmer); }
@@ -1035,12 +1038,23 @@ function volMc(c) {
   return m > 0 ? v / m : 0;
 }
 
+/* Formatting lives here rather than inline, because the board row and the coin
+   page both show this figure. The same coin reading 42% in the table and 41%
+   on its own page is worse than not showing it at all.
+   Thresholds match the volume colours in ratio terms: a coin turning over half
+   its cap in five minutes is genuinely busy; under a sixth is asleep. */
+function volMcClass(c) {
+  const vm = volMc(c);
+  return vm >= 0.5 ? 'hot' : vm >= 0.15 ? 'warm' : '';
+}
+
+function volMcText(c) {
+  const vm = volMc(c);
+  return vm ? (vm * 100).toFixed(0) + '%' : '—';
+}
+
 function rowHTML(c) {
   const volrCls = c.volr === null || c.volr === undefined ? '' : (c.volr >= 1 ? 'good' : 'bad');
-  const vm = volMc(c);
-  // Same thresholds as the volume colours, in ratio terms: a coin turning over
-  // half its cap in five minutes is genuinely busy; under a tenth is asleep.
-  const vmCls = vm >= 0.5 ? 'hot' : vm >= 0.15 ? 'warm' : '';
   const ageCls = (c.age_secs || 0) > 86400 ? 'old' : '';
   return `
   <tr data-mint="${esc(c.mint)}">
@@ -1057,7 +1071,7 @@ function rowHTML(c) {
     <td>${money(c.ath_mcap)}</td>
     <td>${money(c.liq)}</td>
     <td class="${volClass(c.vol_5m)}">${money(c.vol_5m)}</td>
-    <td class="vol ${vmCls}">${vm ? (vm * 100).toFixed(0) + '%' : '—'}</td>
+    <td class="vol ${volMcClass(c)}">${volMcText(c)}</td>
     <td class="txs">${(c.swaps_5m || 0).toLocaleString()}<br><b>${c.buys_5m || 0}</b>/<i>${c.sells_5m || 0}</i></td>
     <td class="sk">${c.smart || 0}<span>/${c.kol || 0}</span></td>
     <td class="volr ${volrCls}">${c.volr === null || c.volr === undefined ? '—' : c.volr.toFixed(2)}</td>
@@ -1243,7 +1257,7 @@ function renderDetail() {
     <div class="tier slow">
       <div class="stats">
         <div class="stat"><div class="k">ATH MC</div><div class="v" data-f="ath">${money(c.ath_mcap)}</div></div>
-        <div class="stat"><div class="k">1h volume</div><div class="v" data-f="vol1h">${money(c.vol_1h)}</div></div>
+        <div class="stat"><div class="k">Vol / MC</div><div class="v ${volMcClass(c)}" data-f="volmc">${volMcText(c)}</div></div>
         <div class="stat"><div class="k">Top 10</div><div class="v" data-f="top10">${wpct(c.top10_pct)}</div></div>
         <div class="stat"><div class="k">Bundler</div><div class="v" data-f="bundler">${wpct(c.bundler_pct, 30)}</div></div>
         <div class="stat"><div class="k">Bot degen</div><div class="v" data-f="botdegen">${wpct(c.botdegen_pct, 40)}</div></div>
@@ -1502,7 +1516,11 @@ function updateDetail(c) {
   set('v5', money(c.vol_5m));
   const v5 = document.querySelector('#detail [data-f="v5"]');
   if (v5) v5.className = ('v ' + volClass(c.vol_5m)).trim();
-  set('vol1h', money(c.vol_1h));
+  set('volmc', volMcText(c));
+  /* The colour has to be repainted too — set() only replaces text, so the
+     class from the first render would stick as the ratio moved. */
+  const vmEl = document.querySelector('#detail [data-f="volmc"]');
+  if (vmEl) vmEl.className = ('v ' + volMcClass(c)).trim();
   set('top10', wpct(c.top10_pct));
   set('bundler', wpct(c.bundler_pct, 30));
   set('botdegen', wpct(c.botdegen_pct, 40));
