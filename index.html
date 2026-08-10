@@ -342,6 +342,20 @@
     }
     .fltgroup .fk { font-size: 10px; color: var(--dimmer); letter-spacing: .06em; white-space: nowrap; }
     .fltgroup .fu { font-size: 10px; color: var(--dimmer); }
+    /* Three of these have a floor you can't go under. Silently snapping the
+       value back reads as a broken input, so say so — briefly, in place, only
+       when someone actually tries. */
+    .fltgroup label { position: relative; }
+    .fltgroup label.floored { background: var(--field); }
+    .floornote {
+      position: absolute; top: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%);
+      background: var(--fg); color: var(--bg);
+      font-size: 10.5px; line-height: 1; white-space: nowrap;
+      padding: 5px 8px; border-radius: 6px; z-index: 5;
+      opacity: 0; pointer-events: none; transition: opacity .15s;
+    }
+    .floornote.on { opacity: 1; }
     .fltgroup input {
       width: 58px; background: none; border: 0; color: var(--fg);
       font-family: inherit; font-size: 12px; text-align: right; padding: 0;
@@ -719,10 +733,10 @@
       <span style="letter-spacing:.1em">TRENDING · 5M</span>
       <div class="spacer"></div>
       <div class="fltgroup">
-        <label><span class="fk">5m vol</span><input id="f_vol" type="number" min="25000" step="1000"><span class="fu">$</span></label>
-        <label><span class="fk">min MC</span><input id="f_mc" type="number" min="50000" step="1000"><span class="fu">$</span></label>
-        <label><span class="fk">max age</span><input id="f_age" type="number" step="1"><span class="fu">d</span></label>
-        <label><span class="fk">min vol/MC</span><input id="f_volmc" type="number" min="10" step="1"><span class="fu">%</span></label>
+        <label title="Minimum 5-minute volume. Floor is $25,000 — below that a coin is too thin to trade safely."><span class="fk">min 5m vol</span><input id="f_vol" type="number" min="25000" step="1000"><span class="fu">$</span><span class="floornote" id="n_vol"></span></label>
+        <label title="Minimum market cap. Floor is $50,000."><span class="fk">min MC</span><input id="f_mc" type="number" min="50000" step="1000"><span class="fu">$</span><span class="floornote" id="n_mc"></span></label>
+        <label title="Hide anything older than this."><span class="fk">max age</span><input id="f_age" type="number" step="1"><span class="fu">d</span></label>
+        <label title="Minimum 5-minute volume as a share of market cap. Floor is 10%."><span class="fk">min vol/MC</span><input id="f_volmc" type="number" min="10" step="1"><span class="fu">%</span><span class="floornote" id="n_volmc"></span></label>
         <button id="f_hidden" class="hiddenbtn" hidden></button>
         <button id="f_reset" title="Back to defaults">reset</button>
       </div>
@@ -1247,17 +1261,52 @@ function paintFilters() {
   f_age.value = filters.age;
   f_volmc.value = filters.volmc;
 }
+/* Say why a value snapped back.
+   Three of these have a floor. Clamping silently means you type 5000, watch it
+   become 25000, and reasonably conclude the input is broken — so the field
+   that got clamped says what the limit is, briefly, right where you're
+   looking. Only fires when someone actually goes under it. */
+const FLOOR_UNIT = { vol: '$', mc: '$', volmc: '%' };
+
+function showFloor(key, floor) {
+  const note = document.getElementById('n_' + key);
+  if (!note) return;
+  const unit = FLOOR_UNIT[key] || '';
+  note.textContent = unit === '%'
+    ? `${floor}% is the lowest`
+    : `${unit}${floor.toLocaleString()} is the lowest`;
+  note.classList.add('on');
+  note.parentElement.classList.add('floored');
+  clearTimeout(note._t);
+  note._t = setTimeout(() => {
+    note.classList.remove('on');
+    note.parentElement.classList.remove('floored');
+  }, 2600);
+}
+
 let fltTimer = null;
 function onFilterEdit() {
   clearTimeout(fltTimer);
   // debounce: typing "25000" shouldn't fire five requests
   fltTimer = setTimeout(() => {
-    filters = {
-      vol: Math.max(FILTER_FLOORS.vol, Number(f_vol.value) || 0),
-      mc: Math.max(FILTER_FLOORS.mc, Number(f_mc.value) || 0),
-      age: Math.max(0, Number(f_age.value) || 0),
-      volmc: Math.max(FILTER_FLOORS.volmc, Number(f_volmc.value) || 0),
+    const raw = {
+      vol: Number(f_vol.value) || 0,
+      mc: Number(f_mc.value) || 0,
+      age: Number(f_age.value) || 0,
+      volmc: Number(f_volmc.value) || 0,
     };
+    filters = {
+      vol: Math.max(FILTER_FLOORS.vol, raw.vol),
+      mc: Math.max(FILTER_FLOORS.mc, raw.mc),
+      age: Math.max(0, raw.age),
+      volmc: Math.max(FILTER_FLOORS.volmc, raw.volmc),
+    };
+    // An empty box is someone mid-edit, not someone asking for zero — don't
+    // scold them for a field they're still typing into.
+    ['vol', 'mc', 'volmc'].forEach(k => {
+      const typed = ({ vol: f_vol, mc: f_mc, volmc: f_volmc })[k].value;
+      if (typed !== '' && raw[k] < FILTER_FLOORS[k]) showFloor(k, FILTER_FLOORS[k]);
+    });
     // Reflect the clamp back into the box. Storing 25000 while the field still
     // reads 500 would leave the screen disagreeing with what's being filtered.
     paintFilters();
