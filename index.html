@@ -948,7 +948,10 @@
 
 <script src="/qr.js"></script>
 <script>
-const API = 'https://api.scgalpha.com';
+/* The API lives on our own domain. It used to be api.scgalpha.com — a
+   second domain that had to stay alive for the product to work, and that
+   read as a third-party call to anyone inspecting the page. */
+const API = 'https://api.edgelvl.app';
 let KEY = localStorage.getItem('edgelvl_key') || '';
 // The coin someone hit Greenlight on before signing in. Held so the sign-in
 // finishes what they were actually trying to do instead of dropping them back
