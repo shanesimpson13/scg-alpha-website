@@ -334,12 +334,29 @@
        floating boxes that never line up. */
     .fltgroup {
       display: inline-flex; align-items: stretch;
-      border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: var(--bg);
     }
+    /* Each filter is a stacked pair — label above, value below — instead of a
+       cramped single line. The old row put a 10px label and a 12px number side
+       by side inside 11px of padding, which read as one run-on string. */
     .fltgroup label {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 6px 11px; border-right: 1px solid var(--line);
+      display: inline-flex; flex-direction: column; align-items: flex-start;
+      gap: 3px; padding: 7px 13px; border-right: 1px solid var(--line);
+      min-width: 84px;
     }
+    .fltgroup label:first-child { border-radius: 10px 0 0 10px; }
+    .fltgroup .val { display: inline-flex; align-items: baseline; gap: 3px; }
+    /* A field sitting on its floor says so, permanently. The transient note
+       only fires if you try to go under — but by then you have already decided
+       the input is broken. This is the version you see BEFORE that. */
+    .atmin {
+      font-size: 8.5px; letter-spacing: .05em; text-transform: uppercase;
+      color: var(--dimmer); border: 1px solid var(--line);
+      border-radius: 4px; padding: 1px 4px; margin-left: 6px;
+      opacity: 0; transition: opacity .15s;
+    }
+    label.at-floor .atmin { opacity: 1; }
     .fltgroup .fk { font-size: 10px; color: var(--dimmer); letter-spacing: .06em; white-space: nowrap; }
     .fltgroup .fu { font-size: 10px; color: var(--dimmer); }
     /* Three of these have a floor you can't go under. Silently snapping the
@@ -357,9 +374,9 @@
     }
     .floornote.on { opacity: 1; }
     .fltgroup input {
-      width: 58px; background: none; border: 0; color: var(--fg);
-      font-family: inherit; font-size: 12px; text-align: right; padding: 0;
-      -moz-appearance: textfield;
+      width: 56px; background: none; border: 0; color: var(--fg);
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      text-align: left; padding: 0; -moz-appearance: textfield;
     }
     .fltgroup input::-webkit-outer-spin-button,
     .fltgroup input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -740,10 +757,10 @@
       <span style="letter-spacing:.1em">TRENDING · 5M</span>
       <div class="spacer"></div>
       <div class="fltgroup">
-        <label title="Minimum 5-minute volume. Floor is $25,000 — below that a coin is too thin to trade safely."><span class="fk">min 5m vol</span><input id="f_vol" type="number" min="25000" step="1000"><span class="fu">$</span><span class="floornote" id="n_vol"></span></label>
-        <label title="Minimum market cap. Floor is $50,000."><span class="fk">min MC</span><input id="f_mc" type="number" min="50000" step="1000"><span class="fu">$</span><span class="floornote" id="n_mc"></span></label>
-        <label title="Hide anything older than this."><span class="fk">max age</span><input id="f_age" type="number" step="1"><span class="fu">d</span></label>
-        <label title="Minimum 5-minute volume as a share of market cap. Floor is 10%."><span class="fk">min vol/MC</span><input id="f_volmc" type="number" min="10" step="1"><span class="fu">%</span><span class="floornote" id="n_volmc"></span></label>
+        <label title="Minimum 5-minute volume. Can't go below $25,000 — under that a coin is too thin to trade."><span class="fk">min 5m vol<span class="atmin">min</span></span><span class="val"><input id="f_vol" type="number" min="25000" step="1000"><span class="fu">$</span></span><span class="floornote" id="n_vol"></span></label>
+        <label title="Minimum market cap. Can't go below $50,000."><span class="fk">min MC<span class="atmin">min</span></span><span class="val"><input id="f_mc" type="number" min="50000" step="1000"><span class="fu">$</span></span><span class="floornote" id="n_mc"></span></label>
+        <label title="Hide anything older than this. No lower limit."><span class="fk">max age</span><span class="val"><input id="f_age" type="number" step="1"><span class="fu">d</span></span></label>
+        <label title="Minimum 5-minute volume as a share of market cap. Can't go below 10%."><span class="fk">min vol/MC<span class="atmin">min</span></span><span class="val"><input id="f_volmc" type="number" min="10" step="1"><span class="fu">%</span></span><span class="floornote" id="n_volmc"></span></label>
         <button id="f_hidden" class="hiddenbtn" hidden></button>
         <button id="f_reset" title="Back to defaults">reset</button>
       </div>
@@ -1267,6 +1284,14 @@ function paintFilters() {
   f_mc.value = filters.mc;
   f_age.value = filters.age;
   f_volmc.value = filters.volmc;
+  /* Mark the fields already sitting on their floor. The transient note only
+     fires once someone types a lower number — by which point they've watched
+     the value snap back and concluded the input is broken. This is the badge
+     that's there beforehand, so the limit is discoverable rather than
+     something you find by hitting it. */
+  [['vol', f_vol], ['mc', f_mc], ['volmc', f_volmc]].forEach(([k, el]) => {
+    el.closest('label').classList.toggle('at-floor', filters[k] <= FILTER_FLOORS[k]);
+  });
 }
 /* Say why a value snapped back.
    Three of these have a floor. Clamping silently means you type 5000, watch it
