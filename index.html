@@ -430,6 +430,13 @@
       cursor: pointer; padding: 3px 7px; border-radius: 6px;
     }
     .hiddenbtn:hover { background: rgba(0,0,0,.07); color: var(--fg); }
+    /* Why the bot is not buying. Amber rather than red: nothing is wrong, a
+       rule is doing its job — but it has to be legible at a glance, because
+       otherwise a held trade is indistinguishable from a stuck one. */
+    .holdwhy {
+      color: var(--amber); font-size: 11px; margin-top: 6px;
+      padding-top: 6px; border-top: 1px solid var(--line);
+    }
     .sk { color: var(--dim); }
     .sk span { color: var(--dimmer); }
     .txs { font-size: 10.5px; color: var(--dimmer); }
@@ -1537,6 +1544,15 @@ function renderBand(c) {
     const now = Number(c.mcap) || 0;
     const fromNum = parseMoney(b.buy_from);
 
+    /* Whatever is refusing the buy right now, wherever we are in the setup.
+       The bot has always sent this; the panel only showed it in the one case
+       where price was already inside the window. So a coin held back by
+       buy/sell balance, or by a rolling-over trend, looked like it was simply
+       waiting — and the only way to find out otherwise was to give up on it.
+       A gate that can hold a trade indefinitely has to be visible. */
+    const held = b.holding_for
+      ? `<div class="holdwhy">Not buying — ${esc(b.holding_for)}.</div>` : '';
+
     // The old copy said "no dip yet" and "In range now" in the same breath,
     // which read as "about to buy" when in fact nothing could fire. The dip
     // has to happen FIRST: the strategy swallows every price at or below
@@ -1550,7 +1566,8 @@ function renderBand(c) {
         `<span class="step" style="color:var(--dimmer)">high so far ${esc(b.hi || '—')}</span>` +
         `<div style="color:var(--dimmer);font-size:11px;margin-top:5px">` +
         `No dip yet, so nothing can trigger. Currently ${money(now)}` +
-        `${need && need < 1 ? ` — ${((1 - need) * 100).toFixed(1)}% below the high would do it` : ''}.</div>`;
+        `${need && need < 1 ? ` — ${((1 - need) * 100).toFixed(1)}% below the high would do it` : ''}.</div>` +
+        held;
       return;
     }
 
@@ -1564,21 +1581,18 @@ function renderBand(c) {
       } else if (toNum && now > toNum) {
         gap = `<div style="color:var(--amber);font-size:11px;margin-top:5px">` +
               `Currently ${money(now)} — above the window; waiting for a lower entry.</div>`;
-      } else if (b.holding_for) {
-        // Price is in the window but a filter is refusing. Saying "buys on the
-        // next tick" here was simply untrue — five gates run after the reclaim
-        // and each can hold the trade indefinitely without anything on screen
-        // changing. Name the one that's holding.
-        gap = `<div style="color:var(--amber);font-size:11px;margin-top:5px">` +
-              `In the window, but holding — ${esc(b.holding_for)}.</div>`;
-      } else {
+      } else if (!b.holding_for) {
+        // Only claim an imminent buy when nothing is refusing it. Saying "buys
+        // on the next tick" while a gate held the trade was simply untrue —
+        // five of them run after the reclaim and each can hold indefinitely
+        // without anything on screen changing.
         gap = `<div style="color:var(--green);font-size:11px;margin-top:5px">` +
               `In the window now — buys on the next confirmed tick.</div>`;
       }
     }
     el.innerHTML = `<span class="bk">Dipped · buys between${warm}</span>` +
       `<span class="step"><b>${esc(b.buy_from || '—')}</b> and <b>${esc(b.buy_to || '—')}</b></span>` +
-      `<span class="step" style="color:var(--dimmer)">high ${esc(b.hi || '—')}</span>` + gap;
+      `<span class="step" style="color:var(--dimmer)">high ${esc(b.hi || '—')}</span>` + gap + held;
     return;
   }
 
