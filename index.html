@@ -2039,9 +2039,10 @@ async function openStrategy(c) {
   const chosen = coinPreset.get(c.mint) || '';
   const row = (name, vals, label) => {
     const on = (name || '') === chosen;
-    const isDef = (name || '') === (DEFAULT_PRESET || '');
-    const mark = on ? '<span class="tick">&#10003;</span>'
-                    : (isDef ? '<span class="tick">default</span>' : '');
+    // Only which one is SELECTED. Which is default belongs on the settings
+    // page, where you set it — here it was a second green marker competing
+    // with the tick for the same glance.
+    const mark = on ? '<span class="tick">&#10003;</span>' : '';
     return `<button data-p="${esc(name)}"${on ? ' class="on"' : ''}>
       <span class="nm">${esc(label)}${mark}</span>
       <span class="sub">${esc(describeStrategy(vals) || 'your saved settings')}</span>
