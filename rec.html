@@ -4,14 +4,21 @@
 <link rel="icon" href="/favicon.ico">
 
 <!--
-  Screen + camera recorder. Everything happens in this tab: the screen and the
-  camera are composited onto a canvas, the canvas is recorded, and the file is
-  downloaded. Nothing is uploaded and there is no server involved.
+  Screen + camera recorder with a review step.
 
-  It records H.264 in an MP4 container because that is what Twitter accepts —
+  Everything happens in this tab: the screen and camera are composited onto a
+  canvas, the canvas is recorded, and you can watch it back and trim before
+  saving. Nothing is uploaded and there is no server involved.
+
+  H.264 in an MP4 container, because that is what Twitter accepts —
   MediaRecorder's default is WebM, which Twitter rejects, and converting in the
-  browser would mean shipping ffmpeg.wasm for no reason when the platform can
-  already encode what we need.
+  browser would mean shipping ffmpeg.wasm when the platform can already encode
+  what we need.
+
+  Trimming re-encodes in real time (a 60s clip takes 60s) because WebCodecs
+  isn't available here and cutting an MP4 at the byte level is a different
+  project. So an untrimmed download hands back the ORIGINAL bytes — instant,
+  and no generation loss for the common case.
 -->
 
 <style>
@@ -66,6 +73,20 @@
     border: 1px solid var(--line); border-radius: 7px; padding: 4px 7px; font: inherit; font-size: 12.5px; }
   input[type=range] { padding: 0; width: 90px; }
 
+  /* review */
+  #review { width: 100%; max-width: 900px; margin-top: 18px; display: none; }
+  #review.on { display: block; }
+  .trim { background: var(--panel); border: 1px solid var(--line);
+          border-radius: 11px; padding: 16px 18px; margin-top: 14px; }
+  .trimrow { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .trimrow:last-child { margin-bottom: 0; }
+  .trimrow label { color: var(--dim); font-size: 12.5px; width: 42px; flex-shrink: 0; }
+  .trimrow input[type=range] { flex: 1; width: auto; }
+  .tval { font-variant-numeric: tabular-nums; font-size: 12.5px; width: 62px;
+          text-align: right; flex-shrink: 0; }
+  .sel { color: var(--dim); font-size: 12.5px; text-align: center; margin-top: 12px; }
+  .sel b { color: var(--fg); }
+
   .msg { margin-top: 16px; font-size: 13px; min-height: 20px; text-align: center; max-width: 620px; }
   .msg.bad { color: var(--rec); }
   .msg.ok { color: var(--accent); }
@@ -79,6 +100,7 @@
 <div class="stage" id="stage">
   <div class="empty" id="empty">Pick a screen or window to start.<br>Your camera sits in the corner.</div>
   <canvas id="cv" hidden></canvas>
+  <video id="player" hidden controls></video>
   <div class="dot" id="dot"><i></i><span id="clock">0:00</span></div>
 </div>
 
@@ -86,10 +108,9 @@
   <button class="go" id="setup">Choose screen</button>
   <button class="go" id="start" disabled>Record</button>
   <button class="stop" id="stop" disabled>Stop</button>
-  <button id="save" disabled>Download</button>
 </div>
 
-<div class="opts">
+<div class="opts" id="opts">
   <label>Camera
     <select id="corner">
       <option value="br">bottom right</option>
@@ -104,6 +125,27 @@
   <label><input type="checkbox" id="sysaudio" checked> Screen audio</label>
 </div>
 
+<div id="review">
+  <div class="trim">
+    <div class="trimrow">
+      <label>Start</label>
+      <input type="range" id="tin" min="0" max="100" step="0.1" value="0">
+      <span class="tval" id="tinv">0:00.0</span>
+    </div>
+    <div class="trimrow">
+      <label>End</label>
+      <input type="range" id="tout" min="0" max="100" step="0.1" value="100">
+      <span class="tval" id="toutv">0:00.0</span>
+    </div>
+    <div class="sel" id="sel"></div>
+  </div>
+  <div class="bar">
+    <button id="playsel">Play selection</button>
+    <button class="go" id="save">Download</button>
+    <button id="again">Record again</button>
+  </div>
+</div>
+
 <div class="msg" id="msg"></div>
 
 <p class="note">
@@ -113,57 +155,53 @@
 </p>
 
 <script>
-/* Everything is local: two MediaStreams get drawn onto a canvas, the canvas is
-   recorded alongside a mixed audio track, and the result is handed back as a
-   file. No upload, no server, nothing persisted. */
-
 const $ = id => document.getElementById(id);
 const say = (t, cls = '') => { $('msg').className = 'msg ' + cls; $('msg').textContent = t; };
+const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` +
+                   `.${Math.floor((s % 1) * 10)}`;
 
-let screenStream = null, camStream = null, mixed = null;
-let recorder = null, chunks = [], blob = null, rafId = null, tick = null, startedAt = 0;
+let screenStream = null, camStream = null, micStream = null;
+let recorder = null, chunks = [], blob = null, mime = '';
+let rafId = null, tick = null, startedAt = 0, duration = 0;
 
-const cv = $('cv');
+const cv = $('cv'), player = $('player');
 const ctx = cv.getContext('2d', { alpha: false });
 const vScreen = document.createElement('video');
 const vCam = document.createElement('video');
 [vScreen, vCam].forEach(v => { v.muted = true; v.playsInline = true; });
 
-/* MP4/H.264 is what Twitter accepts. WebM is the browser default and would need
-   converting, so prefer MP4 and only fall back if this browser can't encode it. */
+/* Twitter accepts MP4/H.264 and rejects WebM. Prefer MP4; fall back only if
+   this browser genuinely cannot encode it. */
 function pickMime() {
-  const wanted = [
+  return [
     'video/mp4;codecs="avc1.42E01E,mp4a.40.2"',
     'video/mp4;codecs=avc1',
     'video/mp4',
     'video/webm;codecs=vp9,opus',
     'video/webm',
-  ];
-  return wanted.find(t => MediaRecorder.isTypeSupported(t)) || '';
+  ].find(t => MediaRecorder.isTypeSupported(t)) || '';
 }
 
+const once = (el, ev) => new Promise(r => el.addEventListener(ev, r, { once: true }));
+
+/* ── capture ─────────────────────────────────────────────────────────────── */
 async function setup() {
   try {
     say('');
     screenStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: 30 },
-      audio: $('sysaudio').checked,
+      video: { frameRate: 30 }, audio: $('sysaudio').checked,
     });
-    // The browser's own "Stop sharing" button ends the track — treat that as stop
-    // rather than carrying on recording a dead stream.
+    // Chrome's own "Stop sharing" ends the track. Treat that as Stop rather
+    // than carrying on recording a dead stream.
     screenStream.getVideoTracks()[0].addEventListener('ended', () => {
       if (recorder && recorder.state === 'recording') stop();
     });
 
-    if ($('corner').value !== 'off') {
+    if ($('corner').value !== 'off' && !camStream) {
       try {
         camStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 1280, height: 720, facingMode: 'user' },
-          audio: false,          // mic is captured separately so it can be toggled
-        });
-      } catch (e) {
-        say('No camera available — recording the screen only.', 'bad');
-      }
+          video: { width: 1280, height: 720, facingMode: 'user' }, audio: false });
+      } catch (e) { say('No camera available — recording the screen only.', 'bad'); }
     }
 
     vScreen.srcObject = screenStream;
@@ -171,14 +209,13 @@ async function setup() {
     if (camStream) { vCam.srcObject = camStream; await vCam.play(); }
 
     const s = screenStream.getVideoTracks()[0].getSettings();
-    // Cap the long edge at 1920: beyond that the file grows fast and Twitter
+    // Cap the long edge at 1920 — beyond that the file grows fast and Twitter
     // downscales it anyway.
     const scale = Math.min(1, 1920 / (s.width || 1920));
     cv.width = Math.round((s.width || 1280) * scale);
     cv.height = Math.round((s.height || 720) * scale);
 
-    cv.hidden = false;
-    $('empty').style.display = 'none';
+    showStage('canvas');
     $('start').disabled = false;
     $('setup').textContent = 'Change screen';
     draw();
@@ -197,23 +234,18 @@ function draw() {
   const corner = $('corner').value;
   if (corner === 'off' || !camStream || vCam.readyState < 2) return;
 
-  // Circular camera inset. The source is cropped to a square first so a 16:9
-  // webcam isn't squashed into the circle.
   const d = Math.round(cv.width * (Number($('camsize').value) / 100));
   const pad = Math.round(cv.width * 0.018);
   const x = corner.endsWith('r') ? cv.width - d - pad : pad;
   const y = corner.startsWith('b') ? cv.height - d - pad : pad;
 
-  const sw = vCam.videoWidth, sh = vCam.videoHeight;
-  const side = Math.min(sw, sh);
-  const sx = (sw - side) / 2, sy = (sh - side) / 2;
-
+  // crop the camera to a square first so a 16:9 feed isn't squashed oval
+  const sw = vCam.videoWidth, sh = vCam.videoHeight, side = Math.min(sw, sh);
   ctx.save();
   ctx.beginPath();
   ctx.arc(x + d / 2, y + d / 2, d / 2, 0, Math.PI * 2);
-  ctx.closePath();
   ctx.clip();
-  ctx.drawImage(vCam, sx, sy, side, side, x, y, d, d);
+  ctx.drawImage(vCam, (sw - side) / 2, (sh - side) / 2, side, side, x, y, d, d);
   ctx.restore();
 
   ctx.beginPath();
@@ -223,51 +255,41 @@ function draw() {
   ctx.stroke();
 }
 
-/* Mic and screen audio are separate streams and MediaRecorder takes one audio
-   track, so they're summed through a WebAudio graph first. */
+/* MediaRecorder takes ONE audio track, so mic and screen audio are summed
+   through WebAudio first. */
 async function buildAudio() {
   const acx = new AudioContext();
   const dest = acx.createMediaStreamDestination();
   let any = false;
 
-  const sysTracks = screenStream.getAudioTracks();
-  if ($('sysaudio').checked && sysTracks.length) {
-    acx.createMediaStreamSource(new MediaStream(sysTracks)).connect(dest);
+  const sys = screenStream.getAudioTracks();
+  if ($('sysaudio').checked && sys.length) {
+    acx.createMediaStreamSource(new MediaStream(sys)).connect(dest);
     any = true;
   }
   if ($('mic').checked) {
     try {
-      const m = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
-      });
-      acx.createMediaStreamSource(m).connect(dest);
-      window._mic = m;                       // kept so it can be stopped later
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true } });
+      acx.createMediaStreamSource(micStream).connect(dest);
       any = true;
-    } catch (e) {
-      say('Microphone unavailable — recording without it.', 'bad');
-    }
+    } catch (e) { say('Microphone unavailable — recording without it.', 'bad'); }
   }
   return any ? dest.stream.getAudioTracks() : [];
 }
 
 async function start() {
-  const mime = pickMime();
+  mime = pickMime();
   if (!mime) return say('This browser cannot record video.', 'bad');
 
   const audio = await buildAudio();
-  mixed = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...audio]);
+  const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...audio]);
 
   chunks = [];
-  recorder = new MediaRecorder(mixed, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
+  recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
   recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
-  recorder.onstop = () => {
-    blob = new Blob(chunks, { type: mime.split(';')[0] });
-    $('save').disabled = false;
-    const mb = (blob.size / 1048576).toFixed(1);
-    const kind = mime.startsWith('video/mp4') ? 'MP4' : 'WebM';
-    say(`Recorded ${mb} MB ${kind}. Download it below.`, 'ok');
-  };
-  recorder.start(1000);          // a chunk a second, so a crash loses one second
+  recorder.onstop = onRecorded;
+  recorder.start(1000);        // one chunk per second, so a crash costs one second
 
   startedAt = Date.now();
   $('dot').classList.add('on');
@@ -276,10 +298,7 @@ async function start() {
     $('clock').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   }, 250);
 
-  $('start').disabled = true;
-  $('stop').disabled = false;
-  $('setup').disabled = true;
-  $('save').disabled = true;
+  $('start').disabled = true; $('stop').disabled = false; $('setup').disabled = true;
   say(mime.startsWith('video/mp4') ? 'Recording — MP4, ready for Twitter.' : 'Recording.');
 }
 
@@ -287,31 +306,163 @@ function stop() {
   if (recorder && recorder.state !== 'inactive') recorder.stop();
   clearInterval(tick);
   $('dot').classList.remove('on');
-  $('stop').disabled = true;
-  $('start').disabled = false;
-  $('setup').disabled = false;
-  [screenStream, camStream, window._mic].forEach(s =>
-    s && s.getTracks().forEach(t => t.stop()));
+  $('stop').disabled = true; $('start').disabled = false; $('setup').disabled = false;
+  [screenStream, camStream, micStream].forEach(s => s && s.getTracks().forEach(t => t.stop()));
+  camStream = null; micStream = null;
+  cancelAnimationFrame(rafId);
 }
 
-function save() {
-  if (!blob) return;
-  const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+/* ── review ──────────────────────────────────────────────────────────────── */
+async function onRecorded() {
+  blob = new Blob(chunks, { type: mime.split(';')[0] });
+  player.src = URL.createObjectURL(blob);
+  showStage('player');
+
+  // A MediaRecorder blob often reports duration as Infinity until it has been
+  // seeked to the end, so nudge it before reading the length.
+  await once(player, 'loadedmetadata');
+  if (!isFinite(player.duration)) {
+    player.currentTime = 1e101;
+    await once(player, 'timeupdate');
+    player.currentTime = 0;
+  }
+  duration = player.duration;
+
+  $('tin').max = $('tout').max = duration;
+  $('tin').value = 0;
+  $('tout').value = duration;
+  paintTrim();
+
+  $('review').classList.add('on');
+  $('opts').style.display = 'none';
+  const mb = (blob.size / 1048576).toFixed(1);
+  say(`${clock(duration)} recorded, ${mb} MB. Watch it back, trim if you want.`, 'ok');
+}
+
+function paintTrim() {
+  let a = Number($('tin').value), b = Number($('tout').value);
+  if (a > b - 0.2) { a = Math.max(0, b - 0.2); $('tin').value = a; }
+  $('tinv').textContent = clock(a);
+  $('toutv').textContent = clock(b);
+  const cut = duration - (b - a);
+  $('sel').innerHTML = cut < 0.15
+    ? `Full recording — <b>${clock(duration)}</b>, saved as-is with no re-encoding.`
+    : `Selection <b>${clock(b - a)}</b> · trimming <b>${clock(cut)}</b> off`;
+}
+
+function playSelection() {
+  const a = Number($('tin').value), b = Number($('tout').value);
+  player.currentTime = a;
+  player.play();
+  const watch = () => {
+    if (player.currentTime >= b) { player.pause(); player.removeEventListener('timeupdate', watch); }
+  };
+  player.addEventListener('timeupdate', watch);
+}
+
+/* Re-encode only the selected range. Real time by necessity: WebCodecs isn't
+   available and cutting MP4 at the byte level is a different project. An
+   untrimmed save skips all of this and hands back the original bytes. */
+async function exportTrim(from, to) {
+  const v = document.createElement('video');
+  v.src = URL.createObjectURL(blob);
+  v.playsInline = true;
+  await once(v, 'loadedmetadata');
+  v.currentTime = from;
+  await once(v, 'seeked');
+
+  const vTrack = v.captureStream().getVideoTracks()[0];
+  // Route audio through WebAudio and deliberately NOT to the speakers, so the
+  // export is silent to you while still being recorded.
+  const acx = new AudioContext();
+  const dest = acx.createMediaStreamDestination();
+  acx.createMediaElementSource(v).connect(dest);
+
+  const out = new MediaStream([vTrack, ...dest.stream.getAudioTracks()]);
+  const rec = new MediaRecorder(out, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
+  const parts = [];
+  rec.ondataavailable = e => { if (e.data.size) parts.push(e.data); };
+
+  const done = new Promise(r => { rec.onstop = r; });
+  rec.start(500);
+  await v.play();
+
+  await new Promise(resolve => {
+    const watch = () => {
+      const pct = Math.round(((v.currentTime - from) / (to - from)) * 100);
+      say(`Trimming… ${Math.min(99, Math.max(0, pct))}%`);
+      if (v.currentTime >= to || v.ended) {
+        v.removeEventListener('timeupdate', watch);
+        resolve();
+      }
+    };
+    v.addEventListener('timeupdate', watch);
+  });
+
+  v.pause();
+  rec.stop();
+  await done;
+  acx.close();
+  return new Blob(parts, { type: mime.split(';')[0] });
+}
+
+async function save() {
+  const a = Number($('tin').value), b = Number($('tout').value);
+  const trimmed = duration - (b - a) >= 0.15;
+  let out = blob;
+
+  if (trimmed) {
+    $('save').disabled = true; $('playsel').disabled = true;
+    say(`Trimming to ${clock(b - a)} — this runs in real time.`);
+    try {
+      out = await exportTrim(a, b);
+    } catch (e) {
+      say('Could not trim: ' + (e.message || e), 'bad');
+      $('save').disabled = false; $('playsel').disabled = false;
+      return;
+    }
+    $('save').disabled = false; $('playsel').disabled = false;
+  }
+
+  const ext = out.type.includes('mp4') ? 'mp4' : 'webm';
   const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `edgelvl-${stamp}.${ext}`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(out);
+  link.download = `edgelvl-${stamp}.${ext}`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+  say(`Saved ${(out.size / 1048576).toFixed(1)} MB${trimmed ? ' (trimmed)' : ''}.`, 'ok');
+}
+
+function showStage(which) {
+  $('empty').style.display = 'none';
+  cv.hidden = which !== 'canvas';
+  player.hidden = which !== 'player';
+}
+
+function again() {
+  $('review').classList.remove('on');
+  $('opts').style.display = '';
+  blob = null;
+  player.removeAttribute('src');
+  $('empty').style.display = '';
+  cv.hidden = true; player.hidden = true;
+  $('start').disabled = true;
+  $('setup').textContent = 'Choose screen';
+  say('');
 }
 
 $('setup').onclick = setup;
 $('start').onclick = start;
 $('stop').onclick = stop;
 $('save').onclick = save;
+$('again').onclick = again;
+$('playsel').onclick = playSelection;
+$('tin').oninput = paintTrim;
+$('tout').oninput = paintTrim;
+
 $('corner').onchange = async () => {
-  // Turning the camera on after starting without one shouldn't need a restart.
-  if ($('corner').value !== 'off' && !camStream) {
+  if ($('corner').value !== 'off' && !camStream && screenStream) {
     try {
       camStream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720, facingMode: 'user' }, audio: false });
