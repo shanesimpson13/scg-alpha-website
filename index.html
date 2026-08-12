@@ -714,17 +714,55 @@
     .sethead h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
     .sethead p { font-size: 12px; color: var(--dim); line-height: 1.7; }
 
-    .setsec { margin-bottom: 26px; }
+    /* Sections are boxes, and close together: the whole strategy should read as
+       one panel you scan, not four lists separated by whitespace. */
+    .setsec { border: 1px solid var(--line); border-radius: 12px; background: var(--field);
+              padding: 0 14px 4px; margin-bottom: 10px; }
     .setsec > h3 {
       font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
-      color: var(--dimmer); font-weight: 500; padding-bottom: 9px;
-      border-bottom: 1px solid var(--line); margin-bottom: 4px;
+      color: var(--dimmer); font-weight: 500; padding: 12px 0 9px;
+      border-bottom: 1px solid var(--line); margin-bottom: 2px;
     }
     .setrow {
       display: grid; grid-template-columns: 1fr 116px; gap: 18px;
-      align-items: center; padding: 13px 2px;
+      align-items: center; padding: 11px 2px;
       border-bottom: 1px solid var(--hair);
     }
+
+    /* ── strategies, as tiles ──
+       A strategy is a thing you own and pick between, so it gets an object on
+       screen rather than being implied by whatever the form happens to hold. */
+    .stiles { display: grid; gap: 10px; margin-bottom: 14px;
+              grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); }
+    .stile { position: relative; text-align: left; background: var(--field);
+             border: 1px solid var(--line); border-radius: 12px; padding: 13px 13px 12px;
+             cursor: pointer; color: var(--fg); font-family: inherit; min-height: 84px; }
+    .stile:hover { background: var(--hover); }
+    .stile.on { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
+    .stile .nm { font-size: 13px; font-weight: 600; padding-right: 46px;
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stile .sub { font-size: 10.5px; color: var(--dimmer); margin-top: 6px; line-height: 1.55; }
+    .stile .badge { position: absolute; top: 11px; right: 11px; font-size: 8.5px;
+                    letter-spacing: .1em; text-transform: uppercase; color: var(--green);
+                    font-weight: 700; }
+    .stile.add { display: grid; place-items: center; color: var(--dimmer);
+                 border-style: dashed; }
+    .stile.add span { font-size: 24px; line-height: 1; }
+    .stile.add:hover { color: var(--fg); border-color: var(--dim); }
+    .setactions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+                  margin: -4px 0 16px; }
+    .linkbtn { background: none; border: 0; color: var(--dim); font-family: inherit;
+               font-size: 11.5px; cursor: pointer; padding: 4px 0; text-decoration: underline;
+               text-underline-offset: 3px; }
+    .linkbtn:hover { color: var(--fg); }
+    .linkbtn.danger:hover { color: var(--red); }
+
+    /* two-way choice, for settings that aren't numbers */
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px;
+           overflow: hidden; width: 100%; }
+    .seg button { flex: 1; background: none; border: 0; color: var(--dim);
+                  font-family: inherit; font-size: 11.5px; padding: 8px 4px; cursor: pointer; }
+    .seg button.on { background: rgba(127,127,127,.16); color: var(--fg); font-weight: 700; }
     .setrow:last-child { border-bottom: 0; }
     .setrow.off { opacity: .38; }
     .setrow .lab { font-size: 13px; }
@@ -974,13 +1012,14 @@
 
   <div id="settings" style="display:none">
     <div class="sethead">
-      <h2>Your strategy</h2>
-      <p>Applies to the next coin you greenlight, never to an open trade.</p>
+      <h2>Your strategies</h2>
+      <p>Pick one on any coin page. Whichever is default runs when a coin doesn't
+         name one. Changes apply to the next coin you greenlight, never to an
+         open trade.</p>
     </div>
     <div id="setlock"><div id="setbody"></div></div>
     <div class="setbar">
       <button class="glbtn" id="savesettings">Save changes</button>
-      <button class="ghost" id="savepreset">Save as a strategy…</button>
       <button class="ghost" id="resetsettings">Reset to defaults</button>
       <span id="setmsg"></span>
     </div>
@@ -1309,6 +1348,7 @@ async function refresh() {
     const d = await api(`/api/trending?limit=50&min_vol=${filters.vol}` +
                         `&min_mc=${filters.mc}&max_age_days=${filters.age}`);
     coins = d.coins || [];
+    notifyNewCoins(coins);
     document.getElementById('livewrap').classList.toggle('stale', !!d.stale);
     document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
     document.getElementById('updated').textContent = `${Math.round(d.age_secs)}s ago`;
@@ -1857,7 +1897,12 @@ function describeStrategy(v) {
   if (v.dip != null) bits.push(`−${Math.round(v.dip * 100)}% dip`);
   if (v.bounce != null) bits.push(`+${pct(v.bounce)}% bounce`);
   if (v.tp1 != null) bits.push(`TP ${v.tp1}x${v.use_tp2 && v.tp2 ? ' / ' + v.tp2 + 'x' : ''}`);
-  if (v.kill != null) bits.push(`stop −${Math.round(v.kill * 100)}%`);
+  // Which kind of stop changes what the number means, so it belongs in the
+  // summary rather than being something you open the strategy to discover.
+  if (v.kill != null) {
+    const kind = Number(v.trail_stop ?? 1) ? 'trailing' : 'fixed';
+    bits.push(`${kind} stop −${Math.round(v.kill * 100)}%`);
+  }
   return bits.join(' · ');
 }
 
@@ -1872,7 +1917,10 @@ async function openStrategy(c) {
   try {
     const d = await api('/api/settings');
     PRESETS = d.presets || {};
-    MYSET = d.settings || {};
+    DEFAULT_PRESET = d.default_preset || '';
+    // `own` so "My settings" shows YOUR numbers, not whatever the default
+    // strategy resolved them to — otherwise the two rows look identical.
+    MYSET = d.own || d.settings || {};
   } catch (e) {
     list.innerHTML = '<div class="sub">Couldn\'t load your strategies.</div>';
     return;
@@ -1885,7 +1933,8 @@ async function openStrategy(c) {
   const row = (name, vals, label) => {
     const on = (name || '') === chosen;
     return `<div class="pitem${on ? ' on' : ''}" role="button" tabindex="0" data-p="${esc(name)}">
-              <span class="nm"><div>${esc(label)}</div>
+              <span class="nm"><div>${esc(label)}${
+                  (name || '') === (DEFAULT_PRESET || '') ? ' <span class="tick">· default</span>' : ''}</div>
                 <div class="sub">${esc(describeStrategy(vals) || 'your saved settings')}</div></span>
               ${on ? '<span class="tick">&#10003;</span>' : ''}
               ${name ? `<span class="geartn" data-del="${esc(name)}" title="Delete">&times;</span>` : ''}
@@ -1998,6 +2047,50 @@ function pnlLine(r) {
   if (r.pnl == null) return '';
   const p = (r.pnl * 100).toFixed(0);
   return `${r.pnl >= 0 ? '+' : ''}${p}%`;
+}
+
+/* New arrivals on the board.
+
+   Seeded silently on the first refresh: everything is "new" when you open the
+   page, and firing fifty notifications for a board you are already looking at
+   is the fastest way to have someone turn notifications off for good.
+
+   Several coins can appear in one refresh, so past a couple they collapse into
+   a single line. One notification saying "4 new coins" is useful; four
+   notifications is an interruption. */
+const seenMints = new Set();
+let boardSeeded = false;
+
+function notifyNewCoins(list) {
+  const mints = (list || []).map(c => c.mint).filter(Boolean);
+  if (!boardSeeded) {
+    mints.forEach(m => seenMints.add(m));
+    boardSeeded = true;
+    return;
+  }
+  const fresh = (list || []).filter(c => c.mint && !seenMints.has(c.mint));
+  fresh.forEach(c => seenMints.add(c.mint));
+  if (!fresh.length || !notifyOn()) return;
+
+  try {
+    if (fresh.length > 2) {
+      const n = new Notification(`${fresh.length} new coins on the board`, {
+        body: fresh.map(c => c.symbol || '').filter(Boolean).slice(0, 6).join(', '),
+        icon: '/favicon.png',
+        tag: 'edgelvl-new-coins',      // replaces itself rather than stacking
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+      return;
+    }
+    fresh.forEach(c => {
+      const n = new Notification(`${c.symbol || 'New coin'} — new on the board`, {
+        body: `${money(c.mcap)} MC · ${money(c.vol_5m)} 5m vol`,
+        icon: '/favicon.png',
+        tag: c.mint,
+      });
+      n.onclick = () => { window.focus(); openDetail(c.mint); n.close(); };
+    });
+  } catch (e) { /* refused outside a gesture — never worth breaking the poll */ }
 }
 
 function notifyStateChange(r) {
@@ -2224,8 +2317,8 @@ const SAMPLE_JOURNAL = {
 /* The shipped defaults, so the locked form shows the real controls at real
    values rather than empty boxes. */
 const SAMPLE_SETTINGS = {
-  size_sol: 0.05, dip: 0.15, bounce: 1.04, volr_min: 1.0,
-  tp1: 1.5, frac1: 0.7, tp2: 2.0, kill: 0.5,
+  dip: 0.15, bounce: 1.04, volr_min: 1.0,
+  tp1: 1.5, frac1: 0.7, tp2: 2.0, kill: 0.5, trail_stop: 1,
   entry_timeout: 3600, max_hold: 21600, use_tp2: 1,
   slippage: 0.15, priority_fee: 0.002,
 };
@@ -2356,10 +2449,9 @@ document.getElementById('openjournal').onclick = e => { e.preventDefault(); open
 /* ── settings ───────────────────────────────────────────────────────────── */
 // [key, label, hint, multiplier, unit, offset]
 // Stored raw (0.15); shown the way people think (15%).
+// Size lives on the coin page now. It's a decision about one coin, made while
+// looking at that coin — not a property of a strategy.
 const SECTIONS = [
-  ["Money", [
-    ["size_sol", "Size per trade", "How much goes into each buy.", 1, "SOL"],
-  ]],
   ["Entry", [
     ["dip", "Dip required", "How far off the high before it looks to buy.", 100, "%"],
     ["bounce", "Reclaim", "Rise off the dip low that triggers the buy.", 100, "%", 1],
@@ -2369,7 +2461,8 @@ const SECTIONS = [
     ["tp1", "Take profit 1", "The first rung.", 1, "x"],
     ["frac1", "Sold at TP1", "The rest rides to TP2.", 100, "%"],
     ["tp2", "Take profit 2", "Fully out here — no runner.", 1, "x"],
-    ["kill", "Trailing stop", "Off the position's peak, not your entry.", 100, "%"],
+    ["trail_stop", "Stop type", "Trailing rides the high and locks in gains, but can exit below your entry after a coin has run. Fixed measures from your entry and never sells a position that's still up.", 1],
+    ["kill", "Stop", "How far it may fall before selling everything.", 100, "%"],
   ]],
   ["Timing", [
     ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
@@ -2688,6 +2781,7 @@ async function openSettings() {
   if (!KEY) {
     // The real controls at their default values, blurred. Save is hidden
     // rather than disabled — there is no account for it to write to.
+    OWN = SAMPLE_SETTINGS; PRESETS = {}; DEFAULT_PRESET = ''; editing = '';
     renderSettings(SAMPLE_SETTINGS);
     lockView('setlock', 'setbody',
       '<div class="signedout">' +
@@ -2704,7 +2798,14 @@ async function openSettings() {
     const d = await api('/api/settings');
     bounds = d.bounds || {};
     SET = { dip: d.settings.dip ?? SET.dip, bounce: d.settings.bounce ?? SET.bounce };
-    renderSettings(d.settings || {});
+    PRESETS = d.presets || {};
+    DEFAULT_PRESET = d.default_preset || '';
+    // `own` is the account's numbers BEFORE any default strategy resolves over
+    // them. Editing must act on those, or marking a strategy default would make
+    // the form quietly start editing a copy of it.
+    OWN = d.own || d.settings || {};
+    if (editing && !PRESETS[editing]) editing = '';   // deleted elsewhere
+    paintEditing();
   } catch (e) {
     setMsg("Couldn't load your settings.", 'var(--red)');
   }
@@ -2718,6 +2819,21 @@ function setMsg(t, color) {
 
 function settingRowHTML(f, vals) {
   const [key, label, hint, , unit] = f;
+
+  /* The stop mode is a choice, not a number, so it gets two buttons rather than
+     a box you type 0 or 1 into. Which one is picked changes what the stop
+     percentage below it MEASURES FROM, which is why they sit together. */
+  if (key === 'trail_stop') {
+    return `<div class="setrow" id="row_trail_stop">
+      <div><div class="lab"><span>${label}</span></div>
+        <div class="hint" id="hint_trail_stop">${hint}</div></div>
+      <div class="seg" id="segstop">
+        <button type="button" data-t="1"${trailStop ? ' class="on"' : ''}>Trailing</button>
+        <button type="button" data-t="0"${trailStop ? '' : ' class="on"'}>Fixed</button>
+      </div>
+    </div>`;
+  }
+
   const v = vals[key];
   const val = v === undefined ? '' : toView(f)(v);
   // TP2 gets a checkbox in place of its label, so it can be switched off.
@@ -2734,12 +2850,124 @@ function settingRowHTML(f, vals) {
   </div>`;
 }
 
+/* Which strategy the form is editing. '' is the account's own settings — the
+   thing that has always been there — and a name is one of the saved ones. */
+let editing = '';
+let trailStop = true;
+let OWN = {};             // the account's own numbers, unresolved by any preset
+let DEFAULT_PRESET = '';
+
+function strategyTilesHTML() {
+  const tile = (name, vals, label) => {
+    const on = name === editing;
+    const isDefault = (name || '') === (DEFAULT_PRESET || '');
+    return `<button class="stile${on ? ' on' : ''}" data-s="${esc(name)}">
+      ${isDefault ? '<span class="badge">Default</span>' : ''}
+      <div class="nm">${esc(label)}</div>
+      <div class="sub">${esc(describeStrategy(vals) || 'your saved settings')}</div>
+    </button>`;
+  };
+  return `<div class="stiles">
+    ${tile('', OWN, 'My settings')}
+    ${Object.keys(PRESETS).map(n => tile(n, { ...OWN, ...PRESETS[n] }, n)).join('')}
+    <button class="stile add" id="addstrat" title="New strategy"><span>+</span></button>
+  </div>
+  <div class="setactions">
+    ${(DEFAULT_PRESET || '') === editing ? ''
+      : '<button class="linkbtn" id="makedefault">Make this the default</button>'}
+    ${editing ? '<button class="linkbtn danger" id="delstrat">Delete this strategy</button>' : ''}
+  </div>`;
+}
+
+function wireStrategyTiles() {
+  document.querySelectorAll('.stile[data-s]').forEach(b => {
+    b.onclick = () => { editing = b.dataset.s; paintEditing(); };
+  });
+  const add = document.getElementById('addstrat');
+  if (add) add.onclick = newStrategy;
+  const md = document.getElementById('makedefault');
+  if (md) md.onclick = async () => {
+    try {
+      const d = await api('/api/settings/default',
+                          { method: 'POST', body: JSON.stringify({ name: editing }) });
+      DEFAULT_PRESET = d.default_preset || '';
+      paintEditing();
+      setMsg(`✓ ${editing || 'My settings'} is now the default.`, 'var(--green)');
+    } catch (e) { setMsg(e.detail || "Couldn't set that as default.", 'var(--red)'); }
+  };
+  const del = document.getElementById('delstrat');
+  if (del) del.onclick = async () => {
+    const n = editing;
+    if (!confirm(`Delete the "${n}" strategy?`)) return;
+    try {
+      const d = await api('/api/settings/preset',
+                          { method: 'POST', body: JSON.stringify({ name: n, delete: true }) });
+      PRESETS = d.presets || {};
+      DEFAULT_PRESET = d.default_preset || '';
+      for (const [m, p] of coinPreset) if (p === n) coinPreset.delete(m);
+      editing = '';
+      paintEditing();
+      setMsg(`Deleted "${n}".`);
+    } catch (e) { setMsg(e.detail || "Couldn't delete that one.", 'var(--red)'); }
+  };
+}
+
+/* A new strategy starts as a COPY of what's on screen rather than from the
+   shipped defaults — you reach for "new" right after tuning something, and
+   losing those numbers to a blank form is the annoying outcome. */
+async function newStrategy() {
+  const body = collect();
+  if (!body) { setMsg('Fix the red values first.', 'var(--red)'); return; }
+  const name = (prompt('Name this strategy — e.g. Runner, Scalp, Careful') || '').trim();
+  if (!name) return;
+  try {
+    const d = await api('/api/settings/preset',
+                        { method: 'POST', body: JSON.stringify({ name, settings: body }) });
+    PRESETS = d.presets || {};
+    DEFAULT_PRESET = d.default_preset || DEFAULT_PRESET;
+    editing = name;
+    paintEditing();
+    setMsg(`✓ Created "${name}".`, 'var(--green)');
+  } catch (e) { setMsg(e.detail || "Couldn't create that one.", 'var(--red)'); }
+}
+
+/* Repaint the form for whichever strategy is being edited. A preset holds only
+   its overrides, so it is shown layered over your own settings — what you see
+   is what that strategy would actually run. */
+function paintEditing() {
+  renderSettings(editing ? { ...OWN, ...(PRESETS[editing] || {}) } : OWN);
+  const btn = document.getElementById('savesettings');
+  if (btn) btn.textContent = editing ? `Save "${editing}"` : 'Save my settings';
+}
+
 function renderSettings(vals) {
   useTp2 = vals.use_tp2 === undefined ? true : !!Number(vals.use_tp2);
-  document.getElementById('setbody').innerHTML = SECTIONS.map(([title, rows]) =>
-    `<div class="setsec"><h3>${title}</h3>${rows.map(f => settingRowHTML(f, vals)).join('')}</div>`
-  ).join('') + notifySectionHTML();
+  trailStop = vals.trail_stop === undefined ? true : !!Number(vals.trail_stop);
+  document.getElementById('setbody').innerHTML =
+    strategyTilesHTML()
+    + SECTIONS.map(([title, rows]) =>
+        `<div class="setsec"><h3>${title}</h3>${rows.map(f => settingRowHTML(f, vals)).join('')}</div>`
+      ).join('')
+    + notifySectionHTML();
+  wireStrategyTiles();
   wireNotifyToggle();
+  const seg = document.getElementById('segstop');
+  if (seg) seg.querySelectorAll('button').forEach(b => {
+    b.onclick = () => {
+      trailStop = b.dataset.t === '1';
+      seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+      // The stop percentage means something different in each mode, so say so
+      // where the number is rather than only in the mode's own hint.
+      const h = document.getElementById('hint_kill');
+      if (h) h.textContent = trailStop
+        ? 'How far it may fall from its peak before selling everything.'
+        : 'How far it may fall below your entry before selling everything.';
+    };
+  });
+  const h = document.getElementById('hint_kill');
+  if (h) h.textContent = trailStop
+    ? 'How far it may fall from its peak before selling everything.'
+    : 'How far it may fall below your entry before selling everything.';
   document.getElementById('set_use_tp2').onchange = e => {
     useTp2 = e.target.checked;
     applyTp2();
@@ -2835,7 +3063,7 @@ document.getElementById('pedit').onclick = () => {
 };
 
 function collect() {
-  const body = { use_tp2: useTp2 ? 1 : 0 };
+  const body = { use_tp2: useTp2 ? 1 : 0, trail_stop: trailStop ? 1 : 0 };
   let bad = false;
   for (const key of Object.keys(F)) {
     const el = document.getElementById('set_' + key);
@@ -2850,47 +3078,43 @@ function collect() {
   return bad ? null : body;
 }
 
-/* Save what's on screen as a NAMED strategy, without changing your defaults.
-   That separation is the point: your account settings stay the thing most coins
-   run, and a named one is what you reach for when a particular coin deserves
-   different numbers. */
-document.getElementById('savepreset').onclick = async () => {
-  const body = collect();
-  if (!body) { setMsg('Some values are out of range — the red ones.', 'var(--red)'); return; }
-  const name = (prompt('Name this strategy — e.g. Runner, Scalp, Careful') || '').trim();
-  if (!name) return;
-  setMsg('Saving…');
-  try {
-    const d = await api('/api/settings/preset',
-                        { method: 'POST', body: JSON.stringify({ name, settings: body }) });
-    PRESETS = d.presets || {};
-    setMsg(`✓ Saved "${name}" — pick it on any coin page.`, 'var(--green)');
-  } catch (e) {
-    setMsg(e.detail || "Couldn't save that one.", 'var(--red)');
-  }
-};
-
 document.getElementById('savesettings').onclick = async () => {
   const body = collect();
   if (!body) { setMsg('Some values are out of range — the red ones.', 'var(--red)'); return; }
   setMsg('Saving…');
   try {
-    const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(body) });
-    renderSettings(d.settings || {});
-    setMsg('✓ Saved — applies to the next coin you greenlight.', 'var(--green)');
+    if (editing) {
+      // Writes to the named strategy only. Your own settings are untouched,
+      // which is the point of them being separate things.
+      const d = await api('/api/settings/preset',
+                          { method: 'POST', body: JSON.stringify({ name: editing, settings: body }) });
+      PRESETS = d.presets || {};
+      DEFAULT_PRESET = d.default_preset || DEFAULT_PRESET;
+      paintEditing();
+      setMsg(`✓ Saved "${editing}" — pick it on any coin page.`, 'var(--green)');
+    } else {
+      const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(body) });
+      OWN = d.settings || OWN;
+      paintEditing();
+      setMsg('✓ Saved — applies to the next coin you greenlight.', 'var(--green)');
+    }
   } catch (e) {
     setMsg(e.detail || 'Rejected — check the values.', 'var(--red)');
   }
 };
 
 document.getElementById('resetsettings').onclick = async () => {
+  /* Resets YOUR settings, never a named strategy — the button says "defaults",
+     and quietly overwriting a strategy you built would be the wrong reading. */
+  if (editing) { editing = ''; paintEditing(); }
   setMsg('Resetting…');
-  const defaults = { size_sol: 0.05, tp1: 1.5, tp2: 2.0, use_tp2: 1, frac1: 0.70, kill: 0.50,
-                     dip: 0.15, bounce: 1.04, volr_min: 1.0,
+  const defaults = { tp1: 1.5, tp2: 2.0, use_tp2: 1, frac1: 0.70, kill: 0.50,
+                     trail_stop: 1, dip: 0.15, bounce: 1.04, volr_min: 1.0,
                      entry_timeout: 3600, max_hold: 21600 };
   try {
     const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(defaults) });
-    renderSettings(d.settings || {});
+    OWN = d.settings || OWN;
+    paintEditing();
     setMsg('✓ Back to the shipped defaults.', 'var(--green)');
   } catch (e) {
     setMsg("Couldn't reset.", 'var(--red)');
