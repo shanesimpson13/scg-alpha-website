@@ -615,25 +615,42 @@
     .amtrow input { flex: 1 1 0; min-width: 0; background: none; border: 0; color: var(--fg);
                     font-family: inherit; font-size: 12.5px; text-align: center;
                     padding: 9px 2px; outline: none; }
-    .stratrow { display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-                border-top: 1px solid var(--hair); font-size: 11px; color: var(--dim); }
-    .stratrow .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-                    white-space: nowrap; color: var(--fg); }
-    .geartn { background: none; border: 0; color: var(--dimmer); cursor: pointer;
-              font-size: 13px; padding: 2px 4px; line-height: 1; border-radius: 6px; }
-    .geartn:hover { color: var(--fg); background: var(--hover); }
+    /* What this greenlight will actually spend, said before you press it. */
+    .amtnote { font-size: 11px; color: var(--dim); text-align: center; line-height: 1.55;
+               margin: -2px 0 2px; }
+    .amtnote.warn { color: var(--amber); }
+    .amtnote.bad { color: var(--red); }
 
-    /* the gear popup */
-    .plist { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 14px; }
-    .pitem { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-             background: var(--field); border: 1px solid var(--line); border-radius: 9px;
-             padding: 11px 12px; color: var(--fg); font-family: inherit; font-size: 13px;
-             cursor: pointer; }
-    .pitem:hover { background: var(--hover); }
-    .pitem.on { border-color: var(--green); }
-    .pitem .sub { color: var(--dimmer); font-size: 10.5px; margin-top: 3px; }
-    .pitem .nm { flex: 1; min-width: 0; }
-    .pitem .tick { color: var(--green); font-weight: 700; }
+    /* The strategy picker is a real control, not a hidden gear — which one runs
+       matters as much as the amount, so it reads at the same weight. */
+    .stratwrap { position: relative; }
+    .stratbtn { display: flex; align-items: center; gap: 9px; width: 100%;
+                background: var(--field); border: 1px solid var(--line); border-radius: 9px;
+                padding: 11px 12px; color: var(--fg); font-family: inherit; font-size: 12.5px;
+                cursor: pointer; text-align: left; }
+    .stratbtn:hover { background: var(--hover); }
+    .stratbtn .gi { font-size: 13px; color: var(--dim); line-height: 1; }
+    .stratbtn .sname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+                       white-space: nowrap; font-weight: 600; }
+    .stratbtn .chev { color: var(--dimmer); font-size: 10px; }
+
+    /* Anchored to the button rather than centred on the screen: you are picking
+       between a handful of names, which is a menu, not a dialog. */
+    .sdrop { position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 40;
+             background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+             padding: 5px; box-shadow: 0 12px 30px rgba(0,0,0,.28); max-height: 300px;
+             overflow-y: auto; }
+    .sdrop button { display: block; width: 100%; text-align: left; background: none;
+                    border: 0; border-radius: 7px; padding: 9px 10px; cursor: pointer;
+                    color: var(--fg); font-family: inherit; font-size: 12.5px; }
+    .sdrop button:hover { background: var(--hover); }
+    .sdrop button.on { background: rgba(127,127,127,.14); }
+    .sdrop .nm { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+    .sdrop .nm .tick { color: var(--green); font-size: 11px; }
+    .sdrop .sub { font-size: 10px; color: var(--dimmer); margin-top: 3px; line-height: 1.45; }
+    .sdrop .edit { border-top: 1px solid var(--hair); margin-top: 4px; padding-top: 8px;
+                   color: var(--dim); font-size: 11.5px; font-weight: 500; }
+
 
     /* ── trade journal ── */
     #journal { max-width: 940px; }
@@ -755,6 +772,28 @@
              color: var(--fg); font-family: inherit; font-size: 13px; font-weight: 600;
              padding: 0 0 3px; outline: none; }
     .tname:focus { border-bottom-color: var(--green); }
+    .stile .x { position: absolute; top: 7px; right: 7px; width: 20px; height: 20px;
+                display: grid; place-items: center; border-radius: 6px; border: 0;
+                background: none; color: var(--dimmer); font-size: 15px; line-height: 1;
+                cursor: pointer; opacity: 0; transition: opacity .12s; }
+    .stile:hover .x, .stile.on .x, .stile .x:focus { opacity: 1; }
+    .stile .x:hover { background: var(--hover); color: var(--red); }
+    .stile .badge { top: auto; bottom: 11px; right: 11px; }
+
+    /* Confirm where the click happened. A centred dialog for deleting one tile
+       moves your eyes away from the thing you are deleting. */
+    .confpop { position: absolute; top: 4px; right: 4px; z-index: 30; width: 152px;
+               background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+               padding: 9px; box-shadow: 0 10px 26px rgba(0,0,0,.3); text-align: left; }
+    .confpop p { font-size: 11px; color: var(--dim); line-height: 1.45; margin-bottom: 8px; }
+    .confpop .row { display: flex; gap: 6px; }
+    .confpop button { flex: 1; border: 1px solid var(--line); background: none;
+                      color: var(--dim); font-family: inherit; font-size: 11px;
+                      padding: 6px 4px; border-radius: 6px; cursor: pointer; }
+    .confpop button.yes { background: var(--red); border-color: var(--red); color: #fff;
+                          font-weight: 700; }
+    .confpop button:hover { background: var(--hover); }
+    .confpop button.yes:hover { opacity: .88; background: var(--red); }
 
     /* Settings that are NOT part of a strategy, fenced off so it's obvious they
        don't change when you switch between them. */
@@ -1006,20 +1045,6 @@
           <a href="#" id="wsignout">Sign out</a>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Which strategy this ONE coin runs. Deliberately a popup on the coin page
-       rather than a trip to settings: the choice belongs next to the decision,
-       and leaving the page to make it is how you end up greenlighting with
-       whatever was set an hour ago. -->
-  <div id="pmodal" class="modal" style="display:none">
-    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Strategy">
-      <button class="modal-x" id="pclose" aria-label="Close">&times;</button>
-      <h3 id="ptitle">Strategy</h3>
-      <p class="sub" id="psub">Applies to this coin only. The bot locks it in when it arms.</p>
-      <div class="plist" id="plist"></div>
-      <button class="ghost" id="pedit">Edit my strategies</button>
     </div>
   </div>
 
@@ -1559,11 +1584,15 @@ function renderDetail() {
         <div class="amtbox">
           <div class="amthead"><span>Amount</span><span>SOL</span></div>
           <div class="amtrow" id="amtrow"></div>
-          <div class="stratrow">
-            <span class="nm" id="stratnm">My settings</span>
-            <button class="geartn" id="gearbtn" title="Strategy for this coin"
-                    aria-label="Strategy for this coin">&#9881;</button>
-          </div>
+        </div>
+        <div class="amtnote" id="amtnote"></div>
+        <div class="stratwrap">
+          <button class="stratbtn" id="gearbtn" aria-haspopup="true" aria-expanded="false">
+            <span class="gi">&#9881;</span>
+            <span class="sname" id="stratnm">Default</span>
+            <span class="chev">&#9662;</span>
+          </button>
+          <div class="sdrop" id="sdrop" hidden></div>
         </div>
         <button class="glbtn" id="glbtn">🟢 GREENLIGHT</button>
         <div class="glnote" id="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.</div>
@@ -1571,6 +1600,7 @@ function renderDetail() {
     </div>
   `;
   renderAmt(c);
+  primeStrategies().then(() => paintStrat(c));
   document.getElementById('gearbtn').onclick = () => openStrategy(c);
   if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
   else renderGreenlight(c);
@@ -1599,6 +1629,7 @@ function renderGreenlight(c) {
   const btn = document.getElementById('glbtn');
   const note = document.getElementById('glnote');
   if (!btn) return;
+  delete btn.dataset.busy;
   const r = botStatus[c.mint];
   const busy = botHasCoin(r);
 
@@ -1622,6 +1653,9 @@ function renderGreenlight(c) {
     note.className = 'glnote';
     note.textContent = 'Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys. Watch it here.';
   }
+  // Re-apply the amount gate last: this branch has just enabled the button, and
+  // an unpriced or unaffordable trade must stay shut regardless.
+  paintAmtNote(c);
 }
 
 
@@ -1895,11 +1929,46 @@ function renderAmt(c) {
     };
   };
   paintStrat(c);
+  paintAmtNote(c);
 }
 
 function paintStrat(c) {
   const el = document.getElementById('stratnm');
-  if (el) el.textContent = coinPreset.get(c.mint) || 'My settings';
+  if (el) el.textContent = coinPreset.get(c.mint) || OWN_NAME;
+}
+
+/* Say what this greenlight will spend, and whether it can.
+
+   Both questions used to be answered only after the fact — by a buy that never
+   fired because no size was picked, or one that failed on chain for want of
+   gas. Neither is something to find out from a log line. */
+function paintAmtNote(c) {
+  const el = document.getElementById('amtnote');
+  const btn = document.getElementById('glbtn');
+  if (!el) return;
+  const amt = coinAmt.get(c.mint);
+  const sym = c.symbol || 'this coin';
+
+  if (!(amt > 0)) {
+    el.className = 'amtnote';
+    el.textContent = 'Pick an amount first.';
+    if (btn && !btn.dataset.busy) { btn.disabled = true; }
+    return;
+  }
+  // Leave room for the fee and the token-account rent a first buy pays; the
+  // swap comes out of the same balance, so the whole of it is never spendable.
+  const need = amt + 0.01;
+  if (KEY && walletTotal > 0 && need > walletTotal) {
+    el.className = 'amtnote bad';
+    el.textContent = `Not enough SOL — ${sol4(amt)} plus fees needs about ` +
+                     `${sol4(need)}, and you have ${sol4(walletTotal)}.`;
+    if (btn && !btn.dataset.busy) { btn.disabled = true; }
+    return;
+  }
+  el.className = 'amtnote';
+  el.textContent = `Buying ${sol4(amt)} SOL of ${sym}` +
+                   (KEY && walletTotal > 0 ? ` · ${sol4(walletTotal - amt)} left` : '');
+  if (btn && !btn.dataset.busy) { btn.disabled = false; }
 }
 
 /* What a strategy actually does, in the terms the playbook uses. A name alone
@@ -1919,74 +1988,92 @@ function describeStrategy(v) {
   return bits.join(' · ');
 }
 
-async function openStrategy(c) {
-  // Same rule as greenlighting: the account is what makes this mean anything.
-  if (!KEY) { pendingCoin = c; openWallet(); return; }
-  const list = document.getElementById('plist');
-  document.getElementById('ptitle').textContent =
-    'Strategy' + (c.symbol ? ' · ' + c.symbol : '');
-  list.innerHTML = '<div class="sub">Loading…</div>';
-  document.getElementById('pmodal').style.display = 'flex';
+/* Load the strategy names once, so the coin page can label the picker before
+   anyone opens it. Without this it reads "Default" for everyone, including
+   people who renamed it. */
+let strategiesPrimed = false;
+async function primeStrategies() {
+  if (strategiesPrimed || !KEY) return;
+  strategiesPrimed = true;
   try {
     const d = await api('/api/settings');
     PRESETS = d.presets || {};
     DEFAULT_PRESET = d.default_preset || '';
-    OWN_NAME = d.own_name || 'My settings';
-    // `own` so "My settings" shows YOUR numbers, not whatever the default
-    // strategy resolved them to — otherwise the two rows look identical.
+    OWN_NAME = d.own_name || OWN_NAME;
+    MYSET = d.own || d.settings || {};
+  } catch (e) { strategiesPrimed = false; }   // let a later visit retry
+}
+
+function closeStrategyDrop() {
+  const d = document.getElementById('sdrop');
+  const b = document.getElementById('gearbtn');
+  if (d) d.hidden = true;
+  if (b) b.setAttribute('aria-expanded', 'false');
+}
+
+/* A menu anchored to its button, not a dialog. You're choosing between a
+   handful of names — that never warranted taking over the screen. */
+async function openStrategy(c) {
+  const drop = document.getElementById('sdrop');
+  const btn = document.getElementById('gearbtn');
+  if (!drop) return;
+  if (!drop.hidden) { closeStrategyDrop(); return; }
+  // Same rule as greenlighting: the account is what makes this mean anything.
+  if (!KEY) { pendingCoin = c; openWallet(); return; }
+
+  drop.innerHTML = '<div class="sub" style="padding:10px">Loading…</div>';
+  drop.hidden = false;
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  try {
+    const d = await api('/api/settings');
+    PRESETS = d.presets || {};
+    DEFAULT_PRESET = d.default_preset || '';
+    OWN_NAME = d.own_name || OWN_NAME;
+    // `own`, so the default row shows YOUR numbers rather than whatever the
+    // default strategy resolved them to — otherwise two rows look identical.
     MYSET = d.own || d.settings || {};
   } catch (e) {
-    list.innerHTML = '<div class="sub">Couldn\'t load your strategies.</div>';
+    drop.innerHTML = '<div class="sub" style="padding:10px">Couldn\'t load your strategies.</div>';
     return;
   }
 
   const chosen = coinPreset.get(c.mint) || '';
-  /* A div, not a button: the delete control lives inside the row, and nesting
-     interactive elements inside a <button> is invalid and behaves badly with
-     keyboards and screen readers. */
   const row = (name, vals, label) => {
     const on = (name || '') === chosen;
-    return `<div class="pitem${on ? ' on' : ''}" role="button" tabindex="0" data-p="${esc(name)}">
-              <span class="nm"><div>${esc(label)}${
-                  (name || '') === (DEFAULT_PRESET || '') ? ' <span class="tick">· default</span>' : ''}</div>
-                <div class="sub">${esc(describeStrategy(vals) || 'your saved settings')}</div></span>
-              ${on ? '<span class="tick">&#10003;</span>' : ''}
-              ${name ? `<span class="geartn" data-del="${esc(name)}" title="Delete">&times;</span>` : ''}
-            </div>`;
+    const isDef = (name || '') === (DEFAULT_PRESET || '');
+    const mark = on ? '<span class="tick">&#10003;</span>'
+                    : (isDef ? '<span class="tick">default</span>' : '');
+    return `<button data-p="${esc(name)}"${on ? ' class="on"' : ''}>
+      <span class="nm">${esc(label)}${mark}</span>
+      <span class="sub">${esc(describeStrategy(vals) || 'your saved settings')}</span>
+    </button>`;
   };
-  list.innerHTML =
+  drop.innerHTML =
     row('', MYSET, OWN_NAME)
-    + Object.keys(PRESETS).map(n => row(n, { ...MYSET, ...PRESETS[n] }, n)).join('');
+    + Object.keys(PRESETS).map(n => row(n, { ...MYSET, ...PRESETS[n] }, n)).join('')
+    + '<button class="edit" data-edit="1">Edit strategies…</button>';
 
-  const pick = n => {
-    if (n) coinPreset.set(c.mint, n); else coinPreset.delete(c.mint);
-    document.getElementById('pmodal').style.display = 'none';
-    paintStrat(c);
-  };
-  list.querySelectorAll('[data-p]').forEach(b => {
-    b.onclick = e => { if (!e.target.dataset.del) pick(b.dataset.p); };
-    b.onkeydown = e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(b.dataset.p); }
+  drop.querySelectorAll('button[data-p]').forEach(b => {
+    b.onclick = () => {
+      const n = b.dataset.p;
+      if (n) coinPreset.set(c.mint, n); else coinPreset.delete(c.mint);
+      closeStrategyDrop();
+      paintStrat(c);
     };
   });
-  list.querySelectorAll('[data-del]').forEach(x => {
-    x.onclick = async e => {
-      e.stopPropagation();
-      const n = x.dataset.del;
-      if (!confirm(`Delete the "${n}" strategy?`)) return;
-      try {
-        const d = await api('/api/settings/preset',
-                            { method: 'POST', body: JSON.stringify({ name: n, delete: true }) });
-        PRESETS = d.presets || {};
-        // A coin still pointing at it falls back to your own settings rather
-        // than holding a name the account no longer has.
-        for (const [m, p] of coinPreset) if (p === n) coinPreset.delete(m);
-        openStrategy(c);
-        paintStrat(c);
-      } catch (err) { /* leave the list as it is; nothing was deleted */ }
-    };
-  });
+  const ed = drop.querySelector('button[data-edit]');
+  if (ed) ed.onclick = () => { closeStrategyDrop(); openSettings(); };
 }
+
+/* Anywhere else closes it. Registered once, not per open, or every visit to a
+   coin page would leave another listener behind. */
+document.addEventListener('click', e => {
+  const drop = document.getElementById('sdrop');
+  if (!drop || drop.hidden) return;
+  if (e.target.closest('#sdrop') || e.target.closest('#gearbtn')) return;
+  closeStrategyDrop();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeStrategyDrop(); });
 
 async function greenlight(c) {
   const btn = document.getElementById('glbtn'), note = document.getElementById('glnote');
@@ -1999,14 +2086,29 @@ async function greenlight(c) {
     return;
   }
 
+  /* An amount is required. It used to be optional, falling back to whatever
+     the strategy held — so pressing GREENLIGHT without choosing spent a number
+     you never saw. */
+  const amt = coinAmt.get(c.mint);
+  if (!(amt > 0)) {
+    paintAmtNote(c);
+    const el = document.getElementById('amtnote');
+    if (el) { el.className = 'amtnote warn'; el.textContent = 'Pick an amount first.'; }
+    return;
+  }
+  // Checked here as well as in the note, because the balance can move between
+  // rendering the page and pressing the button.
+  if (walletTotal > 0 && amt + 0.01 > walletTotal) {
+    paintAmtNote(c);
+    return;
+  }
+
+  btn.dataset.busy = '1';
   btn.disabled = true; btn.textContent = 'Sending…';
   try {
-    // The amount and strategy chosen for THIS coin ride along with it. Both are
-    // optional — omitted, the bot uses the account's own settings, exactly as
-    // every greenlight did before this existed.
-    const body = { mint: c.mint };
-    const amt = coinAmt.get(c.mint);
-    if (amt > 0) body.size_sol = amt;
+    // The amount and strategy chosen for THIS coin ride along with it. The
+    // strategy is optional — absent, the bot uses whichever is default.
+    const body = { mint: c.mint, size_sol: amt };
     const pre = coinPreset.get(c.mint);
     if (pre) body.preset = pre;
     await api('/api/greenlight', { method: 'POST', body: JSON.stringify(body) });
@@ -2016,9 +2118,11 @@ async function greenlight(c) {
     // now, computed from the same rule, and the live one replaces it shortly.
     showPendingBand(c);
   } catch (e) {
+    delete btn.dataset.busy;
     btn.disabled = false; btn.textContent = '🟢 GREENLIGHT';
     note.className = 'glnote warn';
     note.textContent = "Couldn't reach the server — try that again.";
+    paintAmtNote(c);
   }
 }
 
@@ -2822,7 +2926,7 @@ async function openSettings() {
     SET = { dip: d.settings.dip ?? SET.dip, bounce: d.settings.bounce ?? SET.bounce };
     PRESETS = d.presets || {};
     DEFAULT_PRESET = d.default_preset || '';
-    OWN_NAME = d.own_name || 'My settings';
+    OWN_NAME = d.own_name || 'Default';
     // `own` is the account's numbers BEFORE any default strategy resolves over
     // them. Editing must act on those, or marking a strategy default would make
     // the form quietly start editing a copy of it.
@@ -2879,7 +2983,7 @@ let editing = '';
 let trailStop = true;
 let OWN = {};             // the account's own numbers, unresolved by any preset
 let DEFAULT_PRESET = '';
-let OWN_NAME = 'My settings';   // renameable — it is a strategy like the others
+let OWN_NAME = 'Default';   // renameable — it is a strategy like the others
 
 function strategyTilesHTML() {
   /* Divs, not buttons: the selected tile carries an editable name field, and
@@ -2894,6 +2998,7 @@ function strategyTilesHTML() {
       : `<div class="nm">${esc(label)}</div>`;
     return `<div class="stile${on ? ' on' : ''}" role="button" tabindex="0" data-s="${esc(name)}">
       ${isDefault ? '<span class="badge">Default</span>' : ''}
+      ${name ? `<button class="x" data-del="${esc(name)}" title="Delete" aria-label="Delete ${esc(name)}">&times;</button>` : ''}
       ${nameHTML}
       <div class="sub">${esc(describeStrategy(vals) || 'your saved settings')}</div>
     </div>`;
@@ -2907,7 +3012,6 @@ function strategyTilesHTML() {
   <div class="setactions">
     ${(DEFAULT_PRESET || '') === editing ? ''
       : '<button class="linkbtn" id="makedefault">Make this the default</button>'}
-    ${editing ? '<button class="linkbtn danger" id="delstrat">Delete this strategy</button>' : ''}
   </div>`;
 }
 
@@ -2970,21 +3074,39 @@ function wireStrategyTiles() {
       setMsg(`✓ ${editing || 'My settings'} is now the default.`, 'var(--green)');
     } catch (e) { setMsg(e.detail || "Couldn't set that as default.", 'var(--red)'); }
   };
-  const del = document.getElementById('delstrat');
-  if (del) del.onclick = async () => {
-    const n = editing;
-    if (!confirm(`Delete the "${n}" strategy?`)) return;
-    try {
-      const d = await api('/api/settings/preset',
-                          { method: 'POST', body: JSON.stringify({ name: n, delete: true }) });
-      PRESETS = d.presets || {};
-      DEFAULT_PRESET = d.default_preset || '';
-      for (const [m, p] of coinPreset) if (p === n) coinPreset.delete(m);
-      editing = '';
-      paintEditing();
-      setMsg(`Deleted "${n}".`);
-    } catch (e) { setMsg(e.detail || "Couldn't delete that one.", 'var(--red)'); }
-  };
+  /* Deleting confirms where you clicked. A centred dialog for one tile moves
+     your eyes off the thing being deleted, and confirm() looks like a browser
+     no matter what the rest of the page looks like. */
+  document.querySelectorAll('.stile .x[data-del]').forEach(x => {
+    x.onclick = e => {
+      e.stopPropagation();
+      const tile = x.closest('.stile');
+      if (tile.querySelector('.confpop')) return;      // already asking
+      const n = x.dataset.del;
+      const pop = document.createElement('div');
+      pop.className = 'confpop';
+      pop.innerHTML = `<p>Delete <b>${esc(n)}</b>?</p>
+        <div class="row"><button class="no">Keep</button><button class="yes">Delete</button></div>`;
+      pop.onclick = ev => ev.stopPropagation();
+      tile.appendChild(pop);
+      pop.querySelector('.no').onclick = () => pop.remove();
+      pop.querySelector('.yes').onclick = async () => {
+        pop.remove();
+        try {
+          const d = await api('/api/settings/preset',
+                              { method: 'POST', body: JSON.stringify({ name: n, delete: true }) });
+          PRESETS = d.presets || {};
+          DEFAULT_PRESET = d.default_preset || '';
+          // A coin still pointing at it falls back to the default rather than
+          // holding a name the account no longer has.
+          for (const [m, pn] of coinPreset) if (pn === n) coinPreset.delete(m);
+          if (editing === n) editing = '';
+          paintEditing();
+          setMsg(`Deleted "${n}".`);
+        } catch (err) { setMsg(err.detail || "Couldn't delete that one.", 'var(--red)'); }
+      };
+    };
+  });
 }
 
 /* A new strategy starts as a COPY of what's on screen rather than from the
@@ -3136,18 +3258,6 @@ function applyTp2() {
 
 document.getElementById('opensettings').onclick = e => { e.preventDefault(); openSettings(); };
 
-/* The strategy popup. Closing it never changes the choice — you leave with
-   whatever the coin already had, so a stray click can't silently re-point a
-   greenlight you were about to send. */
-document.getElementById('pclose').onclick =
-  () => { document.getElementById('pmodal').style.display = 'none'; };
-document.getElementById('pmodal').onclick = e => {
-  if (e.target.id === 'pmodal') document.getElementById('pmodal').style.display = 'none';
-};
-document.getElementById('pedit').onclick = () => {
-  document.getElementById('pmodal').style.display = 'none';
-  openSettings();
-};
 
 function collect() {
   const body = { use_tp2: useTp2 ? 1 : 0, trail_stop: trailStop ? 1 : 0 };
