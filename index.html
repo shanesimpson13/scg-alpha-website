@@ -749,6 +749,19 @@
                  border-style: dashed; }
     .stile.add span { font-size: 24px; line-height: 1; }
     .stile.add:hover { color: var(--fg); border-color: var(--dim); }
+    /* The selected tile's name is editable in place. No dialog asking what to
+       call a thing you haven't seen yet. */
+    .tname { width: 100%; background: none; border: 0; border-bottom: 1px dashed var(--line);
+             color: var(--fg); font-family: inherit; font-size: 13px; font-weight: 600;
+             padding: 0 0 3px; outline: none; }
+    .tname:focus { border-bottom-color: var(--green); }
+
+    /* Settings that are NOT part of a strategy, fenced off so it's obvious they
+       don't change when you switch between them. */
+    .everysec { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .everyhead { font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+                 color: var(--dimmer); margin-bottom: 10px; }
+    .everyhead b { color: var(--dim); font-weight: 600; }
     .setactions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
                   margin: -4px 0 16px; }
     .linkbtn { background: none; border: 0; color: var(--dim); font-family: inherit;
@@ -1918,6 +1931,7 @@ async function openStrategy(c) {
     const d = await api('/api/settings');
     PRESETS = d.presets || {};
     DEFAULT_PRESET = d.default_preset || '';
+    OWN_NAME = d.own_name || 'My settings';
     // `own` so "My settings" shows YOUR numbers, not whatever the default
     // strategy resolved them to — otherwise the two rows look identical.
     MYSET = d.own || d.settings || {};
@@ -1941,7 +1955,7 @@ async function openStrategy(c) {
             </div>`;
   };
   list.innerHTML =
-    row('', MYSET, 'My settings')
+    row('', MYSET, OWN_NAME)
     + Object.keys(PRESETS).map(n => row(n, { ...MYSET, ...PRESETS[n] }, n)).join('');
 
   const pick = n => {
@@ -2468,11 +2482,19 @@ const SECTIONS = [
     ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
     ["max_hold", "Max hold", "Force-exit a position after this.", 1 / 60, "min"],
   ]],
+];
+
+/* Not part of a strategy. These describe HOW an order is placed rather than
+   when to buy or sell, so they belong to the account and stay the same
+   whichever strategy runs — the server enforces that, a strategy cannot carry
+   its own slippage. */
+const ACCOUNT_SECTIONS = [
   ["Execution", [
     ["slippage", "Slippage", "How far price may move against you between quote and fill before the swap is abandoned. Too tight and buys fail during exactly the moves worth catching.", 100, "%"],
     ["priority_fee", "Priority fee", "What you'll pay at most to land fast. Matters when the network is busy, which is when coins move.", 1, "SOL"],
   ]],
 ];
+const GLOBAL_KEYS = ['slippage', 'priority_fee'];
 
 let bounds = {}, useTp2 = true;
 const F = {};
@@ -2800,6 +2822,7 @@ async function openSettings() {
     SET = { dip: d.settings.dip ?? SET.dip, bounce: d.settings.bounce ?? SET.bounce };
     PRESETS = d.presets || {};
     DEFAULT_PRESET = d.default_preset || '';
+    OWN_NAME = d.own_name || 'My settings';
     // `own` is the account's numbers BEFORE any default strategy resolves over
     // them. Editing must act on those, or marking a strategy default would make
     // the form quietly start editing a copy of it.
@@ -2856,21 +2879,30 @@ let editing = '';
 let trailStop = true;
 let OWN = {};             // the account's own numbers, unresolved by any preset
 let DEFAULT_PRESET = '';
+let OWN_NAME = 'My settings';   // renameable — it is a strategy like the others
 
 function strategyTilesHTML() {
+  /* Divs, not buttons: the selected tile carries an editable name field, and
+     nesting an input inside a <button> is invalid and behaves badly with
+     keyboards. */
   const tile = (name, vals, label) => {
     const on = name === editing;
     const isDefault = (name || '') === (DEFAULT_PRESET || '');
-    return `<button class="stile${on ? ' on' : ''}" data-s="${esc(name)}">
+    const nameHTML = on
+      ? `<input class="tname" id="tname" value="${esc(label)}" maxlength="24"
+                spellcheck="false" aria-label="Strategy name">`
+      : `<div class="nm">${esc(label)}</div>`;
+    return `<div class="stile${on ? ' on' : ''}" role="button" tabindex="0" data-s="${esc(name)}">
       ${isDefault ? '<span class="badge">Default</span>' : ''}
-      <div class="nm">${esc(label)}</div>
+      ${nameHTML}
       <div class="sub">${esc(describeStrategy(vals) || 'your saved settings')}</div>
-    </button>`;
+    </div>`;
   };
   return `<div class="stiles">
-    ${tile('', OWN, 'My settings')}
+    ${tile('', OWN, OWN_NAME)}
     ${Object.keys(PRESETS).map(n => tile(n, { ...OWN, ...PRESETS[n] }, n)).join('')}
-    <button class="stile add" id="addstrat" title="New strategy"><span>+</span></button>
+    <div class="stile add" id="addstrat" role="button" tabindex="0"
+         title="New strategy"><span>+</span></div>
   </div>
   <div class="setactions">
     ${(DEFAULT_PRESET || '') === editing ? ''
@@ -2881,10 +2913,53 @@ function strategyTilesHTML() {
 
 function wireStrategyTiles() {
   document.querySelectorAll('.stile[data-s]').forEach(b => {
-    b.onclick = () => { editing = b.dataset.s; paintEditing(); };
+    const select = () => { if (b.dataset.s !== editing) { editing = b.dataset.s; paintEditing(); } };
+    b.onclick = e => { if (e.target.id !== 'tname') select(); };
+    b.onkeydown = e => {
+      if (e.target.id === 'tname') return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); }
+    };
   });
+
+  // Renaming happens in the tile. Committed on blur or Enter, abandoned on
+  // Escape — the same three keys every rename-in-place has ever used.
+  const nm = document.getElementById('tname');
+  if (nm) {
+    const was = nm.value;
+    const commit = async () => {
+      const to = nm.value.trim();
+      if (!to || to === was) { nm.value = was; return; }
+      try {
+        const d = await api('/api/settings/rename',
+                            { method: 'POST', body: JSON.stringify({ old: editing, new: to }) });
+        PRESETS = d.presets || PRESETS;
+        DEFAULT_PRESET = d.default_preset || '';
+        OWN_NAME = d.own_name || OWN_NAME;
+        if (editing) editing = to;
+        // A coin already pointing at the old name must follow it, or its
+        // greenlight would resolve to a strategy that no longer exists.
+        for (const [m, p] of coinPreset) if (p === was) coinPreset.set(m, to);
+        paintEditing();
+        setMsg(`✓ Renamed to "${to}".`, 'var(--green)');
+      } catch (e) {
+        nm.value = was;
+        setMsg(e.detail || "Couldn't rename that.", 'var(--red)');
+      }
+    };
+    nm.onblur = commit;
+    nm.onkeydown = e => {
+      if (e.key === 'Enter') { e.preventDefault(); nm.blur(); }
+      if (e.key === 'Escape') { nm.value = was; nm.blur(); }
+    };
+  }
+
   const add = document.getElementById('addstrat');
-  if (add) add.onclick = newStrategy;
+  if (add) {
+    add.onclick = newStrategy;
+    add.onkeydown = e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); newStrategy(); }
+    };
+  }
   const md = document.getElementById('makedefault');
   if (md) md.onclick = async () => {
     try {
@@ -2918,8 +2993,11 @@ function wireStrategyTiles() {
 async function newStrategy() {
   const body = collect();
   if (!body) { setMsg('Fix the red values first.', 'var(--red)'); return; }
-  const name = (prompt('Name this strategy — e.g. Runner, Scalp, Careful') || '').trim();
-  if (!name) return;
+  /* Created with a working name, then renamed in the tile. Asking for a name up
+     front means a browser dialog, and a browser dialog looks like one no matter
+     what the rest of the page looks like. */
+  let name = 'New strategy', i = 2;
+  while (PRESETS[name] || name === OWN_NAME) name = `New strategy ${i++}`;
   try {
     const d = await api('/api/settings/preset',
                         { method: 'POST', body: JSON.stringify({ name, settings: body }) });
@@ -2927,7 +3005,11 @@ async function newStrategy() {
     DEFAULT_PRESET = d.default_preset || DEFAULT_PRESET;
     editing = name;
     paintEditing();
-    setMsg(`✓ Created "${name}".`, 'var(--green)');
+    // Straight into renaming it, with the placeholder selected so typing
+    // replaces it.
+    const nm = document.getElementById('tname');
+    if (nm) { nm.focus(); nm.select(); }
+    setMsg('Created — give it a name.', 'var(--dim)');
   } catch (e) { setMsg(e.detail || "Couldn't create that one.", 'var(--red)'); }
 }
 
@@ -2937,18 +3019,23 @@ async function newStrategy() {
 function paintEditing() {
   renderSettings(editing ? { ...OWN, ...(PRESETS[editing] || {}) } : OWN);
   const btn = document.getElementById('savesettings');
-  if (btn) btn.textContent = editing ? `Save "${editing}"` : 'Save my settings';
+  if (btn) btn.textContent = `Save "${editing || OWN_NAME}"`;
 }
 
 function renderSettings(vals) {
   useTp2 = vals.use_tp2 === undefined ? true : !!Number(vals.use_tp2);
   trailStop = vals.trail_stop === undefined ? true : !!Number(vals.trail_stop);
+  const sec = ([title, rows]) =>
+    `<div class="setsec"><h3>${title}</h3>${rows.map(f => settingRowHTML(f, vals)).join('')}</div>`;
   document.getElementById('setbody').innerHTML =
     strategyTilesHTML()
-    + SECTIONS.map(([title, rows]) =>
-        `<div class="setsec"><h3>${title}</h3>${rows.map(f => settingRowHTML(f, vals)).join('')}</div>`
-      ).join('')
-    + notifySectionHTML();
+    + SECTIONS.map(sec).join('')
+    // Fenced off and labelled, because these do NOT change when you switch
+    // strategy and the old layout gave no way to know that.
+    + '<div class="everysec"><div class="everyhead">Applies to <b>every</b> strategy</div>'
+    + ACCOUNT_SECTIONS.map(sec).join('')
+    + notifySectionHTML()
+    + '</div>';
   wireStrategyTiles();
   wireNotifyToggle();
   const seg = document.getElementById('segstop');
@@ -3084,8 +3171,15 @@ document.getElementById('savesettings').onclick = async () => {
   setMsg('Saving…');
   try {
     if (editing) {
-      // Writes to the named strategy only. Your own settings are untouched,
-      // which is the point of them being separate things.
+      // Execution is account-wide, so it goes to the account even while a
+      // strategy is open. The server strips it from strategies regardless;
+      // sending it here is what makes editing it from this screen still work.
+      const globals = {};
+      GLOBAL_KEYS.forEach(k => { if (body[k] !== undefined) globals[k] = body[k]; });
+      if (Object.keys(globals).length) {
+        const g = await api('/api/settings', { method: 'POST', body: JSON.stringify(globals) });
+        OWN = g.own || OWN;
+      }
       const d = await api('/api/settings/preset',
                           { method: 'POST', body: JSON.stringify({ name: editing, settings: body }) });
       PRESETS = d.presets || {};
@@ -3094,7 +3188,8 @@ document.getElementById('savesettings').onclick = async () => {
       setMsg(`✓ Saved "${editing}" — pick it on any coin page.`, 'var(--green)');
     } else {
       const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(body) });
-      OWN = d.settings || OWN;
+      OWN = d.own || OWN;
+      OWN_NAME = d.own_name || OWN_NAME;
       paintEditing();
       setMsg('✓ Saved — applies to the next coin you greenlight.', 'var(--green)');
     }
@@ -3113,7 +3208,7 @@ document.getElementById('resetsettings').onclick = async () => {
                      entry_timeout: 3600, max_hold: 21600 };
   try {
     const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(defaults) });
-    OWN = d.settings || OWN;
+    OWN = d.own || d.settings || OWN;
     paintEditing();
     setMsg('✓ Back to the shipped defaults.', 'var(--green)');
   } catch (e) {
