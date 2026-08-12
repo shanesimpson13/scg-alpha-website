@@ -2314,12 +2314,16 @@ let mcTimer = null;
 /* Everything the wallet holds, as one figure. */
 let walletTotal = 0;
 function setBal(bal) {
-  walletTotal = (bal.wsol || 0) + (bal.unwrapped || 0);
+  /* The TRUE balance — every lamport the wallet holds. It used to show
+     `unwrapped`, which already had the fee headroom subtracted, so a wallet
+     holding 0.872 displayed 0.862 and the missing 0.01 had no explanation on
+     screen. A swap does need to leave something behind to pay its own rent and
+     network fee, but that is a cap on what you can SPEND, not a reason to
+     misreport what you HAVE. `bal.wsol` is only ever non-zero on a wallet
+     funded before deposits stopped being wrapped. */
+  walletTotal = (bal.sol || 0) + (bal.wsol || 0);
   const el = document.getElementById('wbal');
   if (el) el.textContent = sol4(walletTotal) + ' SOL';
-  /* Total, not just the wrapped part. Wrapped-vs-native is our plumbing; to
-     the person who just deposited it is one balance, and showing only the
-     wrapped half made a fresh deposit look like it never arrived. */
   paintChip(walletTotal);
   paintAmount();
 }
