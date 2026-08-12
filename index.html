@@ -2243,10 +2243,10 @@ async function refreshChip() {
   if (!KEY) return;
   try {
     const a = await api('/api/account');
-    /* setBal, not paintChip(wsol) — almost the entire balance sits WRAPPED, so
-       painting the native half alone showed a funded wallet as empty. This is
-       the same one-number rule the modal uses; going through setBal keeps the
-       header, the modal and the size slider reading off a single definition. */
+    /* Always setBal, never paint one half of the balance directly. Balances are
+       native now, but a wallet funded before that change can still hold WSOL,
+       and painting either half alone once showed a funded wallet as empty. One
+       definition keeps the header, the modal and the size slider in agreement. */
     setBal(a.balances);
   } catch (e) {
     // A credential the wallet doesn't accept — an expired session, or a licence
@@ -2304,6 +2304,7 @@ function paintQR(addr) {
 }
 
 let walletPoll = null;
+let seenDeposit = false;    // so "Deposit received" is said once, not every 6s
 /* Declared, because start() did `clearInterval(mcTimer)` before ever assigning
    it — reading an undeclared binding throws, and since start() is async the
    ReferenceError surfaced as an unhandled rejection with nothing in the
@@ -2352,16 +2353,14 @@ async function loadWallet() {
       if (document.getElementById('wmodal').style.display !== 'flex') return;
       try {
         const b = await api('/api/account');
-        if (b.balances.unwrapped > 0.0005) {
-          // A plain-SOL deposit has to be converted before it can trade. That
-          // is plumbing; say a deposit arrived and get on with it.
-          wsay('wdepmsg', 'Deposit received…');
-          const w = await api('/api/account/wrap', { method: 'POST' });
-          setBal(w.balances);
-          wsay('wdepmsg', 'Deposit added.', 'good');
-        } else {
-          setBal(b.balances);
+        // Deposited SOL is tradeable the moment it lands — nothing to convert.
+        // This used to wrap it first, which is what left wallets with no native
+        // SOL to pay fees with.
+        if (!seenDeposit && b.balances.unwrapped > 0.0005) {
+          seenDeposit = true;
+          wsay('wdepmsg', 'Deposit received.', 'good');
         }
+        setBal(b.balances);
       } catch (e) { /* transient — next tick retries */ }
     }, 6000);
   } catch (e) {
