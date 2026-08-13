@@ -574,6 +574,7 @@
        thing here allowed to shrink: the ticker and the age are short and always
        worth reading, a name can be a sentence. */
     .dsym { flex: 0 0 auto; }
+    .dname:empty { display: none; }
     .dname { flex: 0 1 auto; min-width: 0; font-size: 13.5px; font-weight: 400;
              color: var(--dimmer); overflow: hidden; text-overflow: ellipsis;
              white-space: nowrap; }
@@ -1599,8 +1600,8 @@ function renderDetail() {
     <div class="dhead">
       <div class="dheadmain">
       <div class="dtitle">
-        <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="dsym">${esc(c.symbol || c.mint.slice(0, 8))}</span>
-          ${c.name && c.name !== c.symbol ? `<span class="dname">${esc(c.name)}</span>` : ''}
+        <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="dsym" data-f="sym">${esc(c.symbol || c.mint.slice(0, 8))}</span>
+          <span class="dname" data-f="cname">${c.name && c.name !== c.symbol ? esc(c.name) : ''}</span>
           <span class="dage" data-f="age">${age(c.age_secs)}</span></h2>
         <div class="mintline">
           <code class="ca" title="Click to copy the full address"
@@ -1942,6 +1943,11 @@ function setLive(c) {
   set('volmc', volMcText(c));
   const vm = document.querySelector('#detail [data-f="volmc"]');
   if (vm) vm.className = ('v ' + volMcClass(c)).trim();
+  /* The header is built once per coin, so a coin opened before its identity
+     was known kept showing the first eight characters of its mint. The live
+     feed carries the name now; paint it when it turns up. */
+  if (c.symbol) set('sym', esc(c.symbol));
+  if (c.name) set('cname', c.name !== c.symbol ? esc(c.name) : '');
 }
 
 function updateDetail(c) {
