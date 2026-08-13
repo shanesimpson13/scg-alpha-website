@@ -853,7 +853,9 @@
 
     .setcard { max-width: 520px; max-height: 88vh; padding: 0; overflow: hidden;
                display: flex; flex-direction: column; }
-    .setcard .sethead { margin-bottom: 18px; padding-right: 30px; }
+    /* Indented to match the section boxes below, which carry 14px of their own
+       padding — without it the title sat 14px left of every label under it. */
+    .setcard .sethead { margin-bottom: 18px; padding: 0 30px 0 14px; }
     .setcard .tname { font-size: 19px; font-weight: 600; padding: 3px 0 7px; }
     .setcard .sethead p { margin-top: 8px; }
     .setscroll { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 24px 12px; }
