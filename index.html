@@ -1105,7 +1105,8 @@
           <!-- The name is edited here rather than on the tile: on the tile a
                click has to mean "open", so it cannot also mean "rename". -->
           <input class="tname" id="stratname" maxlength="24" spellcheck="false"
-                 aria-label="Strategy name">
+                 aria-label="Strategy name"
+                 autocomplete="off" data-1p-ignore data-lpignore="true">
           <p id="stratsub">What this strategy does when you greenlight a coin with it.</p>
         </div>
         <div id="stratbody"></div>
@@ -1640,7 +1641,8 @@ function renderDetail() {
           <div class="amthead">
             <span class="lbl">Amount</span>
             <input class="amtval" id="amtval" type="number" step="any" min="0"
-                   placeholder="0.00" aria-label="Amount in SOL">
+                   placeholder="0.00" aria-label="Amount in SOL"
+                   autocomplete="off" data-1p-ignore data-lpignore="true">
             <span class="lbl">SOL</span>
           </div>
           <div class="amtrow" id="amtrow"></div>
@@ -2452,7 +2454,12 @@ async function activityLoop() {
   const r = botStatus[openMint];
   const watching = view === 'detail' && r && LIVE_STATES.has(r.state);
   const fast = watching || Date.now() < fastUntil;
-  setTimeout(activityLoop, fast ? 2000 : 10000);
+  /* 1s while you're watching. The cost is one request per second per open tab
+     against the public API, so this is the number that would need revisiting
+     at hundreds of concurrent users — a push channel rather than a poll. At
+     beta scale it is nothing, and the entry window on screen is the number you
+     are making a decision against. */
+  setTimeout(activityLoop, fast ? 1000 : 10000);
 }
 
 async function refreshActivity() {
@@ -3128,7 +3135,8 @@ function settingRowHTML(f, vals) {
   return `<div class="setrow" id="row_${key}">
     <div><div class="lab">${lab}</div><div class="hint" id="hint_${key}">${hint}</div></div>
     <div class="setfield">
-      <input id="set_${key}" type="number" step="any" value="${val}">
+      <input id="set_${key}" type="number" step="any" value="${val}"
+             autocomplete="off" data-1p-ignore data-lpignore="true">
       ${unit ? `<span class="unit">${unit}</span>` : ''}
     </div>
   </div>`;
@@ -3636,11 +3644,23 @@ async function submitBeta() {
     return;
   }
   localStorage.setItem(BETA_KEY, '1');
-  document.getElementById('betagate').style.display = 'none';
+  /* REMOVED, not hidden. A password field left in the document — even display:
+     none — makes Chrome treat every later text input as the username half of a
+     login form, so typing a trade size raised "Save password?" with 0.1 as the
+     username. Nothing else on this page is a credential; the one field that was
+     should not outlive its purpose. */
+  document.getElementById('betagate').remove();
 }
 
 function checkBeta() {
-  if (localStorage.getItem(BETA_KEY) === '1') return;
+  const already = localStorage.getItem(BETA_KEY) === '1';
+  if (already) {
+    // Same reason as above: a returning tester never sees the gate, so the
+    // password field has no business being in their document at all.
+    const g = document.getElementById('betagate');
+    if (g) g.remove();
+    return;
+  }
   const gate = document.getElementById('betagate');
   gate.style.display = 'flex';
   document.getElementById('betago').onclick = submitBeta;
