@@ -2664,8 +2664,8 @@ const SECTIONS = [
    its own slippage. */
 const ACCOUNT_SECTIONS = [
   ["Execution", [
-    ["slippage", "Slippage", "How far price may move between quote and fill before the swap is abandoned. Too tight and buys fail on the moves worth catching.", 100, "%"],
-    ["priority_fee", "Priority fee", "Most you'll pay to land fast. Matters when the network is busy — which is when coins move.", 1, "SOL"],
+    ["slippage", "Slippage", "How far price may move between quote and fill. Too tight and buys fail on the moves worth catching.", 100, "%"],
+    ["priority_fee", "Priority fee", "Most you'll pay to land fast. Matters when the network is busy.", 1, "SOL"],
   ]],
 ];
 const GLOBAL_KEYS = ['slippage', 'priority_fee'];
@@ -3368,7 +3368,7 @@ function notifySectionHTML() {
           <span class="box"></span><span>Desktop notifications</span></label></div>
         <div class="hint" id="hint_notify">${blocked
           ? 'Blocked in your browser settings — allow notifications for this site to turn them on.'
-          : 'Tells you when a trade is entered, takes profit or stops out. Works while this tab is open, including in the background — not with the browser closed.'}</div>
+          : 'Entries, take-profits and stops. Works while this tab is open, even in the background.'}</div>
       </div>
     </div>
   </div>`;
