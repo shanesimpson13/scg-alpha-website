@@ -1952,12 +1952,11 @@ function paintStrat(c) {
   if (el) el.textContent = coinPreset.get(c.mint) || OWN_NAME;
 }
 
-/* The button carries the amount, and refuses when it can't be spent.
+/* The button refuses what can't be spent, and says why.
 
-   Both used to be a line of text under the picker — a caption explaining what
-   the button would do, next to the button. Saying it ON the button is one
-   thing to read instead of two, and the states it can't be pressed in explain
-   themselves rather than needing a note. */
+   The amount itself lives above the chips, so it isn't repeated here. What
+   stays are the two states that would otherwise be a disabled button with no
+   explanation — no amount chosen, or not enough SOL to cover one. */
 function paintAmtNote(c) {
   const btn = document.getElementById('glbtn');
   // Skips while the bot owns the coin: those states set their own label and
@@ -1978,11 +1977,11 @@ function paintAmtNote(c) {
     return;
   }
   btn.disabled = false;
-  btn.textContent = `🟢 GREENLIGHT · ${trimSol(amt)} SOL`;
+  btn.textContent = '🟢 GREENLIGHT';
 }
 
-/* 0.1 rather than 0.1000. A button is read at a glance, and trailing zeros are
-   noise there even though they're right in a balance. */
+/* 0.1 rather than 0.1000. Trailing zeros are right in a balance but noise in a
+   field you're about to type over. */
 function trimSol(v) {
   return String(Number(v.toFixed(6)));
 }
