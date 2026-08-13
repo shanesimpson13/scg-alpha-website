@@ -803,6 +803,7 @@
     .everyhead b { color: var(--dim); font-weight: 600; }
     .setactions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
                   margin: -4px 0 16px; }
+    .hintline { font-size: 11.5px; color: var(--dimmer); }
     .linkbtn { background: none; border: 0; color: var(--dim); font-family: inherit;
                font-size: 11.5px; cursor: pointer; padding: 4px 0; text-decoration: underline;
                text-underline-offset: 3px; }
@@ -843,8 +844,11 @@
     .tgl input:checked + .box { background: var(--green); border-color: var(--green); }
     .tgl input:checked + .box::after { content: "✓"; }
 
-    .setcard { max-width: 560px; max-height: 88vh; padding: 0; overflow: hidden;
+    .setcard { max-width: 520px; max-height: 88vh; padding: 0; overflow: hidden;
                display: flex; flex-direction: column; }
+    .setcard .sethead { margin-bottom: 16px; }
+    .setcard .tname { font-size: 19px; font-weight: 600; padding: 0 0 5px; }
+    .setcard .sethead p { margin-top: 7px; }
     .setscroll { flex: 1; min-height: 0; overflow-y: auto; padding: 24px 22px 10px; }
     .setbar { display: flex; gap: 12px; align-items: center; flex-shrink: 0;
               border-top: 1px solid var(--line); background: var(--panel);
@@ -1055,27 +1059,37 @@
     </div>
   </div>
 
-  <!-- A panel, not a page. Strategies are something you adjust while thinking
-       about a coin, and sending someone to a separate screen to do it loses the
-       thing they were looking at. -->
-  <div id="setmodal" class="modal" style="display:none">
-    <div class="modal-card setcard" id="settings" role="dialog" aria-modal="true"
-         aria-label="Your strategies">
-      <button class="modal-x" id="setclose" aria-label="Close">&times;</button>
+  <!-- The page lists what you own; editing one is a panel over it. Keeps the
+       overview intact while you change a single strategy's numbers. -->
+  <div id="settings" style="display:none">
+    <div class="sethead">
+      <h2>Your strategies</h2>
+      <p>Pick one on any coin page. Whichever is default runs when a coin doesn't
+         name one. Changes apply to the next coin you greenlight, never to an
+         open trade.</p>
+    </div>
+    <div id="setlock"><div id="setbody"></div></div>
+    <span id="setmsg"></span>
+  </div>
+
+  <div id="stratmodal" class="modal" style="display:none">
+    <div class="modal-card setcard" role="dialog" aria-modal="true"
+         aria-labelledby="stratname">
+      <button class="modal-x" id="stratclose" aria-label="Close">&times;</button>
       <div class="setscroll">
         <div class="sethead">
-          <h2>Your strategies</h2>
-          <p>Pick one on any coin page. Whichever is default runs when a coin doesn't
-             name one. Changes apply to the next coin you greenlight, never to an
-             open trade.</p>
+          <!-- The name is edited here rather than on the tile: on the tile a
+               click has to mean "open", so it cannot also mean "rename". -->
+          <input class="tname" id="stratname" maxlength="24" spellcheck="false"
+                 aria-label="Strategy name">
+          <p id="stratsub">What this strategy does when you greenlight a coin with it.</p>
+          <div class="setactions"><span id="defaultline"></span></div>
         </div>
-        <div id="setlock"><div id="setbody"></div></div>
+        <div id="stratbody"></div>
       </div>
-      <!-- Pinned, so Apply is reachable without scrolling past everything that
-           isn't part of the strategy. -->
       <div class="setbar">
         <button class="ghost" id="resetsettings">Reset to defaults</button>
-        <span id="setmsg"></span>
+        <span id="stratmsg"></span>
         <button class="glbtn" id="savesettings">Apply</button>
       </div>
     </div>
@@ -1381,7 +1395,7 @@ function paintHidden() {
 /* Exactly one of these is visible at a time. Five separate places used to
    toggle display, each hiding a different subset, which is why panels stacked
    and why the refresh could yank you off the one you were reading. */
-const VIEWS = ['board', 'detail', 'journal'];
+const VIEWS = ['board', 'detail', 'journal', 'settings'];
 let view = 'board';
 
 function showView(name) {
@@ -2123,8 +2137,8 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   const drop = document.getElementById('sdrop');
   if (drop && !drop.hidden) { closeStrategyDrop(); return; }   // innermost first
-  const panel = document.getElementById('setmodal');
-  if (panel && panel.style.display === 'flex') closeSettings();
+  const panel = document.getElementById('stratmodal');
+  if (panel && panel.style.display === 'flex') closeStrategyEditor();
 });
 
 async function greenlight(c) {
@@ -2863,7 +2877,7 @@ window.setKey = t => { KEY = t; localStorage.setItem('edgelvl_key', t); };
    looking at a blurred page until you navigated away and back. Sign-out has
    never needed it — that path reloads. */
 window.syncAuthView = () => {
-  if (document.getElementById('setmodal').style.display === 'flex') openSettings();
+  if (view === 'settings') openSettings();
   else if (view === 'journal') openJournal();
 };
 window.resumePending = () => {
@@ -2949,35 +2963,26 @@ document.getElementById('wsignout').onclick = async e => {
   location.reload();
 };
 
-function closeSettings() {
-  document.getElementById('setmodal').style.display = 'none';
-}
-
 async function openSettings() {
-  document.getElementById('setmodal').style.display = 'flex';
-  const sc = document.querySelector('.setscroll');
-  if (sc) sc.scrollTop = 0;
+  showView('settings');
+  window.scrollTo(0, 0);
   setMsg('');
-  /* Settings are stored against your account, so with nobody signed in there
-     is nothing to load and nothing Save could write. Showing the controls
-     anyway just produces a form that silently fails. */
-  const bar = document.querySelector('#settings .setbar');
+  /* Strategies are stored against your account, so with nobody signed in there
+     is nothing to load and nothing Apply could write. The tiles still render,
+     blurred, so the page shows what it is rather than an empty box. */
   if (!KEY) {
-    // The real controls at their default values, blurred. Save is hidden
-    // rather than disabled — there is no account for it to write to.
     OWN = SAMPLE_SETTINGS; PRESETS = {}; DEFAULT_PRESET = ''; editing = '';
-    renderSettings(SAMPLE_SETTINGS);
+    renderSettings();
+    closeStrategyEditor();          // nothing to edit without an account
     lockView('setlock', 'setbody',
       '<div class="signedout">' +
       '<p>Sign in to set your strategy.</p>' +
       '<p class="sub">Your dip, bounce and take-profit levels, saved to your account.</p>' +
       '<button class="glbtn solbtn">Sign in</button></div>',
       () => openWallet());
-    if (bar) bar.style.display = 'none';
     return;
   }
   unlockView('setlock', 'setbody');
-  if (bar) bar.style.display = '';
   try {
     const d = await api('/api/settings');
     bounds = d.bounds || {};
@@ -2990,16 +2995,22 @@ async function openSettings() {
     // the form quietly start editing a copy of it.
     OWN = d.own || d.settings || {};
     if (editing && !PRESETS[editing]) editing = '';   // deleted elsewhere
-    paintEditing();
+    renderSettings();
   } catch (e) {
     setMsg("Couldn't load your settings.", 'var(--red)');
   }
 }
 
+/* Whichever is on screen. A confirmation shown on the page behind an open
+   panel is a confirmation nobody sees. */
 function setMsg(t, color) {
-  const m = document.getElementById('setmsg');
+  const panelOpen = document.getElementById('stratmodal').style.display === 'flex';
+  const m = document.getElementById(panelOpen ? 'stratmsg' : 'setmsg');
+  if (!m) return;
   m.textContent = t;
   m.style.color = color || 'var(--dimmer)';
+  const other = document.getElementById(panelOpen ? 'setmsg' : 'stratmsg');
+  if (other) other.textContent = '';
 }
 
 function settingRowHTML(f, vals) {
@@ -3068,10 +3079,7 @@ function strategyTilesHTML() {
   const tile = (name, vals, label) => {
     const on = name === editing;
     const isDefault = (name || '') === (DEFAULT_PRESET || '');
-    const nameHTML = on
-      ? `<input class="tname" id="tname" value="${esc(label)}" maxlength="24"
-                spellcheck="false" aria-label="Strategy name">`
-      : `<div class="nm">${esc(label)}</div>`;
+    const nameHTML = `<div class="nm">${esc(label)}</div>`;
     return `<div class="stile${on ? ' on' : ''}" role="button" tabindex="0" data-s="${esc(name)}">
       ${name ? `<button class="x" data-del="${esc(name)}" title="Delete" aria-label="Delete ${esc(name)}">&times;</button>` : ''}
       ${nameHTML}
@@ -3086,52 +3094,18 @@ function strategyTilesHTML() {
          title="New strategy"><span>+</span></div>
   </div>
   <div class="setactions">
-    ${(DEFAULT_PRESET || '') === editing ? ''
-      : '<button class="linkbtn" id="makedefault">Make this the default</button>'}
+    <span class="hintline">Click one to edit it. The default runs when a coin doesn't name a strategy.</span>
   </div>`;
 }
 
 function wireStrategyTiles() {
   document.querySelectorAll('.stile[data-s]').forEach(b => {
-    const select = () => { if (b.dataset.s !== editing) { editing = b.dataset.s; paintEditing(); } };
-    b.onclick = e => { if (e.target.id !== 'tname') select(); };
+    const open = () => openStrategyEditor(b.dataset.s);
+    b.onclick = e => { if (!e.target.dataset.del) open(); };
     b.onkeydown = e => {
-      if (e.target.id === 'tname') return;
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
     };
   });
-
-  // Renaming happens in the tile. Committed on blur or Enter, abandoned on
-  // Escape — the same three keys every rename-in-place has ever used.
-  const nm = document.getElementById('tname');
-  if (nm) {
-    const was = nm.value;
-    const commit = async () => {
-      const to = nm.value.trim();
-      if (!to || to === was) { nm.value = was; return; }
-      try {
-        const d = await api('/api/settings/rename',
-                            { method: 'POST', body: JSON.stringify({ old: editing, new: to }) });
-        PRESETS = d.presets || PRESETS;
-        DEFAULT_PRESET = d.default_preset || '';
-        OWN_NAME = d.own_name || OWN_NAME;
-        if (editing) editing = to;
-        // A coin already pointing at the old name must follow it, or its
-        // greenlight would resolve to a strategy that no longer exists.
-        for (const [m, p] of coinPreset) if (p === was) coinPreset.set(m, to);
-        paintEditing();
-        setMsg(`✓ Renamed to "${to}".`, 'var(--green)');
-      } catch (e) {
-        nm.value = was;
-        setMsg(e.detail || "Couldn't rename that.", 'var(--red)');
-      }
-    };
-    nm.onblur = commit;
-    nm.onkeydown = e => {
-      if (e.key === 'Enter') { e.preventDefault(); nm.blur(); }
-      if (e.key === 'Escape') { nm.value = was; nm.blur(); }
-    };
-  }
 
   const add = document.getElementById('addstrat');
   if (add) {
@@ -3140,16 +3114,6 @@ function wireStrategyTiles() {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); newStrategy(); }
     };
   }
-  const md = document.getElementById('makedefault');
-  if (md) md.onclick = async () => {
-    try {
-      const d = await api('/api/settings/default',
-                          { method: 'POST', body: JSON.stringify({ name: editing }) });
-      DEFAULT_PRESET = d.default_preset || '';
-      paintEditing();
-      setMsg(`✓ ${editing || 'My settings'} is now the default.`, 'var(--green)');
-    } catch (e) { setMsg(e.detail || "Couldn't set that as default.", 'var(--red)'); }
-  };
   /* Deleting confirms where you clicked. A centred dialog for one tile moves
      your eyes off the thing being deleted, and confirm() looks like a browser
      no matter what the rest of the page looks like. */
@@ -3176,8 +3140,8 @@ function wireStrategyTiles() {
           // A coin still pointing at it falls back to the default rather than
           // holding a name the account no longer has.
           for (const [m, pn] of coinPreset) if (pn === n) coinPreset.delete(m);
-          if (editing === n) editing = '';
-          paintEditing();
+          if (editing === n) { editing = ''; closeStrategyEditor(); }
+          renderSettings();
           setMsg(`Deleted "${n}".`);
         } catch (err) { setMsg(err.detail || "Couldn't delete that one.", 'var(--red)'); }
       };
@@ -3189,11 +3153,14 @@ function wireStrategyTiles() {
    shipped defaults — you reach for "new" right after tuning something, and
    losing those numbers to a blank form is the annoying outcome. */
 async function newStrategy() {
-  const body = collect();
+  // Copies whatever the panel currently holds if it is open, otherwise starts
+  // from your own settings — "new" usually follows tuning something.
+  const body = document.getElementById('stratmodal').style.display === 'flex'
+    ? collect() : { ...OWN };
   if (!body) { setMsg('Fix the red values first.', 'var(--red)'); return; }
-  /* Created with a working name, then renamed in the tile. Asking for a name up
-     front means a browser dialog, and a browser dialog looks like one no matter
-     what the rest of the page looks like. */
+  /* Created with a working name, then renamed in the panel. Asking for a name
+     up front means a browser dialog, and a browser dialog looks like one no
+     matter what the rest of the page looks like. */
   let name = 'New strategy', i = 2;
   while (PRESETS[name] || name === OWN_NAME) name = `New strategy ${i++}`;
   try {
@@ -3201,49 +3168,37 @@ async function newStrategy() {
                         { method: 'POST', body: JSON.stringify({ name, settings: body }) });
     PRESETS = d.presets || {};
     DEFAULT_PRESET = d.default_preset || DEFAULT_PRESET;
-    editing = name;
-    paintEditing();
-    // Straight into renaming it, with the placeholder selected so typing
-    // replaces it.
-    const nm = document.getElementById('tname');
+    renderSettings();
+    openStrategyEditor(name);
+    // Straight into naming it, placeholder selected so typing replaces it.
+    const nm = document.getElementById('stratname');
     if (nm) { nm.focus(); nm.select(); }
     setMsg('Created — give it a name.', 'var(--dim)');
   } catch (e) { setMsg(e.detail || "Couldn't create that one.", 'var(--red)'); }
 }
 
-/* Repaint the form for whichever strategy is being edited. A preset holds only
-   its overrides, so it is shown layered over your own settings — what you see
-   is what that strategy would actually run. */
-function paintEditing() {
-  renderSettings(editing ? { ...OWN, ...(PRESETS[editing] || {}) } : OWN);
-  const btn = document.getElementById('savesettings');
-  // Names what it writes. "Apply" alone is ambiguous once there are several
-  // strategies and only one of them is being edited.
-  if (btn) btn.textContent = `Apply "${editing || OWN_NAME}"`;
-}
+const secHTML = (vals) => ([title, rows]) =>
+  `<div class="setsec"><h3>${title}</h3>${rows.map(f => settingRowHTML(f, vals)).join('')}</div>`;
 
-function renderSettings(vals) {
-  useTp2 = vals.use_tp2 === undefined ? true : !!Number(vals.use_tp2);
-  trailStop = vals.trail_stop === undefined ? true : !!Number(vals.trail_stop);
-  const sec = ([title, rows]) =>
-    `<div class="setsec"><h3>${title}</h3>${rows.map(f => settingRowHTML(f, vals)).join('')}</div>`;
+/* THE PAGE: what you own, plus the settings that belong to no strategy.
+   Editing a strategy's numbers happens in the panel, so this stays an overview
+   you can scan rather than one long form. */
+function renderSettings() {
   document.getElementById('setbody').innerHTML =
     strategyTilesHTML()
-    + SECTIONS.map(sec).join('')
     // Fenced off and labelled, because these do NOT change when you switch
     // strategy and the old layout gave no way to know that.
     + '<div class="everysec"><div class="everyhead">Applies to <b>every</b> strategy</div>'
-    + ACCOUNT_SECTIONS.map(sec).join('')
+    + ACCOUNT_SECTIONS.map(secHTML(OWN)).join('')
     + notifySectionHTML()
     + '</div>';
 
   wireStrategyTiles();
   wireNotifyToggle();
 
-  /* Account-wide fields save themselves. They sit below the Save button that
-     belongs to the strategy, so pressing it to commit a slippage change would
-     be reasonable and wrong — it writes the strategy. Saving on change removes
-     the question. */
+  /* Account-wide fields save themselves. There is no Apply on this page — that
+     button belongs to a strategy — so anything here has to commit on change or
+     it would never commit at all. */
   GLOBAL_KEYS.forEach(k => {
     const el = document.getElementById('set_' + k);
     if (!el) return;
@@ -3265,41 +3220,116 @@ function renderSettings(vals) {
       } catch (e) { setMsg(e.detail || `Couldn't save ${f[1]}.`, 'var(--red)'); }
     };
   });
+}
+
+/* THE PANEL: one strategy's numbers. `editing` is '' for your own settings. */
+function openStrategyEditor(name) {
+  editing = name;
+  const vals = editing ? { ...OWN, ...(PRESETS[editing] || {}) } : OWN;
+  useTp2 = vals.use_tp2 === undefined ? true : !!Number(vals.use_tp2);
+  trailStop = vals.trail_stop === undefined ? true : !!Number(vals.trail_stop);
+
+  document.getElementById('stratname').value = editing || OWN_NAME;
+  document.getElementById('stratbody').innerHTML = SECTIONS.map(secHTML(vals)).join('');
+  paintDefaultLine();
+  setMsg('');
+  wireStrategyForm();
+  document.getElementById('stratmodal').style.display = 'flex';
+  const sc = document.querySelector('#stratmodal .setscroll');
+  if (sc) sc.scrollTop = 0;
+}
+
+/* Whether THIS strategy is the one that runs unasked. Stated rather than
+   offered when it already is, so the line is never a button that does nothing. */
+function paintDefaultLine() {
+  const el = document.getElementById('defaultline');
+  if (!el) return;
+  if ((DEFAULT_PRESET || '') === (editing || '')) {
+    el.innerHTML = '<span class="hintline">Runs when a coin doesn\'t name a strategy.</span>';
+    return;
+  }
+  el.innerHTML = '<button class="linkbtn" id="makedefault">Make this the default</button>';
+  document.getElementById('makedefault').onclick = async () => {
+    try {
+      const d = await api('/api/settings/default',
+                          { method: 'POST', body: JSON.stringify({ name: editing }) });
+      DEFAULT_PRESET = d.default_preset || '';
+      paintDefaultLine();
+      renderSettings();          // the badge on the tiles behind
+      setMsg(`✓ "${editing || OWN_NAME}" is now the default.`, 'var(--green)');
+    } catch (e) { setMsg(e.detail || "Couldn't set that as default.", 'var(--red)'); }
+  };
+}
+
+function closeStrategyEditor() {
+  document.getElementById('stratmodal').style.display = 'none';
+}
+
+/* Everything inside the panel that reacts as you type. */
+function wireStrategyForm() {
   const seg = document.getElementById('segstop');
+  const paintKillHint = () => {
+    const h = document.getElementById('hint_kill');
+    if (h) h.textContent = trailStop
+      ? 'How far it may fall from its peak before selling everything.'
+      : 'How far it may fall below your entry before selling everything.';
+  };
   if (seg) seg.querySelectorAll('button').forEach(b => {
     b.onclick = () => {
       trailStop = b.dataset.t === '1';
       seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
       // The stop percentage means something different in each mode, so say so
       // where the number is rather than only in the mode's own hint.
-      const h = document.getElementById('hint_kill');
-      if (h) h.textContent = trailStop
-        ? 'How far it may fall from its peak before selling everything.'
-        : 'How far it may fall below your entry before selling everything.';
+      paintKillHint();
     };
   });
-  const h = document.getElementById('hint_kill');
-  if (h) h.textContent = trailStop
-    ? 'How far it may fall from its peak before selling everything.'
-    : 'How far it may fall below your entry before selling everything.';
+  paintKillHint();
 
   // Dip and the near-top guard can be set to values that cannot both be
-  // satisfied. Said here, where they are set — the alternative is a coin that
+  // satisfied. Said where they are set — the alternative is a coin that
   // watches for an hour and stands down with nothing to show for it.
   ['dip', 'pico'].forEach(k => {
     const el = document.getElementById('set_' + k);
     if (el) el.oninput = checkReachable;
   });
   checkReachable();
-  document.getElementById('set_use_tp2').onchange = e => {
-    useTp2 = e.target.checked;
-    applyTp2();
-  };
+
+  const tp2 = document.getElementById('set_use_tp2');
+  if (tp2) tp2.onchange = e => { useTp2 = e.target.checked; applyTp2(); };
   ['tp1', 'frac1'].forEach(k => {
     const el = document.getElementById('set_' + k);
     if (el) el.oninput = applyTp2;
   });
   applyTp2();
+
+  /* Renaming lives here rather than on the tile: on the tile a click has to
+     mean "open", so it cannot also mean "rename". */
+  const nm = document.getElementById('stratname');
+  const was = nm.value;
+  nm.onblur = async () => {
+    const to = nm.value.trim();
+    if (!to || to === was) { nm.value = was; return; }
+    try {
+      const d = await api('/api/settings/rename',
+                          { method: 'POST', body: JSON.stringify({ old: editing, new: to }) });
+      PRESETS = d.presets || PRESETS;
+      DEFAULT_PRESET = d.default_preset || '';
+      OWN_NAME = d.own_name || OWN_NAME;
+      // A coin already pointing at the old name must follow it, or its
+      // greenlight would resolve to a strategy that no longer exists.
+      for (const [m, pn] of coinPreset) if (pn === was) coinPreset.set(m, to);
+      if (editing) editing = to;
+      renderSettings();
+      setMsg(`✓ Renamed to "${to}".`, 'var(--green)');
+    } catch (e) {
+      nm.value = was;
+      setMsg(e.detail || "Couldn't rename that.", 'var(--red)');
+    }
+  };
+  nm.onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); nm.blur(); }
+    if (e.key === 'Escape') { nm.value = was; nm.blur(); }
+  };
 }
 
 /* Lives with the settings but is NOT one of them: it's stored in this browser,
@@ -3371,11 +3401,11 @@ function applyTp2() {
 }
 
 document.getElementById('opensettings').onclick = e => { e.preventDefault(); openSettings(); };
-document.getElementById('setclose').onclick = closeSettings;
-document.getElementById('setmodal').onclick = e => {
-  // Only the backdrop closes it. A click that lands inside the card is someone
-  // using the panel, not leaving it.
-  if (e.target.id === 'setmodal') closeSettings();
+document.getElementById('stratclose').onclick = closeStrategyEditor;
+document.getElementById('stratmodal').onclick = e => {
+  // Only the backdrop closes it. A click inside the card is someone using the
+  // panel, not leaving it.
+  if (e.target.id === 'stratmodal') closeStrategyEditor();
 };
 
 
@@ -3414,13 +3444,16 @@ document.getElementById('savesettings').onclick = async () => {
                           { method: 'POST', body: JSON.stringify({ name: editing, settings: body }) });
       PRESETS = d.presets || {};
       DEFAULT_PRESET = d.default_preset || DEFAULT_PRESET;
-      paintEditing();
-      setMsg(`✓ Saved "${editing}" — pick it on any coin page.`, 'var(--green)');
+      const name = editing;
+      renderSettings();
+      closeStrategyEditor();
+      setMsg(`✓ Saved "${name}" — pick it on any coin page.`, 'var(--green)');
     } else {
       const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(body) });
       OWN = d.own || OWN;
       OWN_NAME = d.own_name || OWN_NAME;
-      paintEditing();
+      renderSettings();
+      closeStrategyEditor();
       setMsg('✓ Saved — applies to the next coin you greenlight.', 'var(--green)');
     }
   } catch (e) {
@@ -3428,22 +3461,20 @@ document.getElementById('savesettings').onclick = async () => {
   }
 };
 
-document.getElementById('resetsettings').onclick = async () => {
-  /* Resets YOUR settings, never a named strategy — the button says "defaults",
-     and quietly overwriting a strategy you built would be the wrong reading. */
-  if (editing) { editing = ''; paintEditing(); }
-  setMsg('Resetting…');
-  const defaults = { tp1: 1.5, tp2: 2.0, use_tp2: 1, frac1: 0.70, kill: 0.50,
-                     trail_stop: 1, dip: 0.15, bounce: 1.04, volr_min: 1.0,
-                     entry_timeout: 3600, max_hold: 21600 };
-  try {
-    const d = await api('/api/settings', { method: 'POST', body: JSON.stringify(defaults) });
-    OWN = d.own || d.settings || OWN;
-    paintEditing();
-    setMsg('✓ Back to the shipped defaults.', 'var(--green)');
-  } catch (e) {
-    setMsg("Couldn't reset.", 'var(--red)');
-  }
+const SHIPPED = { tp1: 1.5, tp2: 2.0, use_tp2: 1, frac1: 0.70, kill: 0.50,
+                  trail_stop: 1, dip: 0.15, bounce: 1.04, volr_min: 1.0,
+                  pico: 0.90, entry_timeout: 3600, max_hold: 21600 };
+
+document.getElementById('resetsettings').onclick = () => {
+  /* Fills the open panel with the shipped defaults and saves NOTHING. It used
+     to write immediately, so a misread of the button cost you a strategy you
+     had tuned. Now Apply is still the only thing that commits. */
+  const keep = editing;
+  useTp2 = true; trailStop = true;
+  document.getElementById('stratbody').innerHTML = SECTIONS.map(secHTML(SHIPPED)).join('');
+  editing = keep;
+  wireStrategyForm();
+  setMsg('Defaults loaded — press Apply to keep them.', 'var(--dim)');
 };
 
 function start() {
