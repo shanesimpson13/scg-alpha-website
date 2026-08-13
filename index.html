@@ -566,6 +566,9 @@
       cursor: pointer; text-decoration: none;
     }
     .mintline button:hover, .mintline a:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    .earlier { font-size: 10.5px; color: var(--dimmer); margin-top: 4px; }
+    .earlier b.up { color: var(--green); }
+    .earlier b.down { color: var(--red); }
     #dband:empty { display: none; }
     #dband {
       padding: 11px 13px; border: 1px solid var(--line);
@@ -601,6 +604,15 @@
        change a minute later. */
     .amtbox { border: 1px solid var(--line); border-radius: 9px; background: var(--field);
               overflow: hidden; }
+    /* What this trade is as a share of the wallet — the number that decides
+       whether a run of losses matters. Above the amount because it is the thing
+       worth reading first. */
+    .amtpct { display: flex; justify-content: space-between; align-items: baseline;
+              padding: 8px 10px 0; font-size: 10.5px; color: var(--dimmer); }
+    .amtpct b { color: var(--dim); font-weight: 600; font-size: 12px; }
+    .amtpct.heavy b { color: var(--amber); }
+    .amtpct.over b { color: var(--red); }
+
     /* The chosen amount sits ABOVE the chips and is itself typeable, so the
        chips are shortcuts that fill it rather than a mode you switch out of. */
     .amthead { display: flex; align-items: center; gap: 9px; padding: 8px 10px 7px; }
@@ -1442,7 +1454,6 @@ async function refresh() {
     }
     if (view === 'detail' && openMint) renderDetail();
     else if (view === 'board') renderBoard();
-    refreshActivity();
   } catch (e) {
     // Privy sessions expire after about an hour. Now that the board is public,
     // a stale one would quietly 401 on every action while everything still
@@ -1625,6 +1636,7 @@ function renderDetail() {
         <div id="dstatus"></div>
         <div id="dband"></div>
         <div class="amtbox">
+          <div class="amtpct" id="amtpct"></div>
           <div class="amthead">
             <span class="lbl">Amount</span>
             <input class="amtval" id="amtval" type="number" step="any" min="0"
@@ -1718,7 +1730,18 @@ function renderDetailStatus() {
   if (!r) { el.innerHTML = ''; return; }
   const [dot] = STATE_UI[r.state] || ['closed'];
   const canUnarm = r.state === 'watching';
-  el.innerHTML = `<div class="actdot ${dot}"></div><div>${stateLine(r)}</div>` +
+  /* What the LAST session on this coin did, kept in view while a new one runs.
+     Greenlighting again starts a fresh session, and wiping the fact that the
+     previous one took profit removes the result you most want in front of you
+     when deciding whether to go again. */
+  const prev = botPrior[openMint];
+  const earlier = prev
+    ? `<div class="earlier">Earlier: ${esc((STATE_UI[prev.state] || [,prev.state])[1] || prev.state)}` +
+      `${prev.pnl != null ? ` · <b class="${prev.pnl >= 0 ? 'up' : 'down'}">` +
+        `${prev.pnl >= 0 ? '+' : ''}${(prev.pnl * 100).toFixed(0)}%</b>` : ''}</div>`
+    : '';
+  el.innerHTML = `<div class="actdot ${dot}"></div>` +
+                 `<div>${stateLine(r)}${earlier}</div>` +
                  `<div class="when">${ago(r.ts)}</div>` +
                  (canUnarm ? `<button class="unarmbtn" id="d_unarm">Unarm</button>` : '');
   // the button tracks the same status this panel just rendered
@@ -1999,6 +2022,27 @@ function renderAmt(c) {
 
   paintStrat(c);
   paintAmtNote(c);
+  paintAmtPct(c);
+}
+
+/* This trade as a share of the wallet. Sizing is what turned a real edge into
+   a crater in the simulations — a positive average with too much per trade
+   still walks the account down — so the share is stated, not left to be worked
+   out from two numbers on different parts of the screen. */
+function paintAmtPct(c) {
+  const el = document.getElementById('amtpct');
+  if (!el) return;
+  const amt = coinAmt.get(c.mint);
+  if (!(amt > 0) || !(walletTotal > 0)) {
+    el.className = 'amtpct';
+    el.innerHTML = walletTotal > 0
+      ? `<span>of balance</span><span>${sol4(walletTotal)} SOL</span>` : '';
+    return;
+  }
+  const pct = (amt / walletTotal) * 100;
+  el.className = 'amtpct' + (pct > 100 ? ' over' : pct >= 50 ? ' heavy' : '');
+  el.innerHTML = `<span><b>${pct.toFixed(pct < 10 ? 1 : 0)}%</b> of balance</span>` +
+                 `<span>${sol4(walletTotal)} SOL</span>`;
 }
 
 function paintStrat(c) {
@@ -2185,6 +2229,9 @@ async function greenlight(c) {
     if (pre) body.preset = pre;
     await api('/api/greenlight', { method: 'POST', body: JSON.stringify(body) });
     sent.set(c.mint, Date.now());
+    // The bot polls for greenlights every 5s, so poll hard for a while rather
+    // than leaving the coin looking ignored for two board refreshes.
+    fastUntil = Date.now() + 30000;
     markSent(c);
     // Don't wait ~15s for the bot's first band. Show where it would buy right
     // now, computed from the same rule, and the live one replaces it shortly.
@@ -2385,8 +2432,28 @@ const ago = ts => {
   return `${(s / 3600).toFixed(1)}h ago`;
 };
 
-let botStatus = {};      // mint -> the bot's last word on that coin
+let botStatus = {};
+let botPrior = {};   // the session before the current one, per mint
 let SET = { dip: 0.15, bounce: 1.04 };   // your thresholds, for the projection
+
+/* The bot publishes its band every 2 SECONDS. Status used to ride the board's
+   10s refresh, so a ~20s warmup ticked maybe twice, an arming coin could take
+   15s to appear once the bot's own 5s greenlight poll is added, and the entry
+   window on screen was up to 10s behind the one actually being used.
+
+   So it gets its own clock: 2s while you are watching a coin the bot is
+   working, 10s otherwise. And a burst after a greenlight, because that is the
+   one moment you are waiting on a specific thing to appear. */
+const LIVE_STATES = new Set(['watching', 'bought', 'tp1', 'tp2', 'tp']);
+let fastUntil = 0;
+
+async function activityLoop() {
+  try { await refreshActivity(); } catch (e) { /* never stop the loop */ }
+  const r = botStatus[openMint];
+  const watching = view === 'detail' && r && LIVE_STATES.has(r.state);
+  const fast = watching || Date.now() < fastUntil;
+  setTimeout(activityLoop, fast ? 2000 : 10000);
+}
 
 async function refreshActivity() {
   let rows = [];
@@ -2401,7 +2468,14 @@ async function refreshActivity() {
   // first sighting of each mint and ignore the history behind it.
   const was = botStatus;
   botStatus = {};
-  rows.forEach(r => { if (!botStatus[r.mint]) botStatus[r.mint] = r; });
+  botPrior = {};
+  rows.forEach(r => {
+    if (!botStatus[r.mint]) { botStatus[r.mint] = r; return; }
+    /* Everything BEHIND the current session. Greenlighting a coin again starts
+       a fresh one, which used to wipe the fact that the last one took profit —
+       the result you most want in front of you when deciding to go again. */
+    if (!botPrior[r.mint] && r.pnl != null) botPrior[r.mint] = r;
+  });
   if (openMint) renderDetailStatus();
 
   /* A fill moves real money, so the header balance has to move with it.
@@ -2827,6 +2901,9 @@ function setBal(bal) {
   if (el) el.textContent = sol4(walletTotal) + ' SOL';
   paintChip(walletTotal);
   paintAmount();
+  // The share depends on the balance, so it has to follow a fill.
+  const c = findCoin(openMint);
+  if (c && view === 'detail') { paintAmtPct(c); paintAmtNote(c); }
 }
 
 /* The slider is a share of the balance, shown in SOL so nobody has to do the
@@ -3508,6 +3585,7 @@ function start() {
   refresh();
   clearInterval(timer);
   timer = setInterval(refresh, 10000);
+  activityLoop();
   // Market cap has to keep up with the chart, and the board's 10s tick is far
   // too slow for that. While a coin is open, re-read just that coin every 1.5s
   // — one request, and it's the same cadence the live layer runs at.
