@@ -1935,6 +1935,13 @@ function setLive(c) {
   set('v5', money(c.vol_5m));
   const v5 = document.querySelector('#detail [data-f="v5"]');
   if (v5) v5.className = ('v ' + volClass(c.vol_5m)).trim();
+  /* Vol/MC is BOTH of the numbers above it, so leaving it out of this meant it
+     sat frozen at the board's figure while the market cap and the volume it is
+     computed from moved every second. It looked broken because it was: the
+     ratio on screen did not match the two numbers next to it. */
+  set('volmc', volMcText(c));
+  const vm = document.querySelector('#detail [data-f="volmc"]');
+  if (vm) vm.className = ('v ' + volMcClass(c)).trim();
 }
 
 function updateDetail(c) {
