@@ -512,7 +512,8 @@
     .dmc .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums;
               line-height: 1.15; }
     .dtitle { min-width: 0; }
-    .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: baseline; gap: 11px; }
+    .dhead h2 { font-size: 23px; font-weight: 600; display: flex; align-items: baseline;
+                gap: 10px; min-width: 0; }
     .dhead h2 img { align-self: center; }
     .dage { font-size: 12px; font-weight: 400; color: var(--dimmer); }
     .dhead h2 img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
@@ -569,11 +570,14 @@
     .earlier { font-size: 10.5px; color: var(--dimmer); margin-top: 4px; }
     .earlier b.up { color: var(--green); }
     .earlier b.down { color: var(--red); }
-    /* The full name, which the board shows under the ticker and this page was
-       dropping. Skipped when it only repeats the ticker. */
-    .dname { font-size: 12.5px; color: var(--dim); margin-top: 3px;
-             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-             max-width: 42ch; }
+    /* The full name, beside the ticker rather than under it. It is the only
+       thing here allowed to shrink: the ticker and the age are short and always
+       worth reading, a name can be a sentence. */
+    .dsym { flex: 0 0 auto; }
+    .dname { flex: 0 1 auto; min-width: 0; font-size: 13.5px; font-weight: 400;
+             color: var(--dimmer); overflow: hidden; text-overflow: ellipsis;
+             white-space: nowrap; }
+    .dhead h2 .dage { flex: 0 0 auto; }
     #dband:empty { display: none; }
     #dband {
       padding: 11px 13px; border: 1px solid var(--line);
@@ -1595,10 +1599,9 @@ function renderDetail() {
     <div class="dhead">
       <div class="dheadmain">
       <div class="dtitle">
-        <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}
+        <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="dsym">${esc(c.symbol || c.mint.slice(0, 8))}</span>
+          ${c.name && c.name !== c.symbol ? `<span class="dname">${esc(c.name)}</span>` : ''}
           <span class="dage" data-f="age">${age(c.age_secs)}</span></h2>
-        ${c.name && c.name !== c.symbol
-          ? `<div class="dname">${esc(c.name)}</div>` : ''}
         <div class="mintline">
           <code class="ca" title="Click to copy the full address"
                 onclick="copyCA(this,'${esc(c.mint)}')">${shortCA(c.mint)}</code>
