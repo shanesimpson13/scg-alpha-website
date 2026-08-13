@@ -1700,12 +1700,22 @@ function renderDetailStatus() {
  *  current market cap, clearly marked as a projection.
  */
 /** Immediate "here is where it would buy" the instant you greenlight. */
+/* The dip and reclaim THIS coin would use — the strategy picked for it, not
+   the account's defaults. Showing one while the bot runs the other is how a
+   preview becomes a lie. */
+function bandSettings(mint) {
+  const p = coinPreset.get(mint);
+  const v = p ? { ...MYSET, ...(PRESETS[p] || {}) } : MYSET;
+  return { dip: v.dip ?? SET.dip, bounce: v.bounce ?? SET.bounce };
+}
+
 function showPendingBand(c) {
   const el = document.getElementById('dband');
   if (!el) return;
   const mc = Number(c.mcap) || 0;
   if (!mc) return;
-  const floor = mc * (1 - SET.dip), ceil = mc * (1 - SET.dip) * SET.bounce;
+  const S_ = bandSettings(c.mint);
+  const floor = mc * (1 - S_.dip), ceil = mc * (1 - S_.dip) * S_.bounce;
   el.innerHTML = `<span class="bk">Watching · waiting for a dip and a reclaim</span>` +
     `<span class="step">from <b>${money(mc)}</b></span>` +
     `<span class="step">dip below <b>${money(floor)}</b></span>` +
@@ -1790,7 +1800,8 @@ function renderBand(c) {
   // no live session — project from where it is now
   const mc = Number(c.mcap) || 0;
   if (!mc) { el.innerHTML = ''; return; }
-  const dip = mc * (1 - SET.dip), reclaim = dip * SET.bounce;
+  const S_ = bandSettings(openMint);
+  const dip = mc * (1 - S_.dip), reclaim = dip * S_.bounce;
   el.innerHTML = `<span class="bk">What would trigger a buy</span>` +
     `<span class="step">from <b>${money(mc)}</b></span>` +
     `<span class="step">a dip below <b>${money(dip)}</b></span>` +
@@ -2076,6 +2087,7 @@ async function openStrategy(c) {
       if (n) coinPreset.set(c.mint, n); else coinPreset.delete(c.mint);
       closeStrategyDrop();
       paintStrat(c);
+      renderBand(c);          // the trigger levels belong to the strategy
     };
   });
   const ed = drop.querySelector('button[data-edit]');
@@ -2586,6 +2598,9 @@ const SECTIONS = [
     ["dip", "Dip required", "How far off the high before it looks to buy.", 100, "%"],
     ["bounce", "Reclaim", "Rise off the dip low that triggers the buy.", 100, "%", 1],
     ["volr_min", "B/S floor", "Checked at the moment of entry, not when you greenlight. Under 1 means more is being sold than bought — the buy waits rather than the coin being dropped.", 1],
+    // Stored as a ceiling (0.90) but read as a distance from the high (10%),
+    // which is how you think about it. -100 with offset 1 gives (1 - v) * 100.
+    ["pico", "Stay below the high by", "Refuses an entry this close to the running high. It has to be SMALLER than your dip or nothing can ever fire — entry lands around the dip level, so a 5% dip needs this under 5%. Set it low for near-market entries on a parabolic coin.", -100, "%", 1],
   ]],
   ["Exit", [
     ["tp1", "Take profit 1", "The first rung.", 1, "x"],
@@ -2614,7 +2629,10 @@ const GLOBAL_KEYS = ['slippage', 'priority_fee'];
 
 let bounds = {}, useTp2 = true;
 const F = {};
-SECTIONS.forEach(([, rows]) => rows.forEach(f => { F[f[0]] = f; }));
+// BOTH lists. Built from SECTIONS alone, collect() silently skipped slippage
+// and priority fee — they rendered, accepted input, and never saved.
+[...SECTIONS, ...ACCOUNT_SECTIONS].forEach(([, rows]) =>
+  rows.forEach(f => { F[f[0]] = f; }));
 
 const toView = f => v => +(((v - (f[5] || 0)) * f[3]).toFixed(6));
 const toRaw = f => v => +((v / f[3]) + (f[5] || 0)).toFixed(6);
@@ -2989,6 +3007,24 @@ function settingRowHTML(f, vals) {
   </div>`;
 }
 
+/* Entry lands around high x (1 - dip), and the guard refuses anything within
+   its own distance of that high. So the guard must be the SMALLER of the two or
+   there is no price that satisfies both, and the coin waits forever. */
+function checkReachable() {
+  const dipEl = document.getElementById('set_dip');
+  const picoEl = document.getElementById('set_pico');
+  const hint = document.getElementById('hint_pico');
+  if (!dipEl || !picoEl || !hint) return;
+  const dip = Number(dipEl.value), gap = Number(picoEl.value);
+  const bad = isFinite(dip) && isFinite(gap) && dip > 0 && gap >= dip;
+  [dipEl, picoEl].forEach(el => el.classList.toggle('bad', bad));
+  hint.style.color = bad ? 'var(--red)' : '';
+  hint.textContent = bad
+    ? `Nothing can fire: a ${dip}% dip enters near ${dip}% below the high, but ` +
+      `this refuses anything within ${gap}% of it. Drop this below ${dip}%.`
+    : F.pico[2];
+}
+
 /* Which strategy the form is editing. '' is the account's own settings — the
    thing that has always been there — and a name is one of the saved ones. */
 let editing = '';
@@ -3181,6 +3217,32 @@ function renderSettings(vals) {
   if (bar && slot) slot.appendChild(bar);
   wireStrategyTiles();
   wireNotifyToggle();
+
+  /* Account-wide fields save themselves. They sit below the Save button that
+     belongs to the strategy, so pressing it to commit a slippage change would
+     be reasonable and wrong — it writes the strategy. Saving on change removes
+     the question. */
+  GLOBAL_KEYS.forEach(k => {
+    const el = document.getElementById('set_' + k);
+    if (!el) return;
+    el.onchange = async () => {
+      const f = F[k];
+      const raw = toRaw(f)(Number(el.value));
+      const b = bounds[k];
+      if (!isFinite(raw) || (b && (raw < b[0] || raw > b[1]))) {
+        el.classList.add('bad');
+        setMsg(`${f[1]} is out of range.`, 'var(--red)');
+        return;
+      }
+      el.classList.remove('bad');
+      try {
+        const d = await api('/api/settings',
+                            { method: 'POST', body: JSON.stringify({ [k]: raw }) });
+        OWN = d.own || OWN;
+        setMsg(`✓ ${f[1]} saved.`, 'var(--green)');
+      } catch (e) { setMsg(e.detail || `Couldn't save ${f[1]}.`, 'var(--red)'); }
+    };
+  });
   const seg = document.getElementById('segstop');
   if (seg) seg.querySelectorAll('button').forEach(b => {
     b.onclick = () => {
@@ -3198,6 +3260,15 @@ function renderSettings(vals) {
   if (h) h.textContent = trailStop
     ? 'How far it may fall from its peak before selling everything.'
     : 'How far it may fall below your entry before selling everything.';
+
+  // Dip and the near-top guard can be set to values that cannot both be
+  // satisfied. Said here, where they are set — the alternative is a coin that
+  // watches for an hour and stands down with nothing to show for it.
+  ['dip', 'pico'].forEach(k => {
+    const el = document.getElementById('set_' + k);
+    if (el) el.oninput = checkReachable;
+  });
+  checkReachable();
   document.getElementById('set_use_tp2').onchange = e => {
     useTp2 = e.target.checked;
     applyTp2();
