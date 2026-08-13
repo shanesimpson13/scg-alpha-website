@@ -760,9 +760,17 @@
     .stile .nm { font-size: 13px; font-weight: 600; padding-right: 24px;
                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .stile .sub { font-size: 10.5px; color: var(--dimmer); margin-top: 6px; line-height: 1.55; }
-    .stile .badge { display: inline-block; margin-top: 9px; font-size: 8.5px;
-                    letter-spacing: .1em; text-transform: uppercase; color: var(--green);
-                    font-weight: 700; }
+    .defpick { display: flex; align-items: center; gap: 6px; margin-top: 10px;
+               background: none; border: 0; padding: 0; cursor: pointer;
+               font-family: inherit; font-size: 10px; letter-spacing: .08em;
+               text-transform: uppercase; font-weight: 700; color: var(--dimmer); }
+    .defpick .dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+                    border: 1px solid var(--line); }
+    .defpick:hover { color: var(--dim); }
+    .defpick:hover .dot { border-color: var(--dim); }
+    .defpick.on { color: var(--green); cursor: default; }
+    .defpick.on .dot { border-color: var(--green);
+                       box-shadow: inset 0 0 0 2.5px var(--bg), inset 0 0 0 11px var(--green); }
     .stile.add { display: grid; place-items: center; color: var(--dimmer);
                  border-style: dashed; }
     .stile.add span { font-size: 24px; line-height: 1; }
@@ -3076,15 +3084,22 @@ function strategyTilesHTML() {
   /* Divs, not buttons: the selected tile carries an editable name field, and
      nesting an input inside a <button> is invalid and behaves badly with
      keyboards. */
+  /* The ring marks the DEFAULT, not "the one you last opened". Editing state
+     outlives the panel, so highlighting it left a tile looking selected long
+     after that meant anything. Exactly one strategy runs unasked, which is a
+     radio — so it is drawn as one and picked here, where you can see them all
+     side by side. */
   const tile = (name, vals, label) => {
-    const on = name === editing;
     const isDefault = (name || '') === (DEFAULT_PRESET || '');
-    const nameHTML = `<div class="nm">${esc(label)}</div>`;
-    return `<div class="stile${on ? ' on' : ''}" role="button" tabindex="0" data-s="${esc(name)}">
+    return `<div class="stile${isDefault ? ' on' : ''}" role="button" tabindex="0" data-s="${esc(name)}">
       ${name ? `<button class="x" data-del="${esc(name)}" title="Delete" aria-label="Delete ${esc(name)}">&times;</button>` : ''}
-      ${nameHTML}
+      <div class="nm">${esc(label)}</div>
       <div class="sub">${esc(describeStrategy(vals) || 'your saved settings')}</div>
-      ${isDefault ? '<span class="badge">Default</span>' : ''}
+      <button class="defpick${isDefault ? ' on' : ''}" data-def="${esc(name)}"
+              aria-pressed="${isDefault}"
+              title="${isDefault ? 'Runs when a coin names no strategy' : 'Make this the default'}">
+        <span class="dot"></span>${isDefault ? 'Default' : 'Set as default'}
+      </button>
     </div>`;
   };
   return `<div class="stiles">
@@ -3101,9 +3116,29 @@ function strategyTilesHTML() {
 function wireStrategyTiles() {
   document.querySelectorAll('.stile[data-s]').forEach(b => {
     const open = () => openStrategyEditor(b.dataset.s);
-    b.onclick = e => { if (!e.target.dataset.del) open(); };
+    b.onclick = e => {
+      if (e.target.closest('[data-del]') || e.target.closest('[data-def]')) return;
+      open();
+    };
     b.onkeydown = e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+    };
+  });
+
+  /* Picking the default. One per account, so choosing one unchooses the rest —
+     which is why it is drawn as a radio rather than a toggle per tile. */
+  document.querySelectorAll('.defpick[data-def]').forEach(r => {
+    r.onclick = async e => {
+      e.stopPropagation();
+      const n = r.dataset.def;
+      if ((DEFAULT_PRESET || '') === (n || '')) return;    // already it
+      try {
+        const d = await api('/api/settings/default',
+                            { method: 'POST', body: JSON.stringify({ name: n }) });
+        DEFAULT_PRESET = d.default_preset || '';
+        renderSettings();
+        setMsg(`✓ "${n || OWN_NAME}" runs when a coin names no strategy.`, 'var(--green)');
+      } catch (err) { setMsg(err.detail || "Couldn't set that as default.", 'var(--red)'); }
     };
   });
 
@@ -3248,17 +3283,9 @@ function paintDefaultLine() {
     el.innerHTML = '<span class="hintline">Runs when a coin doesn\'t name a strategy.</span>';
     return;
   }
-  el.innerHTML = '<button class="linkbtn" id="makedefault">Make this the default</button>';
-  document.getElementById('makedefault').onclick = async () => {
-    try {
-      const d = await api('/api/settings/default',
-                          { method: 'POST', body: JSON.stringify({ name: editing }) });
-      DEFAULT_PRESET = d.default_preset || '';
-      paintDefaultLine();
-      renderSettings();          // the badge on the tiles behind
-      setMsg(`✓ "${editing || OWN_NAME}" is now the default.`, 'var(--green)');
-    } catch (e) { setMsg(e.detail || "Couldn't set that as default.", 'var(--red)'); }
-  };
+  // Chosen on the tiles, where every strategy is visible at once. Repeating the
+  // control here would be a second place to change one account-wide setting.
+  el.innerHTML = '<span class="hintline">Not the default — set that on the strategies page.</span>';
 }
 
 function closeStrategyEditor() {
