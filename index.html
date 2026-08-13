@@ -601,9 +601,19 @@
        change a minute later. */
     .amtbox { border: 1px solid var(--line); border-radius: 9px; background: var(--field);
               overflow: hidden; }
-    .amthead { display: flex; justify-content: space-between; align-items: center;
-               padding: 7px 10px 6px; font-size: 10px; color: var(--dimmer);
-               letter-spacing: .06em; text-transform: uppercase; }
+    /* The chosen amount sits ABOVE the chips and is itself typeable, so the
+       chips are shortcuts that fill it rather than a mode you switch out of. */
+    .amthead { display: flex; align-items: center; gap: 9px; padding: 8px 10px 7px; }
+    .amthead .lbl { font-size: 10px; color: var(--dimmer); letter-spacing: .06em;
+                    text-transform: uppercase; flex-shrink: 0; }
+    .amtval { flex: 1; min-width: 0; background: none; border: 0; color: var(--fg);
+              font-family: inherit; font-size: 13.5px; font-weight: 700; padding: 0;
+              outline: none; }
+    .amtval::placeholder { color: var(--dimmer); font-weight: 400; }
+    /* the spinners fight the layout and nobody uses them here */
+    .amtval::-webkit-outer-spin-button, .amtval::-webkit-inner-spin-button {
+      -webkit-appearance: none; margin: 0; }
+    .amtval { -moz-appearance: textfield; }
     .amtrow { display: flex; border-top: 1px solid var(--hair); }
     .amtrow button { flex: 1 1 0; min-width: 0; background: none; border: 0;
                      border-right: 1px solid var(--hair); color: var(--dim);
@@ -612,9 +622,6 @@
     .amtrow button:last-child { border-right: 0; flex: 0 0 38px; font-size: 11px; }
     .amtrow button:hover { background: var(--hover); color: var(--fg); }
     .amtrow button.on { background: rgba(127,127,127,.16); color: var(--fg); font-weight: 700; }
-    .amtrow input { flex: 1 1 0; min-width: 0; background: none; border: 0; color: var(--fg);
-                    font-family: inherit; font-size: 12.5px; text-align: center;
-                    padding: 9px 2px; outline: none; }
     /* The strategy picker is a real control, not a hidden gear — which one runs
        matters as much as the amount, so it reads at the same weight. */
     .stratwrap { position: relative; }
@@ -1575,7 +1582,12 @@ function renderDetail() {
         <div id="dstatus"></div>
         <div id="dband"></div>
         <div class="amtbox">
-          <div class="amthead"><span>Amount</span><span>SOL</span></div>
+          <div class="amthead">
+            <span class="lbl">Amount</span>
+            <input class="amtval" id="amtval" type="number" step="any" min="0"
+                   placeholder="0.00" aria-label="Amount in SOL">
+            <span class="lbl">SOL</span>
+          </div>
           <div class="amtrow" id="amtrow"></div>
         </div>
         <div class="stratwrap">
@@ -1893,38 +1905,44 @@ let MYSET = {};                 // my account settings, for showing what each on
 
 function renderAmt(c) {
   const row = document.getElementById('amtrow');
-  if (!row) return;
+  const val = document.getElementById('amtval');
+  if (!row || !val) return;
   const cur = coinAmt.get(c.mint);
+
+  // The field is the amount. Chips fill it, the pencil focuses it — no mode to
+  // switch out of, and the shortcuts stay on screen while you type.
+  val.value = cur > 0 ? trimSol(cur) : '';
   row.innerHTML =
     AMT_CHIPS.map(v => `<button data-v="${v}"${cur === v ? ' class="on"' : ''}>${v}</button>`).join('')
-    + '<button data-custom="1" title="Custom amount">&#9998;</button>';
+    + '<button data-custom="1" title="Type an amount">&#9998;</button>';
+
+  const set = v => {
+    if (v > 0) coinAmt.set(c.mint, Number(Number(v).toFixed(6)));
+    else coinAmt.delete(c.mint);
+    // Repaint the chips so the highlight follows, but leave the field alone
+    // while it has focus or typing "0.15" would fight the cursor.
+    const keep = document.activeElement === val;
+    if (!keep) renderAmt(c);
+    else {
+      row.querySelectorAll('button[data-v]').forEach(b =>
+        b.classList.toggle('on', Number(b.dataset.v) === coinAmt.get(c.mint)));
+      paintAmtNote(c);
+    }
+  };
 
   row.querySelectorAll('button[data-v]').forEach(b => {
     b.onclick = () => {
       const v = Number(b.dataset.v);
-      // Tapping the one already chosen clears it, back to your strategy's size.
-      if (coinAmt.get(c.mint) === v) coinAmt.delete(c.mint);
-      else coinAmt.set(c.mint, v);
-      renderAmt(c);
+      // Tapping the one already chosen clears it.
+      set(coinAmt.get(c.mint) === v ? 0 : v);
     };
   });
-  row.querySelector('button[data-custom]').onclick = () => {
-    row.innerHTML = '<input type="number" step="0.001" min="0.001" max="10" ' +
-                    `placeholder="0.00" value="${cur || ''}">`;
-    const inp = row.querySelector('input');
-    inp.focus();
-    const commit = () => {
-      const v = Number(inp.value);
-      if (v > 0) coinAmt.set(c.mint, Number(v.toFixed(6)));
-      else coinAmt.delete(c.mint);
-      renderAmt(c);
-    };
-    inp.onblur = commit;
-    inp.onkeydown = e => {
-      if (e.key === 'Enter') { e.preventDefault(); commit(); }
-      if (e.key === 'Escape') renderAmt(c);
-    };
-  };
+  row.querySelector('button[data-custom]').onclick = () => { val.focus(); val.select(); };
+
+  val.oninput = () => set(Number(val.value));
+  val.onblur = () => renderAmt(c);
+  val.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); val.blur(); } };
+
   paintStrat(c);
   paintAmtNote(c);
 }
