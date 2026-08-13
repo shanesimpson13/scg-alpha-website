@@ -569,6 +569,11 @@
     .earlier { font-size: 10.5px; color: var(--dimmer); margin-top: 4px; }
     .earlier b.up { color: var(--green); }
     .earlier b.down { color: var(--red); }
+    /* The full name, which the board shows under the ticker and this page was
+       dropping. Skipped when it only repeats the ticker. */
+    .dname { font-size: 12.5px; color: var(--dim); margin-top: 3px;
+             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+             max-width: 42ch; }
     #dband:empty { display: none; }
     #dband {
       padding: 11px 13px; border: 1px solid var(--line);
@@ -1592,6 +1597,8 @@ function renderDetail() {
       <div class="dtitle">
         <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(c.symbol || c.mint.slice(0, 8))}
           <span class="dage" data-f="age">${age(c.age_secs)}</span></h2>
+        ${c.name && c.name !== c.symbol
+          ? `<div class="dname">${esc(c.name)}</div>` : ''}
         <div class="mintline">
           <code class="ca" title="Click to copy the full address"
                 onclick="copyCA(this,'${esc(c.mint)}')">${shortCA(c.mint)}</code>
