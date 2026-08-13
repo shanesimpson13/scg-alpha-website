@@ -843,7 +843,8 @@
     .tgl input:checked + .box { background: var(--green); border-color: var(--green); }
     .tgl input:checked + .box::after { content: "✓"; }
 
-    .setbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+    .setbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+              margin: 14px 0 4px; }
     .setbar .glbtn { width: auto; padding: 13px 26px; font-size: 13px; }
     .ghost {
       background: none; border: 1px solid var(--line); color: var(--dim);
@@ -3163,12 +3164,21 @@ function renderSettings(vals) {
   document.getElementById('setbody').innerHTML =
     strategyTilesHTML()
     + SECTIONS.map(sec).join('')
+    // Save sits here, with the thing it saves. Below the account-wide block it
+    // read as if it applied to that too.
+    + '<div id="setbarslot"></div>'
     // Fenced off and labelled, because these do NOT change when you switch
     // strategy and the old layout gave no way to know that.
     + '<div class="everysec"><div class="everyhead">Applies to <b>every</b> strategy</div>'
     + ACCOUNT_SECTIONS.map(sec).join('')
     + notifySectionHTML()
     + '</div>';
+
+  /* MOVED, not rebuilt: the bar is static markup with handlers already bound to
+     it, and re-rendering it here would drop them on every repaint. */
+  const bar = document.querySelector('#settings .setbar');
+  const slot = document.getElementById('setbarslot');
+  if (bar && slot) slot.appendChild(bar);
   wireStrategyTiles();
   wireNotifyToggle();
   const seg = document.getElementById('segstop');
