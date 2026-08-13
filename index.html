@@ -853,10 +853,10 @@
 
     .setcard { max-width: 520px; max-height: 88vh; padding: 0; overflow: hidden;
                display: flex; flex-direction: column; }
-    .setcard .sethead { margin-bottom: 16px; }
-    .setcard .tname { font-size: 19px; font-weight: 600; padding: 0 0 5px; }
-    .setcard .sethead p { margin-top: 7px; }
-    .setscroll { flex: 1; min-height: 0; overflow-y: auto; padding: 24px 22px 10px; }
+    .setcard .sethead { margin-bottom: 18px; padding-right: 30px; }
+    .setcard .tname { font-size: 19px; font-weight: 600; padding: 3px 0 7px; }
+    .setcard .sethead p { margin-top: 8px; }
+    .setscroll { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 24px 12px; }
     .setbar { display: flex; gap: 12px; align-items: center; flex-shrink: 0;
               border-top: 1px solid var(--line); background: var(--panel);
               padding: 12px 16px; }
@@ -1090,7 +1090,6 @@
           <input class="tname" id="stratname" maxlength="24" spellcheck="false"
                  aria-label="Strategy name">
           <p id="stratsub">What this strategy does when you greenlight a coin with it.</p>
-          <div class="setactions"><span id="defaultline"></span></div>
         </div>
         <div id="stratbody"></div>
       </div>
@@ -2639,23 +2638,23 @@ document.getElementById('openjournal').onclick = e => { e.preventDefault(); open
 // looking at that coin — not a property of a strategy.
 const SECTIONS = [
   ["Entry", [
-    ["dip", "Dip required", "How far off the high before it looks to buy.", 100, "%"],
-    ["bounce", "Reclaim", "Rise off the dip low that triggers the buy.", 100, "%", 1],
-    ["volr_min", "B/S floor", "Checked at the moment of entry, not when you greenlight. Under 1 means more is being sold than bought — the buy waits rather than the coin being dropped.", 1],
+    ["dip", "Dip required", "How far it must fall from the high before looking to buy.", 100, "%"],
+    ["bounce", "Reclaim", "Rise off the low that triggers the buy.", 100, "%", 1],
+    ["volr_min", "B/S floor", "Under 1 means more selling than buying. Checked at entry — the buy waits, the coin isn't dropped.", 1],
     // Stored as a ceiling (0.90) but read as a distance from the high (10%),
     // which is how you think about it. -100 with offset 1 gives (1 - v) * 100.
-    ["pico", "Stay below the high by", "Refuses an entry this close to the running high. It has to be SMALLER than your dip or nothing can ever fire — entry lands around the dip level, so a 5% dip needs this under 5%. Set it low for near-market entries on a parabolic coin.", -100, "%", 1],
+    ["pico", "Stay below the high by", "Must be smaller than your dip or nothing can fire. Lower it for near-market entries on a parabolic coin.", -100, "%", 1],
   ]],
   ["Exit", [
     ["tp1", "Take profit 1", "The first rung.", 1, "x"],
     ["frac1", "Sold at TP1", "The rest rides to TP2.", 100, "%"],
-    ["tp2", "Take profit 2", "Fully out here — no runner.", 1, "x"],
-    ["trail_stop", "Stop type", "Trailing rides the high and locks in gains, but can exit below your entry after a coin has run. Fixed measures from your entry and never sells a position that's still up.", 1],
-    ["kill", "Stop", "How far it may fall before selling everything.", 100, "%"],
+    ["tp2", "Take profit 2", "Fully out here.", 1, "x"],
+    ["trail_stop", "Stop type", "Trailing follows the high — it locks in gains but can exit below your entry. Fixed measures from entry.", 1],
+    ["kill", "Stop", "How far it may fall before selling out.", 100, "%"],
   ]],
   ["Timing", [
     ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
-    ["max_hold", "Max hold", "Force-exit a position after this.", 1 / 60, "min"],
+    ["max_hold", "Max hold", "Sells whatever is left after this.", 1 / 60, "min"],
   ]],
 ];
 
@@ -2665,8 +2664,8 @@ const SECTIONS = [
    its own slippage. */
 const ACCOUNT_SECTIONS = [
   ["Execution", [
-    ["slippage", "Slippage", "How far price may move against you between quote and fill before the swap is abandoned. Too tight and buys fail during exactly the moves worth catching.", 100, "%"],
-    ["priority_fee", "Priority fee", "What you'll pay at most to land fast. Matters when the network is busy, which is when coins move.", 1, "SOL"],
+    ["slippage", "Slippage", "How far price may move between quote and fill before the swap is abandoned. Too tight and buys fail on the moves worth catching.", 100, "%"],
+    ["priority_fee", "Priority fee", "Most you'll pay to land fast. Matters when the network is busy — which is when coins move.", 1, "SOL"],
   ]],
 ];
 const GLOBAL_KEYS = ['slippage', 'priority_fee'];
@@ -3066,8 +3065,7 @@ function checkReachable() {
   [dipEl, picoEl].forEach(el => el.classList.toggle('bad', bad));
   hint.style.color = bad ? 'var(--red)' : '';
   hint.textContent = bad
-    ? `Nothing can fire: a ${dip}% dip enters near ${dip}% below the high, but ` +
-      `this refuses anything within ${gap}% of it. Drop this below ${dip}%.`
+    ? `Nothing can fire — a ${dip}% dip enters around ${dip}% off the high. Drop this under ${dip}%.`
     : F.pico[2];
 }
 
@@ -3272,26 +3270,11 @@ function openStrategyEditor(name) {
 
   document.getElementById('stratname').value = editing || OWN_NAME;
   document.getElementById('stratbody').innerHTML = SECTIONS.map(secHTML(vals)).join('');
-  paintDefaultLine();
   setMsg('');
   wireStrategyForm();
   document.getElementById('stratmodal').style.display = 'flex';
   const sc = document.querySelector('#stratmodal .setscroll');
   if (sc) sc.scrollTop = 0;
-}
-
-/* Whether THIS strategy is the one that runs unasked. Stated rather than
-   offered when it already is, so the line is never a button that does nothing. */
-function paintDefaultLine() {
-  const el = document.getElementById('defaultline');
-  if (!el) return;
-  if ((DEFAULT_PRESET || '') === (editing || '')) {
-    el.innerHTML = '<span class="hintline">Runs when a coin doesn\'t name a strategy.</span>';
-    return;
-  }
-  // Chosen on the tiles, where every strategy is visible at once. Repeating the
-  // control here would be a second place to change one account-wide setting.
-  el.innerHTML = '<span class="hintline">Not the default — pick it on the strategies page.</span>';
 }
 
 function closeStrategyEditor() {
@@ -3304,8 +3287,8 @@ function wireStrategyForm() {
   const paintKillHint = () => {
     const h = document.getElementById('hint_kill');
     if (h) h.textContent = trailStop
-      ? 'How far it may fall from its peak before selling everything.'
-      : 'How far it may fall below your entry before selling everything.';
+      ? 'How far it may fall from its peak before selling out.'
+      : 'How far it may fall below your entry before selling out.';
   };
   if (seg) seg.querySelectorAll('button').forEach(b => {
     b.onclick = () => {
