@@ -615,12 +615,6 @@
     .amtrow input { flex: 1 1 0; min-width: 0; background: none; border: 0; color: var(--fg);
                     font-family: inherit; font-size: 12.5px; text-align: center;
                     padding: 9px 2px; outline: none; }
-    /* What this greenlight will actually spend, said before you press it. */
-    .amtnote { font-size: 11px; color: var(--dim); text-align: center; line-height: 1.55;
-               margin: -2px 0 2px; }
-    .amtnote.warn { color: var(--amber); }
-    .amtnote.bad { color: var(--red); }
-
     /* The strategy picker is a real control, not a hidden gear — which one runs
        matters as much as the amount, so it reads at the same weight. */
     .stratwrap { position: relative; }
@@ -1584,7 +1578,6 @@ function renderDetail() {
           <div class="amthead"><span>Amount</span><span>SOL</span></div>
           <div class="amtrow" id="amtrow"></div>
         </div>
-        <div class="amtnote" id="amtnote"></div>
         <div class="stratwrap">
           <button class="stratbtn" id="gearbtn" aria-haspopup="true" aria-expanded="false">
             <span class="gi">&#9881;</span>
@@ -1633,6 +1626,9 @@ function renderGreenlight(c) {
   const busy = botHasCoin(r);
 
   if (busy) {
+    // Flagged so the amount gate leaves this label alone — the bot owning the
+    // coin outranks anything about what you were going to spend.
+    btn.dataset.bot = '1';
     btn.disabled = true;
     btn.textContent = r.state === 'watching' ? '👀 YOUR BOT HAS IT' : '📈 IN POSITION';
     btn.onclick = null;
@@ -1645,6 +1641,7 @@ function renderGreenlight(c) {
     return;
   }
 
+  delete btn.dataset.bot;
   btn.disabled = false;
   btn.textContent = '🟢 GREENLIGHT';
   btn.onclick = () => greenlight(c);
@@ -1871,6 +1868,7 @@ function updateDetail(c) {
 function markSent(c) {
   const btn = document.getElementById('glbtn'), note = document.getElementById('glnote');
   if (!btn) return;
+  btn.dataset.bot = '1';
   btn.disabled = true;
   btn.textContent = '✓ QUEUED FOR YOUR BOT';
   note.className = 'glnote';
@@ -1936,38 +1934,39 @@ function paintStrat(c) {
   if (el) el.textContent = coinPreset.get(c.mint) || OWN_NAME;
 }
 
-/* Say what this greenlight will spend, and whether it can.
+/* The button carries the amount, and refuses when it can't be spent.
 
-   Both questions used to be answered only after the fact — by a buy that never
-   fired because no size was picked, or one that failed on chain for want of
-   gas. Neither is something to find out from a log line. */
+   Both used to be a line of text under the picker — a caption explaining what
+   the button would do, next to the button. Saying it ON the button is one
+   thing to read instead of two, and the states it can't be pressed in explain
+   themselves rather than needing a note. */
 function paintAmtNote(c) {
-  const el = document.getElementById('amtnote');
   const btn = document.getElementById('glbtn');
-  if (!el) return;
+  // Skips while the bot owns the coin: those states set their own label and
+  // must not be overwritten with a buy prompt.
+  if (!btn || btn.dataset.busy || btn.dataset.bot) return;
   const amt = coinAmt.get(c.mint);
-  const sym = c.symbol || 'this coin';
 
   if (!(amt > 0)) {
-    el.className = 'amtnote';
-    el.textContent = 'Pick an amount first.';
-    if (btn && !btn.dataset.busy) { btn.disabled = true; }
+    btn.disabled = true;
+    btn.textContent = 'PICK AN AMOUNT';
     return;
   }
   // Leave room for the fee and the token-account rent a first buy pays; the
   // swap comes out of the same balance, so the whole of it is never spendable.
-  const need = amt + 0.01;
-  if (KEY && walletTotal > 0 && need > walletTotal) {
-    el.className = 'amtnote bad';
-    el.textContent = `Not enough SOL — ${sol4(amt)} plus fees needs about ` +
-                     `${sol4(need)}, and you have ${sol4(walletTotal)}.`;
-    if (btn && !btn.dataset.busy) { btn.disabled = true; }
+  if (KEY && walletTotal > 0 && amt + 0.01 > walletTotal) {
+    btn.disabled = true;
+    btn.textContent = 'NOT ENOUGH SOL';
     return;
   }
-  el.className = 'amtnote';
-  el.textContent = `Buying ${sol4(amt)} SOL of ${sym}` +
-                   (KEY && walletTotal > 0 ? ` · ${sol4(walletTotal - amt)} left` : '');
-  if (btn && !btn.dataset.busy) { btn.disabled = false; }
+  btn.disabled = false;
+  btn.textContent = `🟢 GREENLIGHT · ${trimSol(amt)} SOL`;
+}
+
+/* 0.1 rather than 0.1000. A button is read at a glance, and trailing zeros are
+   noise there even though they're right in a balance. */
+function trimSol(v) {
+  return String(Number(v.toFixed(6)));
 }
 
 /* What a strategy actually does, in the terms the playbook uses. A name alone
@@ -2090,12 +2089,7 @@ async function greenlight(c) {
      the strategy held — so pressing GREENLIGHT without choosing spent a number
      you never saw. */
   const amt = coinAmt.get(c.mint);
-  if (!(amt > 0)) {
-    paintAmtNote(c);
-    const el = document.getElementById('amtnote');
-    if (el) { el.className = 'amtnote warn'; el.textContent = 'Pick an amount first.'; }
-    return;
-  }
+  if (!(amt > 0)) { paintAmtNote(c); return; }
   // Checked here as well as in the note, because the balance can move between
   // rendering the page and pressing the button.
   if (walletTotal > 0 && amt + 0.01 > walletTotal) {
