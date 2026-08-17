@@ -1876,7 +1876,12 @@ function renderBand(c) {
     return;
   }
 
-  // no live session — project from where it is now
+  /* Only project for a coin the bot is NOT working. This branch runs for any
+     state that isn't "watching", which includes HOLDING — so a position showed
+     a buy window underneath it, describing an entry that had already happened.
+     Nothing to project once the bot has the coin: the status panel above says
+     what it is doing. */
+  if (r && botHasCoin(r)) { el.innerHTML = ''; return; }
   const mc = Number(c.mcap) || 0;
   if (!mc) { el.innerHTML = ''; return; }
   const S_ = bandSettings(openMint);
