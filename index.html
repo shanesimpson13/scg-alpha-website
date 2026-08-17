@@ -1820,7 +1820,11 @@ function renderBand(c) {
     const age = r.ts ? Math.max(0, (Date.now() / 1000) - r.ts) : 0;
     const left = Math.max(0, Math.round((b.warmup_left || 0) - age));
     const warm = left > 0 ? ` · ${left}s of warmup left` : '';
-    const now = Number(c.mcap) || 0;
+    /* The bot's OWN market cap, not the coin page's live one. Every other
+       figure in this panel is derived from the bot's price feed, so mixing
+       GMGN's number in for "currently" produced a current cap ABOVE the high
+       it was supposedly below. One basis, or none of it means anything. */
+    const now = parseMoney(r.mc) || Number(c.mcap) || 0;
     const fromNum = parseMoney(b.buy_from);
 
     /* Whatever is refusing the buy right now, wherever we are in the setup.
@@ -1829,8 +1833,15 @@ function renderBand(c) {
        buy/sell balance, or by a rolling-over trend, looked like it was simply
        waiting — and the only way to find out otherwise was to give up on it.
        A gate that can hold a trade indefinitely has to be visible. */
-    const held = b.holding_for
+    /* The warmup already has a live countdown in the header. Repeating the
+       bot's own copy of it showed two clocks disagreeing by a couple of
+       seconds, which reads as a bug even though both were right when sent. */
+    const isWarmup = /^warming up/i.test(b.holding_for || '');
+    const held = (b.holding_for && !isWarmup)
       ? `<div class="holdwhy">Not buying — ${esc(b.holding_for)}.</div>` : '';
+    // A reset IS the explanation for there being no dip, so the two must be
+    // said together rather than as separate, contradictory sentences.
+    const wasReset = /dip reset/i.test(b.holding_for || '');
 
     // The old copy said "no dip yet" and "In range now" in the same breath,
     // which read as "about to buy" when in fact nothing could fire. The dip
@@ -1842,10 +1853,15 @@ function renderBand(c) {
       const need = (now && trigger) ? (trigger / now) : null;
       el.innerHTML = `<span class="bk">Waiting for a dip${warm}</span>` +
         `<span class="step">needs to trade at or below <b>${esc(b.buy_from || '—')}</b></span>` +
-        `<span class="step" style="color:var(--dimmer)">high so far ${esc(b.hi || '—')}</span>` +
+        /* "high so far" read as the coin's high and invited a comparison with
+           the chart. It is the high SINCE YOU GREENLIT — a spike a minute
+           before your tap is not part of it, by design. */
+        `<span class="step" style="color:var(--dimmer)">high since you greenlit ${esc(b.hi || '—')}</span>` +
         `<div style="color:var(--dimmer);font-size:11px;margin-top:5px">` +
-        `No dip yet, so nothing can trigger. Currently ${money(now)}` +
-        `${need && need < 1 ? ` — ${((1 - need) * 100).toFixed(1)}% below the high would do it` : ''}.</div>` +
+        (wasReset
+          ? `The dip reset, so there is nothing to reclaim yet. Currently ${money(now)}`
+          : `No dip yet, so nothing can trigger. Currently ${money(now)}`) +
+        `${need && need < 1 ? ` — ${((1 - need) * 100).toFixed(1)}% below would do it` : ''}.</div>` +
         held;
       return;
     }
