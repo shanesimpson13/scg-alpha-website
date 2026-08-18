@@ -579,6 +579,7 @@
              color: var(--dimmer); overflow: hidden; text-overflow: ellipsis;
              white-space: nowrap; }
     .dhead h2 .dage { flex: 0 0 auto; }
+    .pending { color: var(--dimmer); font-style: italic; cursor: help; }
     #dband:empty { display: none; }
     #dband {
       padding: 11px 13px; border: 1px solid var(--line);
@@ -2706,7 +2707,9 @@ function paintJournal(d) {
       <td><span class="s">${esc(r.name || '')}</span></td>
       <td style="text-align:right">${res}</td>
       <td style="text-align:right" class="${cls(p)}">${p == null ? '—' : pct(p)}</td>
-      <td style="text-align:right">${r.peak_after_tap ?? '—'}x</td>
+      <td style="text-align:right">${r.peak_pending
+          ? `<span class="pending" title="The bot stops watching when a session ends. This is measured from candles a few minutes later, so it isn't final yet.">measuring…</span>`
+          : (r.peak_after_tap ?? '—') + 'x'}</td>
       <td style="text-align:right;color:var(--dimmer)">${(r.ts || '').slice(11, 16)}</td>
     </tr>`;
     })();
