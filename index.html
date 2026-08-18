@@ -3611,11 +3611,16 @@ document.getElementById('resetsettings').onclick = () => {
 };
 
 function start() {
-  // the buy-trigger projection uses YOUR dip and reclaim, so fetch them up
-  // front rather than only when the settings page is opened
-  api('/api/settings').then(d => {
-    if (d && d.settings) SET = { dip: d.settings.dip ?? SET.dip, bounce: d.settings.bounce ?? SET.bounce };
-  }).catch(() => {});
+  /* The buy-trigger projection uses YOUR dip and reclaim, so fetch them up
+     front rather than only when the settings page is opened — but only if
+     there is an account to fetch them from. Signed out this 401'd on the first
+     paint of every visit, and the projection falls back to the shipped
+     defaults, which is the right answer for someone who has not set any. */
+  if (KEY) {
+    api('/api/settings').then(d => {
+      if (d && d.settings) SET = { dip: d.settings.dip ?? SET.dip, bounce: d.settings.bounce ?? SET.bounce };
+    }).catch(() => {});
+  }
   refresh();
   clearInterval(timer);
   timer = setInterval(refresh, 10000);
