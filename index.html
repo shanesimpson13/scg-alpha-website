@@ -2708,8 +2708,10 @@ function paintJournal(d) {
       <td style="text-align:right">${res}</td>
       <td style="text-align:right" class="${cls(p)}">${p == null ? '—' : pct(p)}</td>
       <td style="text-align:right">${r.peak_pending
-          ? `<span class="pending" title="The bot stops watching when a session ends. This is measured from candles a few minutes later, so it isn't final yet.">measuring…</span>`
-          : (r.peak_after_tap ?? '—') + 'x'}</td>
+          ? `<span class="pending" title="The bot stops watching when a session ends. The real peak is measured from candles a few minutes later.">measuring…</span>`
+          : r.peak_floor
+            ? `<span class="pending" title="Measured only while the bot was watching, so it is a lower bound — the coin may have run further after the session closed. Too old to verify from candles now.">≥${r.peak_after_tap ?? '—'}x</span>`
+            : (r.peak_after_tap ?? '—') + 'x'}</td>
       <td style="text-align:right;color:var(--dimmer)">${(r.ts || '').slice(11, 16)}</td>
     </tr>`;
     })();
