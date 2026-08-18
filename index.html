@@ -2482,6 +2482,13 @@ async function activityLoop() {
 }
 
 async function refreshActivity() {
+  // Nothing to ask for without an account, and asking anyway 401s on every
+  // tick. The loop keeps running so it picks up the moment you sign in.
+  if (!KEY) {
+    const el = document.getElementById('activity');
+    if (el) el.innerHTML = '';
+    return;
+  }
   let rows = [];
   try {
     rows = (await api('/api/status')).positions || [];
