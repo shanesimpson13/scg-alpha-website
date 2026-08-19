@@ -123,15 +123,18 @@
      left a dead gap underneath the text. Centring splits that space so it
      reads as a deliberate two-column block. */
   .founder { display: flex; gap: 24px; align-items: center; margin-top: 16px; }
-  .founder img { flex: 0 0 236px; width: 236px; aspect-ratio: 1218 / 1286;
-                 object-fit: cover; border-radius: 8px; border: 1px solid var(--line);
-                 display: block; }
+  /* margin-left:auto, not flex:1 on the copy — capping the copy's width stops
+     it from growing, which left the portrait stranded mid-column instead of on
+     the same right edge as every other block. */
+  .founder img { flex: 0 0 268px; width: 268px; aspect-ratio: 1218 / 1286;
+                 margin-left: auto; object-fit: cover; border-radius: 8px;
+                 border: 1px solid var(--line); display: block; }
   /* Held narrower than the column so the copy wraps down the portrait instead
      of running past it in a single line. */
   .founder p { flex: 1; min-width: 0; max-width: 40ch; margin-bottom: 0; }
   @media (max-width: 560px) {
     .founder { flex-direction: column; align-items: flex-start; gap: 16px; }
-    .founder img { flex: none; width: 190px; }
+    .founder img { flex: none; width: 190px; margin-left: 0; }
     .founder p { max-width: none; }
   }
 
