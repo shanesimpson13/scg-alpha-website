@@ -2303,10 +2303,17 @@ if ('serviceWorker' in navigator) {
   });
 }
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();          // keep Chrome's own banner out of the way
+  e.preventDefault();          // keep the browser's own banner out of the way
   installPrompt = e;
+  /* It can arrive after Settings has already drawn the manual instructions,
+     so swap them back for the button that does it in one click. */
   const row = document.getElementById('row_install');
+  const btn = document.getElementById('do_install');
+  const hint = document.getElementById('install_hint');
   if (row) row.style.display = '';
+  if (btn) btn.style.display = '';
+  if (hint) hint.innerHTML = 'Notifications arrive from <b>EdgeLvl</b> rather than '
+                           + 'from your browser, and the terminal gets its own window.';
 });
 let notifyTestSeq = 0;   // unique tag per test, so none replaces another
 
@@ -3530,7 +3537,7 @@ function notifySectionHTML() {
       </div>
       <button type="button" id="notify_test" class="notiftest">Send a test</button>
     </div>
-    <div class="setrow" id="row_install" style="display:none">
+    <div class="setrow" id="row_install">
       <div>
         <div class="lab">Install EdgeLvl</div>
         <div class="hint" id="install_hint">Notifications arrive from <b>EdgeLvl</b> rather
@@ -3596,20 +3603,30 @@ function wireNotifyToggle() {
     }
   };
 
-  /* Two ways this row becomes relevant: Chrome has offered an install, or the
-     terminal is already running as one. Anything else and it stays hidden,
-     because a button that cannot do anything is worse than no button. */
+  /* The row is always shown. beforeinstallprompt is not a dependable signal:
+     Chrome fires it once per load, at its own discretion, and withholds it for
+     a good while after someone installs the app and removes it again. Hiding
+     the row in that state turned a browser quirk into a dead end — the exact
+     situation someone hits right after uninstalling to try again. */
   const installed = window.matchMedia('(display-mode: standalone)').matches
                  || window.navigator.standalone === true;
   const irow = document.getElementById('row_install');
   const ibtn = document.getElementById('do_install');
-  if (irow && installed) {
+  if (irow) {
     irow.style.display = '';
-    document.getElementById('install_hint').textContent =
-      'Installed. Notifications come from EdgeLvl.';
-    ibtn.style.display = 'none';
-  } else if (irow && installPrompt) {
-    irow.style.display = '';
+    if (installed) {
+      document.getElementById('install_hint').textContent =
+        'Installed. Notifications come from EdgeLvl.';
+      ibtn.style.display = 'none';
+    } else if (!installPrompt) {
+      /* No prompt to fire, so point at the path that always works. */
+      ibtn.style.display = 'none';
+      document.getElementById('install_hint').innerHTML =
+        'Your browser is not offering it right now, which is normal for a while '
+        + 'after uninstalling. Install it by hand from the browser menu: '
+        + '<b>\u22ee \u2192 Cast, save and share \u2192 Install page as app</b>. '
+        + 'Then notifications arrive from <b>EdgeLvl</b> rather than your browser.';
+    }
   }
   if (ibtn) ibtn.onclick = async () => {
     if (!installPrompt) return;
@@ -3621,7 +3638,7 @@ function wireNotifyToggle() {
     installPrompt = null;
     document.getElementById('install_hint').textContent = outcome === 'accepted'
       ? 'Installing. Open EdgeLvl from your dock and notifications will come from it.'
-      : 'Not installed. You can still install it from the address bar later.';
+      : 'Not installed. You can install it later from the browser menu.';
     ibtn.style.display = 'none';
   };
 
