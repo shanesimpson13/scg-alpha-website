@@ -793,6 +793,10 @@
                        border-radius: 7px; padding: 6px 6px; cursor: pointer;
                        font-family: inherit; font-size: 11px; color: var(--dim); }
     .tileacts button:hover { background: var(--hover); color: var(--fg); }
+    .notiftest { background: none; border: 1px solid var(--line); border-radius: 7px;
+                 padding: 8px 6px; cursor: pointer; font-family: inherit;
+                 font-size: 11px; color: var(--dim); width: 100%; }
+    .notiftest:hover { background: var(--hover); color: var(--fg); }
     .stile.add { display: grid; place-items: center; color: var(--dimmer);
                  border-style: dashed; }
     .stile.add span { font-size: 24px; line-height: 1; }
@@ -3480,7 +3484,9 @@ function notifySectionHTML() {
       <div class="setrow"><div><div class="lab"><span>Not supported</span></div>
       <div class="hint">This browser can't show desktop notifications.</div></div></div></div>`;
   }
-  const blocked = Notification.permission === 'denied';
+  const perm = Notification.permission;
+  const blocked = perm === 'denied';
+  const permTxt = { granted: 'allowed', denied: 'blocked', default: 'not asked yet' }[perm] || perm;
   return `<div class="setsec"><h3>Notifications</h3>
     <div class="setrow">
       <div>
@@ -3488,14 +3494,53 @@ function notifySectionHTML() {
           <input type="checkbox" id="set_notify" ${notifyOn() ? 'checked' : ''} ${blocked ? 'disabled' : ''}>
           <span class="box"></span><span>Desktop notifications</span></label></div>
         <div class="hint" id="hint_notify">${blocked
-          ? 'Blocked in your browser settings — allow notifications for this site to turn them on.'
-          : 'Entries, take-profits and stops. Works while this tab is open, even in the background.'}</div>
+          ? 'Blocked by your browser. Click the padlock in the address bar, set Notifications to Allow, then reload this page.'
+          : 'New coins on the board, entries, take-profits and stops. Works while this tab is open, even in the background.'}</div>
       </div>
+    </div>
+    <div class="setrow">
+      <div>
+        <div class="lab">Check it works</div>
+        <div class="hint" id="notify_diag">Browser permission: <b>${permTxt}</b>.${
+          perm === 'granted' && !notifyOn()
+            ? ' The switch above is off, so nothing is being sent.' : ''}</div>
+      </div>
+      <button type="button" id="notify_test" class="notiftest">Send a test</button>
     </div>
   </div>`;
 }
 
 function wireNotifyToggle() {
+  /* The test button exists because the failure we cannot see from here is the
+     OS one: the browser reports success, the notification is constructed, and
+     macOS quietly declines to draw it because the browser is not allowed to
+     notify or Focus is on. Firing one on demand turns "it doesn't work" into
+     a question the person can actually answer by looking at their screen. */
+  const test = document.getElementById('notify_test');
+  if (test) test.onclick = async () => {
+    const diag = document.getElementById('notify_diag');
+    if (Notification.permission !== 'granted') {
+      const p = await Notification.requestPermission();
+      if (p !== 'granted') {
+        diag.innerHTML = 'Your browser refused. Click the padlock in the address '
+                       + 'bar, set Notifications to Allow, then reload.';
+        return;
+      }
+    }
+    try {
+      new Notification('EdgeLvl test', {
+        body: 'If you can read this, notifications work.',
+        icon: '/favicon.png', tag: 'edgelvl-test',
+      });
+      diag.innerHTML = 'Sent. If nothing appeared on screen, your browser is '
+                     + 'allowed but the system is hiding it: check macOS System '
+                     + 'Settings \u2192 Notifications for this browser, and turn off '
+                     + 'Focus or Do Not Disturb.';
+    } catch (e) {
+      diag.innerHTML = `Could not send it: ${e.message}`;
+    }
+  };
+
   const el = document.getElementById('set_notify');
   if (!el) return;
   el.onchange = async e => {
