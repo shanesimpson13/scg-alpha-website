@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EdgeLvl — Systematic Solana trading</title>
+<link rel="icon" type="image/png" href="/favicon.png?v=2">
+<link rel="icon" href="/favicon.ico?v=2" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<style>
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Same palette and type as the board. Green is the only accent here, the
+     same green the GREENLIGHT button uses, so nothing on this page introduces
+     a colour the product doesn't already have. */
+  :root {
+    --bg: #fbfbfa; --panel: #f2f2f0; --fg: #14140f;
+    --line: rgba(0,0,0,0.11); --hair: rgba(0,0,0,0.06);
+    --dim: rgba(0,0,0,0.58); --dimmer: rgba(0,0,0,0.38);
+    --field: rgba(0,0,0,0.03); --hover: rgba(0,0,0,0.028);
+    --green: #12924b; --red: #c0362c;
+  }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 13px/1.75 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 20px 22px 24px;
+          min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* The wordmark sits left and is the way back to the board, exactly as it
+     behaves everywhere else. */
+  header { display: flex; align-items: center;
+           padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  header .homelink { display: inline-block; line-height: 0; color: var(--fg); }
+  header .homelink:hover { opacity: .72; }
+  header .wordmark { height: 15px; width: auto; display: block; color: var(--fg);
+                     aspect-ratio: 180.303 / 39.203; }
+
+  /* ── sections ───────────────────────────────────────────────────────────── */
+
+  section { padding: clamp(46px, 8vh, 84px) 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: 0; }
+  .cover { padding-top: clamp(60px, 14vh, 130px); padding-bottom: clamp(60px, 14vh, 130px); }
+
+  .sk { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
+        color: var(--dimmer); display: flex; gap: 13px; margin-bottom: 22px; }
+  .sk .n { color: var(--fg); font-weight: 600; }
+
+  h1 { font-size: clamp(28px, 6vw, 52px); font-weight: 600; letter-spacing: -0.035em;
+       line-height: 1.1; text-wrap: balance; }
+  h2 { font-size: clamp(19px, 3.2vw, 30px); font-weight: 600; letter-spacing: -0.025em;
+       line-height: 1.2; text-wrap: balance; margin-bottom: 18px; }
+  h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+
+  p { color: var(--dim); margin-bottom: 13px; max-width: 66ch; }
+  p.lead { color: var(--fg); font-size: 15px; line-height: 1.75; }
+  p:last-child { margin-bottom: 0; }
+  strong, b { color: var(--fg); font-weight: 600; }
+  .hi { color: var(--green); font-weight: 600; }
+  a { color: var(--dim); }
+  a:hover { color: var(--fg); }
+
+  .figure { font-size: clamp(30px, 7vw, 56px); font-weight: 600; letter-spacing: -0.045em;
+            line-height: 1; font-variant-numeric: tabular-nums; margin-bottom: 16px; }
+  .figure .q { color: var(--dim); }
+
+  /* ── the two product panels, rebuilt from the app's own styles ──────────── */
+
+  .panels { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+            gap: 26px; align-items: start; margin: 26px 0 20px; }
+  @media (max-width: 800px) { .panels { grid-template-columns: minmax(0, 1fr); } }
+  .cap { font-size: 11px; color: var(--dimmer); line-height: 1.65; margin-top: 11px; }
+
+  .stack { display: flex; flex-direction: column; gap: 11px; }
+
+  .band { padding: 11px 13px; border: 1px solid var(--line); border-radius: 8px;
+          font-size: 11.5px; color: var(--dim); line-height: 1.7; }
+  .band b { color: var(--fg); font-weight: 600; }
+  .band .bk { color: var(--dimmer); font-size: 10px; letter-spacing: .1em;
+              text-transform: uppercase; display: block; margin-bottom: 5px; }
+  .band .step { display: block; }
+  .band .note { display: block; margin-top: 7px; color: var(--dimmer); font-size: 10.5px;
+                line-height: 1.6; }
+
+  .amtbox { border: 1px solid var(--line); border-radius: 9px; background: var(--field);
+            overflow: hidden; }
+  .amtpct { display: flex; justify-content: space-between; align-items: baseline;
+            padding: 8px 10px 0; font-size: 10.5px; color: var(--dimmer); }
+  .amtpct b { color: var(--dim); font-weight: 600; font-size: 12px; }
+  .amthead { display: flex; align-items: center; gap: 9px; padding: 8px 10px 7px; }
+  .amthead .lbl { font-size: 10px; color: var(--dimmer); letter-spacing: .06em;
+                  text-transform: uppercase; }
+  .amthead .val { flex: 1; font-size: 13.5px; font-weight: 700; }
+  .amthead .unit { font-size: 11px; color: var(--dimmer); }
+  .amtrow { display: flex; border-top: 1px solid var(--hair); }
+  .amtrow span { flex: 1 1 0; text-align: center; border-right: 1px solid var(--hair);
+                 color: var(--dim); font-size: 12.5px; padding: 9px 2px; }
+  .amtrow span:last-child { border-right: 0; flex: 0 0 38px; font-size: 11px; }
+  .amtrow span.on { background: rgba(127,127,127,.16); color: var(--fg); font-weight: 700; }
+
+  .stratbtn { display: flex; align-items: center; gap: 9px; background: var(--field);
+              border: 1px solid var(--line); border-radius: 9px; padding: 11px 12px;
+              font-size: 12.5px; }
+  .stratbtn .gi { color: var(--dim); }
+  .stratbtn .sname { flex: 1; font-weight: 600; }
+  .stratbtn .chev { color: var(--dimmer); font-size: 10px; }
+
+  .glbtn { width: 100%; background: var(--green); color: #fff; border: 0; padding: 16px;
+           font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 9px;
+           letter-spacing: .04em; text-align: center; }
+  .glnote { font-size: 10.5px; color: var(--dimmer); text-align: center; line-height: 1.6; }
+
+  /* the strategy editor */
+  .setcard { border: 1px solid var(--line); border-radius: 12px; background: var(--bg);
+             padding: 18px 16px 16px; }
+  .setname { background: var(--field); border: 1px solid var(--line); border-radius: 8px;
+             padding: 11px 12px; font-size: 14px; font-weight: 600; }
+  .setcard > p { font-size: 12px; margin: 10px 2px 16px; }
+  .setsec { border: 1px solid var(--line); border-radius: 12px; background: var(--field);
+            padding: 0 14px 4px; margin-bottom: 10px; }
+  .setsec > h4 { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
+                 color: var(--dimmer); font-weight: 500; padding: 12px 0 9px;
+                 border-bottom: 1px solid var(--line); }
+  .setrow { display: grid; grid-template-columns: 1fr 108px; gap: 16px; align-items: center;
+            padding: 11px 2px; border-bottom: 1px solid var(--hair); }
+  .setrow:last-child { border-bottom: 0; }
+  .setrow.off { opacity: .38; }
+  .setrow .lab { font-size: 13px; color: var(--fg); }
+  .setrow .hint { font-size: 11px; color: var(--dimmer); line-height: 1.5; margin-top: 3px; }
+  .setfield { position: relative; }
+  .setfield .box { background: var(--field); border: 1px solid var(--line); border-radius: 6px;
+                   padding: 9px 30px 9px 11px; font-size: 13px; text-align: right;
+                   color: var(--fg); }
+  .setfield .u { position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+                 font-size: 11px; color: var(--dimmer); }
+
+  /* ── data ───────────────────────────────────────────────────────────────── */
+
+  .tablewrap { overflow-x: auto; margin: 20px 0 14px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--dimmer);
+       font-weight: 500; text-align: left; padding: 0 0 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 13px 0; border-bottom: 1px solid var(--hair); color: var(--dim);
+       white-space: nowrap; font-size: 13.5px; }
+  th:not(:first-child), td:not(:first-child) { text-align: right; padding-left: 18px; }
+  tr:last-child td { border-bottom: 0; }
+  td.k { color: var(--fg); font-weight: 600; }
+  tr.mark td { color: var(--green); }
+  tr.mark td.k { color: var(--green); }
+
+  ol { list-style: none; }
+  ol li { display: grid; grid-template-columns: 26px 1fr; gap: 4px 10px;
+          padding: 15px 0; border-bottom: 1px solid var(--hair); align-items: baseline; }
+  ol li:last-child { border-bottom: 0; }
+  ol .n { color: var(--green); font-weight: 600; font-size: 12px; }
+  ol p { margin: 4px 0 0; font-size: 12.5px; }
+
+  footer { display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+           margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line);
+           font-size: 11px; color: var(--dimmer); line-height: 1.7; }
+  footer a { color: var(--dim); text-decoration: none; }
+  footer a:hover { color: var(--fg); text-decoration: underline; }
+  .fsocial { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  .fsocial a { display: inline-flex; color: var(--dimmer); }
+  .fsocial svg { width: 15px; height: 15px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <a class="homelink" href="/" title="Back to the board" aria-label="EdgeLvl, back to the board">
+      <svg class="wordmark" viewBox="97.350 166.297 180.303 39.203" fill="currentColor" role="img" aria-label="EDGE"><g transform="translate(93.427734,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g><g transform="translate(140.461163,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 35.28125 -39.203125 L 35.28125 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 0 Z M 35.28125 -7.84375 L 35.28125 -31.359375 L 43.125 -31.359375 L 43.125 -7.84375 Z M 35.28125 -7.84375 "/></g><g transform="translate(187.494592,205.499987)"><path d="M 11.765625 0 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 -15.6875 L 19.59375 -15.6875 L 19.59375 -23.515625 L 43.125 -23.515625 L 43.125 0 Z M 3.921875 -7.84375 L 3.921875 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 Z M 11.765625 -31.359375 L 11.765625 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 Z M 11.765625 -31.359375 "/></g><g transform="translate(234.528021,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g></svg>
+    </a>
+  </header>
+
+  <section class="cover">
+    <h1>Systematic Solana trading.</h1>
+  </section>
+
+  <section>
+    <div class="sk"><span class="n">01</span><span>The problem</span></div>
+    <h2>The hardest part of trading is the entry and the exit, not picking the coins.</h2>
+    <p class="lead">Picking is the easy part. The entry and the exit are the two places manual trading goes wrong.</p>
+    <p>They are also the two hardest things to do by hand. Both need a decision at a specific price, at a specific second, usually while the position is moving against you. That is the part people do badly under pressure, and it is the part we automate.</p>
+  </section>
+
+  <section>
+    <div class="sk"><span class="n">02</span><span>The product</span></div>
+    <h2>You choose. The machine executes.</h2>
+    <p class="lead">The board finds coins that are moving. You decide which ones are worth taking. From there the bot handles the entry timing and the exit.</p>
+
+    <div class="panels">
+      <div>
+        <div class="stack">
+          <div class="band">
+            <span class="bk">What would trigger a buy</span>
+            <span class="step">from <b>$180.1K</b></span>
+            <span class="step">a dip below <b>$135.1K</b></span>
+            <span class="step">then a reclaim above <b>$141.8K</b></span>
+            <span class="note">Projected from the current market cap. Once you greenlight, the bot measures from the high it sees.</span>
+          </div>
+
+          <div class="amtbox">
+            <div class="amtpct"><span><b>10%</b> of balance</span><span>0.9535 SOL</span></div>
+            <div class="amthead">
+              <span class="lbl">Amount</span><span class="val">0.1</span><span class="unit">SOL</span>
+            </div>
+            <div class="amtrow">
+              <span>0.01</span><span class="on">0.1</span><span>0.5</span><span>1</span><span>%</span>
+            </div>
+          </div>
+
+          <div class="stratbtn">
+            <span class="gi">&#9881;</span><span class="sname">25% DIP</span><span class="chev">&#9662;</span>
+          </div>
+
+          <div class="glbtn">&#128994; GREENLIGHT</div>
+          <div class="glnote">Your bot picks this up within 5 seconds, waits for a dip and a reclaim, then buys.</div>
+        </div>
+        <p class="cap">One tap. The levels are shown before you commit, so you know what the bot will do before it does it.</p>
+      </div>
+
+      <div>
+        <div class="setcard">
+          <div class="setname">25% DIP</div>
+          <p>What this strategy does when you greenlight a coin with it.</p>
+
+          <div class="setsec">
+            <h4>Entry</h4>
+            <div class="setrow">
+              <div><div class="lab">Dip required</div><div class="hint">How far it must fall from the high before looking to buy.</div></div>
+              <div class="setfield"><div class="box">25</div><span class="u">%</span></div>
+            </div>
+            <div class="setrow">
+              <div><div class="lab">Reclaim</div><div class="hint">Rise off the low that triggers the buy.</div></div>
+              <div class="setfield"><div class="box">5</div><span class="u">%</span></div>
+            </div>
+            <div class="setrow">
+              <div><div class="lab">B/S floor</div><div class="hint">Under 1 means more selling than buying. Checked at entry, so the buy waits and the coin isn't dropped.</div></div>
+              <div class="setfield"><div class="box">1</div></div>
+            </div>
+            <div class="setrow">
+              <div><div class="lab">Stay below the high by</div><div class="hint">Must be smaller than your dip or nothing can fire.</div></div>
+              <div class="setfield"><div class="box">10</div><span class="u">%</span></div>
+            </div>
+          </div>
+
+          <div class="setsec">
+            <h4>Exit</h4>
+            <div class="setrow">
+              <div><div class="lab">Take profit 1</div><div class="hint">Sells the whole position here.</div></div>
+              <div class="setfield"><div class="box">1.5</div><span class="u">x</span></div>
+            </div>
+            <div class="setrow off">
+              <div><div class="lab">Sold at TP1</div><div class="hint">Not used with one rung.</div></div>
+              <div class="setfield"><div class="box">70</div><span class="u">%</span></div>
+            </div>
+            <div class="setrow">
+              <div><div class="lab">Stop</div><div class="hint">Sells everything if it falls this far.</div></div>
+              <div class="setfield"><div class="box">50</div><span class="u">%</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap">Every rule is set before the trade, not during it. Dip, reclaim, take profit, stop. Users build and name their own strategies and pick one per coin.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sk"><span class="n">03</span><span>Monetization &amp; marketing</span></div>
+    <p class="figure">1% <span class="q">on swaps</span></p>
+    <p class="lead">20% of that goes to Jupiter, so we net <span class="hi">0.8%</span>.</p>
+
+    <h2 style="margin-top:40px">Marketing is founder-led.</h2>
+    <p class="lead">I am going to livestream taking <span class="hi">1 SOL to 100 SOL</span> using the product.</p>
+    <p>It shows the product being used profitably, to an audience that already trusts us.</p>
+  </section>
+
+  <section>
+    <div class="sk"><span class="n">04</span><span>Potential</span></div>
+    <h2>What this looks like at scale.</h2>
+    <p class="lead">One active trader running 1 SOL positions, 20 round trips a month, routes 40 SOL through us. At 0.8% net that is 0.32 SOL a month, about $25.</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Active traders</th><th>Monthly volume</th><th>Monthly net</th><th>Annual</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="k">500</td><td>20,000 SOL</td><td>$12,300</td><td>$148K</td></tr>
+          <tr class="mark"><td class="k">2,500</td><td>100,000 SOL</td><td>$61,600</td><td>$739K</td></tr>
+          <tr><td class="k">10,000</td><td>400,000 SOL</td><td>$246,000</td><td>$3.0M</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>BullX alone reported around 260,000 monthly active traders. 10,000 is under 4% of a single competitor, in a category where the largest platform holds roughly half the volume.</p>
+    <p>Revenue tracks volume rather than headcount, so one trader running 10 SOL positions counts the same as ten running 1 SOL.</p>
+  </section>
+
+  <section>
+    <div class="sk"><span class="n">05</span><span>The ask</span></div>
+    <p class="figure">$200,000 <span class="q">SAFE</span></p>
+    <ol>
+      <li><span class="n">01</span><div>
+        <strong>Upgrade the data streams.</strong>
+        <p>Higher rate limits, and custom charts with the strategy drawn on the coin: dip level, reclaim trigger, take profit, stop.</p>
+      </div></li>
+      <li><span class="n">02</span><div>
+        <strong>Organic first, through our own channels.</strong>
+        <p>The Telegram group and our X accounts, with the 1 SOL to 100 SOL run as the spine of it.</p>
+      </div></li>
+      <li><span class="n">03</span><div>
+        <strong>Then paid X ads.</strong>
+        <p>Behind the organic posts and videos that already convert. We buy reach for what is proven, not for guesses.</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <footer>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+    <div class="fsocial">
+      <a href="https://x.com/edgelvl_app" target="_blank" rel="noopener noreferrer"
+         title="EdgeLvl on X" aria-label="EdgeLvl on X">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+      <a href="https://t.me/edgelvl" target="_blank" rel="noopener noreferrer"
+         title="EdgeLvl on Telegram" aria-label="EdgeLvl on Telegram">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212-.07-.062-.174-.041-.249-.024-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
