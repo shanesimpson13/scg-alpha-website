@@ -119,16 +119,20 @@
 
   /* Flex rather than grid so that if the portrait is ever missing, the image
      removes itself and the copy simply takes the full column. */
-  .founder { display: flex; gap: 14px; align-items: flex-start; margin-top: 14px; }
-  .founder img { flex: 0 0 148px; width: 148px; aspect-ratio: 3 / 4; object-fit: cover;
-                 object-position: 34% 42%; border-radius: 8px; border: 1px solid var(--line);
+  /* Centred rather than top-aligned: two lines of copy beside a tall portrait
+     left a dead gap underneath the text. Centring splits that space so it
+     reads as a deliberate two-column block. */
+  .founder { display: flex; gap: 24px; align-items: center; margin-top: 16px; }
+  .founder img { flex: 0 0 236px; width: 236px; aspect-ratio: 1218 / 1286;
+                 object-fit: cover; border-radius: 8px; border: 1px solid var(--line);
                  display: block; }
-  /* flex:1 so the copy fills the column and the portrait sits flush to the
-     right edge, in line with every other block on the page. */
-  .founder p { flex: 1; min-width: 0; margin-bottom: 0; }
+  /* Held narrower than the column so the copy wraps down the portrait instead
+     of running past it in a single line. */
+  .founder p { flex: 1; min-width: 0; max-width: 40ch; margin-bottom: 0; }
   @media (max-width: 560px) {
-    .founder { flex-direction: column; }
-    .founder img { flex: none; width: 132px; }
+    .founder { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .founder img { flex: none; width: 190px; }
+    .founder p { max-width: none; }
   }
 
   /* ── data ───────────────────────────────────────────────────────────────── */
