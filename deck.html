@@ -123,7 +123,9 @@
   .founder img { flex: 0 0 148px; width: 148px; aspect-ratio: 3 / 4; object-fit: cover;
                  object-position: 34% 42%; border-radius: 8px; border: 1px solid var(--line);
                  display: block; }
-  .founder p { margin-bottom: 0; }
+  /* flex:1 so the copy fills the column and the portrait sits flush to the
+     right edge, in line with every other block on the page. */
+  .founder p { flex: 1; min-width: 0; margin-bottom: 0; }
   @media (max-width: 560px) {
     .founder { flex-direction: column; }
     .founder img { flex: none; width: 132px; }
@@ -249,8 +251,8 @@
   <h2><span class="n">03</span>Monetization &amp; marketing</h2>
   <p class="lead">1% on swaps. 20% goes to Jupiter, so we net <span class="hi">0.8%</span>.</p>
   <div class="founder">
-    <img src="/founder.jpg" alt="Shane Simpson, founder" onerror="this.remove()">
     <p>Marketing is founder-led. I will livestream taking <span class="hi">1 SOL to 100 SOL</span> using the product, to an audience that already trusts us.</p>
+    <img src="/founder.jpg" alt="Shane Simpson, founder" onerror="this.remove()">
   </div>
 
   <h2><span class="n">04</span>Potential</h2>
@@ -271,12 +273,12 @@
   <h2><span class="n">05</span>The ask</h2>
   <p class="lead">$200,000 SAFE.</p>
   <ol>
-    <li><span class="n">01</span><div><strong>Data streams.</strong>
-      <p>Higher rate limits, and custom charts with the strategy drawn on the coin.</p></div></li>
-    <li><span class="n">02</span><div><strong>Organic first.</strong>
-      <p>Telegram and X, with the 1 SOL to 100 SOL run as the spine.</p></div></li>
+    <li><span class="n">01</span><div><strong>Upgrade the data streams.</strong>
+      <p>Higher rate limits, and custom charts with the strategy drawn on the coin: dip level, reclaim trigger, take profit, stop.</p></div></li>
+    <li><span class="n">02</span><div><strong>Organic first, through our own channels.</strong>
+      <p>A 300 person Telegram group plus business and personal X accounts, with the 1 SOL to 100 SOL run as the spine of it.</p></div></li>
     <li><span class="n">03</span><div><strong>Then paid X ads.</strong>
-      <p>Behind the posts and videos that already convert.</p></div></li>
+      <p>Only behind the organic posts and videos that already convert. We buy reach for what is proven, not for guesses.</p></div></li>
   </ol>
 
   <footer>
