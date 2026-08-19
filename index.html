@@ -7,6 +7,9 @@
   <link rel="icon" type="image/png" href="/favicon.png?v=3">
   <link rel="icon" href="/favicon.ico?v=3" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#fbfbfa">
+  <meta name="apple-mobile-web-app-title" content="EdgeLvl">
   <style>
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2286,6 +2289,25 @@ async function greenlight(c) {
    Off until asked for. A permission prompt nobody invited is how people end up
    blocking notifications permanently. */
 const NOTIFY_KEY = 'edgelvl_notify';
+
+/* Installing the terminal is what makes a notification say EdgeLvl instead of
+   Google Chrome, so the worker registers on every visit and the browser's
+   install offer is held for the button in Settings. Chrome fires
+   beforeinstallprompt once, and only when it considers the site installable —
+   there is no way to summon it later, so it has to be captured here. */
+let installPrompt = null;
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(e =>
+      console.warn('service worker registration failed', e));
+  });
+}
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();          // keep Chrome's own banner out of the way
+  installPrompt = e;
+  const row = document.getElementById('row_install');
+  if (row) row.style.display = '';
+});
 let notifyTestSeq = 0;   // unique tag per test, so none replaces another
 
 function notifyOn() {
@@ -2340,7 +2362,7 @@ function notifyNewCoins(list) {
     if (fresh.length > 2) {
       const n = new Notification(`${fresh.length} new coins on the board`, {
         body: fresh.map(c => c.symbol || '').filter(Boolean).slice(0, 6).join(', '),
-        icon: '/favicon.png',
+        icon: '/icon-192.png',
         tag: 'edgelvl-new-coins',      // replaces itself rather than stacking
       });
       n.onclick = () => { window.focus(); n.close(); };
@@ -2349,7 +2371,7 @@ function notifyNewCoins(list) {
     fresh.forEach(c => {
       const n = new Notification(`${c.symbol || 'New coin'} — new on the board`, {
         body: `${money(c.mcap)} MC · ${money(c.vol_5m)} 5m vol`,
-        icon: '/favicon.png',
+        icon: '/icon-192.png',
         tag: c.mint,
       });
       n.onclick = () => { window.focus(); openDetail(c.mint); n.close(); };
@@ -2365,7 +2387,7 @@ function notifyStateChange(r) {
   try {
     const n = new Notification(title, {
       body,
-      icon: '/favicon.png',
+      icon: '/icon-192.png',
       // One notification per coin: a coin that moves through several states
       // replaces its own rather than stacking four of them up.
       tag: r.mint,
@@ -3508,6 +3530,14 @@ function notifySectionHTML() {
       </div>
       <button type="button" id="notify_test" class="notiftest">Send a test</button>
     </div>
+    <div class="setrow" id="row_install" style="display:none">
+      <div>
+        <div class="lab">Install EdgeLvl</div>
+        <div class="hint" id="install_hint">Notifications arrive from <b>EdgeLvl</b> rather
+          than from your browser, and the terminal gets its own window.</div>
+      </div>
+      <button type="button" id="do_install" class="notiftest">Install</button>
+    </div>
   </div>`;
 }
 
@@ -3539,7 +3569,7 @@ function wireNotifyToggle() {
          a new banner, so the second test of a session appears to do nothing. */
       const n = new Notification('EdgeLvl test', {
         body: 'If you can read this, notifications work.',
-        icon: '/favicon.png', tag: `edgelvl-test-${++notifyTestSeq}`,
+        icon: '/icon-192.png', tag: `edgelvl-test-${++notifyTestSeq}`,
       });
       diag.textContent = 'Sending\u2026';
       let settled = false;
@@ -3566,6 +3596,35 @@ function wireNotifyToggle() {
     }
   };
 
+  /* Two ways this row becomes relevant: Chrome has offered an install, or the
+     terminal is already running as one. Anything else and it stays hidden,
+     because a button that cannot do anything is worse than no button. */
+  const installed = window.matchMedia('(display-mode: standalone)').matches
+                 || window.navigator.standalone === true;
+  const irow = document.getElementById('row_install');
+  const ibtn = document.getElementById('do_install');
+  if (irow && installed) {
+    irow.style.display = '';
+    document.getElementById('install_hint').textContent =
+      'Installed. Notifications come from EdgeLvl.';
+    ibtn.style.display = 'none';
+  } else if (irow && installPrompt) {
+    irow.style.display = '';
+  }
+  if (ibtn) ibtn.onclick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    /* The event is single-use: once prompt() has been called Chrome will not
+       let it be reused, so drop it either way rather than leaving a dead
+       button behind. */
+    installPrompt = null;
+    document.getElementById('install_hint').textContent = outcome === 'accepted'
+      ? 'Installing. Open EdgeLvl from your dock and notifications will come from it.'
+      : 'Not installed. You can still install it from the address bar later.';
+    ibtn.style.display = 'none';
+  };
+
   const el = document.getElementById('set_notify');
   if (!el) return;
   el.onchange = async e => {
@@ -3576,7 +3635,7 @@ function wireNotifyToggle() {
       hint.textContent = 'On. A test notification should have appeared.';
       new Notification('EdgeLvl notifications are on', {
         body: "New coins on the board, entries, take-profits and stops.",
-        icon: '/favicon.png', tag: `edgelvl-test-${++notifyTestSeq}`,
+        icon: '/icon-192.png', tag: `edgelvl-test-${++notifyTestSeq}`,
       });
     } else if (!ok && e.target.getAttribute('data-asked') !== null) {
       hint.textContent = 'Permission refused — allow notifications for this site to enable them.';
