@@ -2286,6 +2286,7 @@ async function greenlight(c) {
    Off until asked for. A permission prompt nobody invited is how people end up
    blocking notifications permanently. */
 const NOTIFY_KEY = 'edgelvl_notify';
+let notifyTestSeq = 0;   // unique tag per test, so none replaces another
 
 function notifyOn() {
   return localStorage.getItem(NOTIFY_KEY) === '1'
@@ -3518,7 +3519,7 @@ function wireNotifyToggle() {
      a question the person can actually answer by looking at their screen. */
   const test = document.getElementById('notify_test');
   if (test) test.onclick = async () => {
-    const diag = document.getElementById('notify_diag');
+    let diag = document.getElementById('notify_diag');
     if (Notification.permission !== 'granted') {
       const p = await Notification.requestPermission();
       if (p !== 'granted') {
@@ -3526,18 +3527,42 @@ function wireNotifyToggle() {
                        + 'bar, set Notifications to Allow, then reload.';
         return;
       }
+      /* Granted just now, so the switch this panel drew as disabled is stale.
+         Repaint before carrying on, or it stays greyed out until a reload. */
+      localStorage.setItem(NOTIFY_KEY, '1');
+      renderSettings();
+      diag = document.getElementById('notify_diag');
     }
     try {
-      new Notification('EdgeLvl test', {
+      /* A UNIQUE tag every time. Reusing one means the browser replaces the
+         notification already sitting in Notification Centre instead of raising
+         a new banner, so the second test of a session appears to do nothing. */
+      const n = new Notification('EdgeLvl test', {
         body: 'If you can read this, notifications work.',
-        icon: '/favicon.png', tag: 'edgelvl-test',
+        icon: '/favicon.png', tag: `edgelvl-test-${++notifyTestSeq}`,
       });
-      diag.innerHTML = 'Sent. If nothing appeared on screen, your browser is '
-                     + 'allowed but the system is hiding it: check macOS System '
-                     + 'Settings \u2192 Notifications for this browser, and turn off '
-                     + 'Focus or Do Not Disturb.';
+      diag.textContent = 'Sending\u2026';
+      let settled = false;
+      n.onshow = () => {
+        settled = true;
+        diag.textContent = 'Shown. Notifications are working.';
+      };
+      n.onerror = () => {
+        settled = true;
+        diag.textContent = 'The browser could not display it.';
+      };
+      /* onshow never firing is the interesting case: the browser accepted it
+         and the system declined to draw it. That is the one thing this code
+         cannot see directly, so infer it from the silence. */
+      setTimeout(() => {
+        if (settled) return;
+        diag.innerHTML = 'Your browser accepted it but nothing was drawn, which '
+                       + 'means the system is suppressing it. Check System Settings '
+                       + '\u2192 Notifications \u2192 your browser is set to Allow, and '
+                       + 'that Focus or Do Not Disturb is off.';
+      }, 1800);
     } catch (e) {
-      diag.innerHTML = `Could not send it: ${e.message}`;
+      diag.textContent = `Could not send it: ${e.message}`;
     }
   };
 
@@ -3550,8 +3575,8 @@ function wireNotifyToggle() {
     if (e.target.checked && ok) {
       hint.textContent = 'On. A test notification should have appeared.';
       new Notification('EdgeLvl notifications are on', {
-        body: "You'll hear about entries, take-profits and stops.",
-        icon: '/favicon.png', tag: 'edgelvl-test',
+        body: "New coins on the board, entries, take-profits and stops.",
+        icon: '/favicon.png', tag: `edgelvl-test-${++notifyTestSeq}`,
       });
     } else if (!ok && e.target.getAttribute('data-asked') !== null) {
       hint.textContent = 'Permission refused — allow notifications for this site to enable them.';
