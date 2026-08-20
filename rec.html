@@ -41,6 +41,11 @@
     display: flex; align-items: center; justify-content: center; position: relative;
   }
   .stage canvas, .stage video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  /* display:block above outranks the browser's own [hidden] rule, because an
+     author stylesheet beats the user-agent one — so showStage() set .hidden on
+     both and neither went away. They rendered side by side: the canvas, then
+     the player's controls as a strip beside it. */
+  .stage canvas[hidden], .stage video[hidden] { display: none; }
   .empty { color: var(--dim); font-size: 13px; text-align: center; padding: 0 30px; }
 
   .dot {
