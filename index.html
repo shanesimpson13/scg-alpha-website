@@ -993,7 +993,6 @@
       <table>
         <thead><tr>
           <th>Coin</th><th>Result</th><th>P&amp;L</th>
-          <th title="How far it ran after you greenlit it, regardless of whether the bot entered">Peak after tap</th>
           <th>When</th>
         </tr></thead>
         <tbody id="jrows"></tbody>
@@ -1430,9 +1429,14 @@ function showView(name) {
   view = name;
   const brand = document.getElementById('brand');
   if (brand) {
-    const canGoBack = name !== 'board';
-    brand.classList.toggle('clickable', canGoBack);
-    brand.onclick = canGoBack ? () => showView('board') : null;
+    /* Always clickable. Off the board it goes back; on the board it reloads
+       the data, because once this is installed as an app there is no address
+       bar and no reload button — the wordmark is the only thing left to
+       press. */
+    const onBoard = name === 'board';
+    brand.classList.add('clickable');
+    brand.title = onBoard ? 'Refresh the board' : 'Back to the board';
+    brand.onclick = onBoard ? () => refresh() : () => showView('board');
   }
   VIEWS.forEach(id => {
     const el = document.getElementById(id);
@@ -2323,6 +2327,37 @@ window.addEventListener('beforeinstallprompt', e => {
 });
 let notifyTestSeq = 0;   // unique tag per test, so none replaces another
 
+/* One way out for every notification.
+
+   Through the service worker where there is one: the system credits the
+   registration rather than the page, so an installed EdgeLvl shows as EdgeLvl
+   instead of as the browser, and sw.js handles the click by focusing a window
+   that is already open. `mint` rides along in data so the worker can tell the
+   page which coin to open. Falls back to the page constructor when no worker
+   has registered, which is any browser that cannot install it anyway. */
+async function showNotif(title, opts, mint) {
+  const options = { icon: '/icon-192.png', badge: '/icon-192.png', ...opts };
+  if (mint) options.data = { mint };
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && reg.showNotification) return reg.showNotification(title, options);
+    } catch (e) { /* fall through to the page constructor */ }
+  }
+  const n = new Notification(title, options);
+  n.onclick = () => { window.focus(); if (mint) openDetail(mint); n.close(); };
+  return n;
+}
+
+/* The worker asks the page to open a coin after a click, because only the page
+   knows how to render one. */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    const mint = e.data && e.data.openMint;
+    if (mint && typeof openDetail === 'function') openDetail(mint);
+  });
+}
+
 function notifyOn() {
   return localStorage.getItem(NOTIFY_KEY) === '1'
     && 'Notification' in window
@@ -2379,21 +2414,17 @@ function notifyNewCoins(list) {
 
   try {
     if (fresh.length > 2) {
-      const n = new Notification(`${fresh.length} new coins on the board`, {
+      showNotif(`${fresh.length} new coins on the board`, {
         body: fresh.map(c => c.symbol || '').filter(Boolean).slice(0, 6).join(', '),
-        icon: '/icon-192.png',
         tag: 'edgelvl-new-coins',      // replaces itself rather than stacking
       });
-      n.onclick = () => { window.focus(); n.close(); };
       return;
     }
     fresh.forEach(c => {
-      const n = new Notification(`${c.symbol || 'New coin'} — new on the board`, {
+      showNotif(`${c.symbol || 'New coin'} — new on the board`, {
         body: `${money(c.mcap)} MC · ${money(c.vol_5m)} 5m vol`,
-        icon: '/icon-192.png',
         tag: c.mint,
-      });
-      n.onclick = () => { window.focus(); openDetail(c.mint); n.close(); };
+      }, c.mint);
     });
   } catch (e) { /* refused outside a gesture — never worth breaking the poll */ }
 }
@@ -2404,14 +2435,12 @@ function notifyStateChange(r) {
   if (!make || !r.name) return;
   const [title, body] = make(r);
   try {
-    const n = new Notification(title, {
+    showNotif(title, {
       body,
-      icon: '/icon-192.png',
       // One notification per coin: a coin that moves through several states
       // replaces its own rather than stacking four of them up.
       tag: r.mint,
-    });
-    n.onclick = () => { window.focus(); openDetail(r.mint); n.close(); };
+    }, r.mint);
   } catch (e) { /* some browsers refuse outside a user gesture — not worth breaking the poll */ }
 }
 
@@ -2647,14 +2676,14 @@ function unlockView(lockId, bodyId) {
    journal through a blur, nothing more. */
 const SAMPLE_JOURNAL = {
   summary: { greenlights: 34, entered: 21, win_rate: 0.57, net_sol: 0.412,
-             avg_win: 0.48, avg_loss: -0.29, avg_peak_after_tap: 1.62 },
+             avg_win: 0.48, avg_loss: -0.29 },
   trades: [
-    { ts: '2026-08-04T19:42:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol:  0.0104, peak_after_tap: 2.10 },
-    { ts: '2026-08-04T17:15:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol: -0.0058, peak_after_tap: 1.14 },
-    { ts: '2026-08-04T14:08:00', name: 'SAMPLE', entered: false, spent_sol: 0,    pnl_sol: 0,       peak_after_tap: 1.31 },
-    { ts: '2026-08-03T22:51:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol:  0.0173, peak_after_tap: 2.84 },
-    { ts: '2026-08-03T20:30:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol: -0.0061, peak_after_tap: 1.09 },
-    { ts: '2026-08-03T16:02:00', name: 'SAMPLE', entered: false, spent_sol: 0,    pnl_sol: 0,       peak_after_tap: 1.47 },
+    { ts: '2026-08-04T19:42:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol:  0.0104 },
+    { ts: '2026-08-04T17:15:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol: -0.0058 },
+    { ts: '2026-08-04T14:08:00', name: 'SAMPLE', entered: false, spent_sol: 0,    pnl_sol: 0 },
+    { ts: '2026-08-03T22:51:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol:  0.0173 },
+    { ts: '2026-08-03T20:30:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol: -0.0061 },
+    { ts: '2026-08-03T16:02:00', name: 'SAMPLE', entered: false, spent_sol: 0,    pnl_sol: 0 },
   ],
 };
 
@@ -2721,7 +2750,6 @@ function paintJournal(d) {
     <div class="jcell"><div class="k">Net txs</div><div class="v ${cls(s.net_sol)}">${(s.net_sol ?? 0).toFixed(3)} SOL</div></div>
     <div class="jcell"><div class="k">Avg win</div><div class="v up">${pct(s.avg_win)}</div></div>
     <div class="jcell"><div class="k">Avg loss</div><div class="v down">${pct(s.avg_loss)}</div></div>
-    <div class="jcell"><div class="k">Avg peak after tap</div><div class="v">${s.avg_peak_after_tap ?? '—'}x</div></div>
   </div>`;
 
   document.getElementById('jinsights').innerHTML = insights(s).map(t => `<div class="insight">${t}</div>`).join('');
@@ -2753,15 +2781,10 @@ function paintJournal(d) {
       <td><span class="s">${esc(r.name || '')}</span></td>
       <td style="text-align:right">${res}</td>
       <td style="text-align:right" class="${cls(p)}">${p == null ? '—' : pct(p)}</td>
-      <td style="text-align:right">${r.peak_pending
-          ? `<span class="pending" title="The bot stops watching when a session ends. The real peak is measured from candles a few minutes later.">measuring…</span>`
-          : r.peak_floor
-            ? `<span class="pending" title="Measured only while the bot was watching, so it is a lower bound — the coin may have run further after the session closed. Too old to verify from candles now.">≥${r.peak_after_tap ?? '—'}x</span>`
-            : (r.peak_after_tap ?? '—') + 'x'}</td>
       <td style="text-align:right;color:var(--dimmer)">${(r.ts || '').slice(11, 16)}</td>
     </tr>`;
     })();
-  }).join('') : `<tr><td colspan="5"><div class="empty">No trades yet.</div></td></tr>`;
+  }).join('') : `<tr><td colspan="4"><div class="empty">No trades yet.</div></td></tr>`;
 }
 
 /** Read the numbers back as plain observations. No advice that the data
@@ -2829,9 +2852,10 @@ const ACCOUNT_SECTIONS = [
   ["Execution", [
     ["slippage", "Slippage", "How far price may move between quote and fill. Too tight and buys fail on the moves worth catching.", 100, "%"],
     ["priority_fee", "Priority fee", "Most you'll pay to land fast. Matters when the network is busy.", 1, "SOL"],
+    ["smoothing", "Price smoothing", "Polls the price is averaged over. 1 acts on the price as it arrives, so a take profit fires the moment it is crossed. Higher ignores a single bad quote, but a spike shorter than the window is missed entirely.", 1, "polls"],
   ]],
 ];
-const GLOBAL_KEYS = ['slippage', 'priority_fee'];
+const GLOBAL_KEYS = ['slippage', 'priority_fee', 'smoothing'];
 
 let bounds = {}, useTp2 = true;
 const F = {};
@@ -3627,9 +3651,9 @@ function wireNotifyToggle() {
   if (irow) {
     irow.style.display = '';
     if (installed) {
-      document.getElementById('install_hint').textContent =
-        'Installed. Notifications come from EdgeLvl.';
-      ibtn.style.display = 'none';
+      // Running as the app already: nothing to offer, so take the row away
+      // instead of stating the obvious back at someone.
+      irow.style.display = 'none';
     } else if (!installPrompt) {
       /* No prompt to fire, so point at the path that always works. */
       ibtn.style.display = 'none';

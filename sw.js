@@ -29,12 +29,18 @@ self.addEventListener('fetch', () => {});
  * open a second copy of the terminal. */
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+  const mint = (event.notification.data || {}).mint;
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       for (const client of list) {
-        if ('focus' in client) return client.focus();
+        if ('focus' in client) {
+          // Only the page knows how to render a coin, so hand the mint over
+          // rather than navigating and losing whatever state is on screen.
+          if (mint) client.postMessage({ openMint: mint });
+          return client.focus();
+        }
       }
-      return self.clients.openWindow('/');
+      return self.clients.openWindow(mint ? `/?coin=${mint}` : '/');
     })
   );
 });
