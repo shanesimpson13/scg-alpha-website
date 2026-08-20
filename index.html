@@ -1446,7 +1446,11 @@ async function refresh() {
     const d = await api(`/api/trending?limit=50&min_vol=${filters.vol}` +
                         `&min_mc=${filters.mc}&max_age_days=${filters.age}`);
     coins = d.coins || [];
-    notifyNewCoins(coins);
+    // sorted(), not coins: the board also drops anything under the vol/MC
+    // ratio (which the server never sees, it is not a query parameter) and
+    // anything hidden with the x. Notifying off the raw response meant alerts
+    // for coins that never reached the board, and for ones deliberately hidden.
+    notifyNewCoins(sorted());
     document.getElementById('livewrap').classList.toggle('stale', !!d.stale);
     document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
     document.getElementById('updated').textContent = `${Math.round(d.age_secs)}s ago`;
@@ -1539,6 +1543,7 @@ function onFilterEdit() {
     // reads 500 would leave the screen disagreeing with what's being filtered.
     paintFilters();
     localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
+    reseedBoardNotices();
     refresh();
   }, 450);
 }
@@ -1547,6 +1552,7 @@ document.getElementById('f_reset').onclick = () => {
   filters = { ...FILTER_DEFAULTS };
   localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
   paintFilters();
+  reseedBoardNotices();
   refresh();
 };
 paintFilters();
@@ -2353,6 +2359,12 @@ function pnlLine(r) {
    notifications is an interruption. */
 const seenMints = new Set();
 let boardSeeded = false;
+
+/* Widening a filter qualifies coins that have sat in the feed for hours. They
+   are genuinely new TO THE BOARD, but a dozen at once is exactly the burst that
+   gets notifications turned off for good, so take the next refresh as a fresh
+   baseline instead of announcing it. */
+function reseedBoardNotices() { boardSeeded = false; seenMints.clear(); }
 
 function notifyNewCoins(list) {
   const mints = (list || []).map(c => c.mint).filter(Boolean);
