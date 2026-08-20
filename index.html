@@ -2852,7 +2852,7 @@ const ACCOUNT_SECTIONS = [
   ["Execution", [
     ["slippage", "Slippage", "How far price may move between quote and fill. Too tight and buys fail on the moves worth catching.", 100, "%"],
     ["priority_fee", "Priority fee", "Most you'll pay to land fast. Matters when the network is busy.", 1, "SOL"],
-    ["smoothing", "Price smoothing", "Polls the price is averaged over. 1 acts on the price as it arrives, so a take profit fires the moment it is crossed. Higher ignores a single bad quote, but a spike shorter than the window is missed entirely.", 1, "polls"],
+    ["smoothing", "Price smoothing", "Polls the price is averaged over. 1 reacts instantly; higher ignores a bad quote but can miss a fast spike.", 1, "polls"],
   ]],
 ];
 const GLOBAL_KEYS = ['slippage', 'priority_fee', 'smoothing'];
