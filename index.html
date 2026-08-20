@@ -3573,7 +3573,10 @@ function notifySectionHTML() {
     <div class="setrow">
       <div>
         <div class="lab">Check it works</div>
-        <div class="hint" id="notify_diag">Browser permission: <b>${permTxt}</b>.${
+        <div class="hint" id="notify_diag">Browser permission: <b>${permTxt}</b>. ${
+          window.matchMedia('(display-mode: standalone)').matches
+            ? 'Running as the app, so alerts come from EdgeLvl.'
+            : 'Running in a browser tab, so alerts come from your browser. Open the installed app for them to arrive as EdgeLvl.'}${
           perm === 'granted' && !notifyOn()
             ? ' The switch above is off, so nothing is being sent.' : ''}</div>
       </div>
