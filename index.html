@@ -297,6 +297,10 @@
     .posrow button { padding: 5px 12px; font-size: 11px; }
     .wfoot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--hair);
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
+    /* Reads as the coin's name first and a link second: underlined only on
+       hover, so a column of them does not turn into a wall of blue. */
+    .jcoin { color: var(--fg); text-decoration: none; }
+    .jcoin:hover { text-decoration: underline; }
     footer a { color: var(--dim); text-decoration: none; }
     footer a:hover { color: var(--fg); text-decoration: underline; }
     .fsocial { display: flex; align-items: center; gap: 14px; margin-left: auto; }
@@ -2778,7 +2782,9 @@ function paintJournal(d) {
     const res = !r.entered ? '<span style="color:var(--dimmer)">no entry</span>'
       : (p >= 0 ? '<span class="up">win</span>' : '<span class="down">loss</span>');
     return `<tr>
-      <td><span class="s">${esc(r.name || '')}</span></td>
+      <td>${r.mint
+        ? `<a class="jcoin" href="https://gmgn.ai/sol/token/${esc(r.mint)}" target="_blank" rel="noopener" title="Open the chart on GMGN">${esc(r.name || '')}</a>`
+        : `<span class="s">${esc(r.name || '')}</span>`}</td>
       <td style="text-align:right">${res}</td>
       <td style="text-align:right" class="${cls(p)}">${p == null ? '—' : pct(p)}</td>
       <td style="text-align:right;color:var(--dimmer)">${(r.ts || '').slice(11, 16)}</td>
@@ -2852,7 +2858,7 @@ const ACCOUNT_SECTIONS = [
   ["Execution", [
     ["slippage", "Slippage", "How far price may move between quote and fill. Too tight and buys fail on the moves worth catching.", 100, "%"],
     ["priority_fee", "Priority fee", "Most you'll pay to land fast. Matters when the network is busy.", 1, "SOL"],
-    ["smoothing", "Price smoothing", "Polls the price is averaged over. 1 reacts instantly; higher ignores a bad quote but can miss a fast spike.", 1, "polls"],
+    ["smoothing", "Price smoothing (TP/SL)", "Polls averaged before TP and the stop are checked. 1 reacts instantly; higher ignores a bad quote but can miss a fast spike.", 1, "polls"],
   ]],
 ];
 const GLOBAL_KEYS = ['slippage', 'priority_fee', 'smoothing'];
@@ -3651,9 +3657,10 @@ function wireNotifyToggle() {
   if (irow) {
     irow.style.display = '';
     if (installed) {
-      // Running as the app already: nothing to offer, so take the row away
-      // instead of stating the obvious back at someone.
-      irow.style.display = 'none';
+      /* Removed, not hidden. display:none leaves the element in the DOM, so
+         the row above it is still not :last-child and keeps its bottom border
+         — a rule sitting under nothing. */
+      irow.remove();
     } else if (!installPrompt) {
       /* No prompt to fire, so point at the path that always works. */
       ibtn.style.display = 'none';
