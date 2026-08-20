@@ -126,21 +126,7 @@
 </div>
 
 <div id="review">
-  <div class="trim">
-    <div class="trimrow">
-      <label>Start</label>
-      <input type="range" id="tin" min="0" max="100" step="0.1" value="0">
-      <span class="tval" id="tinv">0:00.0</span>
-    </div>
-    <div class="trimrow">
-      <label>End</label>
-      <input type="range" id="tout" min="0" max="100" step="0.1" value="100">
-      <span class="tval" id="toutv">0:00.0</span>
-    </div>
-    <div class="sel" id="sel"></div>
-  </div>
   <div class="bar">
-    <button id="playsel">Play selection</button>
     <button class="go" id="save">Download</button>
     <button id="again">Record again</button>
   </div>
@@ -227,7 +213,15 @@ async function setup() {
 }
 
 function draw() {
-  rafId = requestAnimationFrame(draw);
+  /* Driven by the screen track's own frames, not by paint. rAF is throttled to
+     about one frame a second once the tab is hidden — and this tab is hidden
+     the moment you switch to whatever you are recording, so the canvas stopped
+     updating while the encoder carried on and the picture froze. */
+  if (vScreen.requestVideoFrameCallback) {
+    rafId = vScreen.requestVideoFrameCallback(() => draw());
+  } else {
+    rafId = requestAnimationFrame(draw);
+  }
   if (vScreen.readyState < 2) return;
   ctx.drawImage(vScreen, 0, 0, cv.width, cv.height);
 
@@ -328,15 +322,10 @@ async function onRecorded() {
   }
   duration = player.duration;
 
-  $('tin').max = $('tout').max = duration;
-  $('tin').value = 0;
-  $('tout').value = duration;
-  paintTrim();
-
   $('review').classList.add('on');
   $('opts').style.display = 'none';
   const mb = (blob.size / 1048576).toFixed(1);
-  say(`${clock(duration)} recorded, ${mb} MB. Watch it back, trim if you want.`, 'ok');
+  say(`${clock(duration)} recorded, ${mb} MB. Watch it back, then download.`, 'ok');
 }
 
 function paintTrim() {
@@ -406,23 +395,11 @@ async function exportTrim(from, to) {
   return new Blob(parts, { type: mime.split(';')[0] });
 }
 
+/* Always the original bytes: instant, and no generation loss. Trimming lived
+   here and re-encoded in real time, so a minute of video cost a minute of
+   waiting to do a job any editor does better. */
 async function save() {
-  const a = Number($('tin').value), b = Number($('tout').value);
-  const trimmed = duration - (b - a) >= 0.15;
-  let out = blob;
-
-  if (trimmed) {
-    $('save').disabled = true; $('playsel').disabled = true;
-    say(`Trimming to ${clock(b - a)} — this runs in real time.`);
-    try {
-      out = await exportTrim(a, b);
-    } catch (e) {
-      say('Could not trim: ' + (e.message || e), 'bad');
-      $('save').disabled = false; $('playsel').disabled = false;
-      return;
-    }
-    $('save').disabled = false; $('playsel').disabled = false;
-  }
+  const out = blob;
 
   const ext = out.type.includes('mp4') ? 'mp4' : 'webm';
   const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
@@ -457,9 +434,6 @@ $('start').onclick = start;
 $('stop').onclick = stop;
 $('save').onclick = save;
 $('again').onclick = again;
-$('playsel').onclick = playSelection;
-$('tin').oninput = paintTrim;
-$('tout').oninput = paintTrim;
 
 $('corner').onchange = async () => {
   if ($('corner').value !== 'off' && !camStream && screenStream) {
