@@ -305,6 +305,17 @@
        than choosing which slice of it to show. Being outside #jrange also keeps
        it clear of the range switcher's querySelectorAll, which would otherwise
        claim its click handler. */
+    .pfprow { display: flex; align-items: center; gap: 11px; margin-top: 14px;
+              padding-top: 14px; border-top: 1px solid var(--hair); }
+    .pfpdot { width: 36px; height: 36px; border-radius: 50%; flex: 0 0 36px;
+              background: var(--field); border: 1px solid var(--line);
+              background-size: cover; background-position: center; }
+    .pfptxt { flex: 1; min-width: 0; font-size: 12px; }
+    .pfphint { font-size: 10.5px; color: var(--dimmer); margin-top: 2px; }
+    .pfpbtn { background: none; border: 1px solid var(--line); border-radius: 7px;
+              padding: 6px 11px; font-family: inherit; font-size: 11px;
+              color: var(--dim); cursor: pointer; }
+    .pfpbtn:hover { background: var(--hover); color: var(--fg); }
     .jhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
     .jshareb { flex: 0 0 auto; background: none; border: 1px solid var(--line);
                border-radius: 7px; padding: 8px 14px; font-family: inherit;
@@ -1082,6 +1093,17 @@
           <p class="wtip">Send SOL on the Solana network to this address.</p>
           <div class="waddr" id="waddr" role="button" tabindex="0"
                title="Click to copy">…</div>
+          <!-- Only ever used to sign a share card, so it lives on this device
+               rather than on our servers. -->
+          <div class="pfprow">
+            <div class="pfpdot" id="pfpdot"></div>
+            <div class="pfptxt">
+              <div>Profile picture</div>
+              <div class="pfphint">Shown on your share card. Stays on this device.</div>
+            </div>
+            <label class="pfpbtn">Choose<input type="file" id="pfpin" accept="image/*" hidden></label>
+            <button class="pfpbtn" id="pfpclr" style="display:none">Remove</button>
+          </div>
           <!-- Deposits land on their own schedule, so the watcher fires no
                matter which tab is open. It used to write into the shared
                #wmsg, which put "Deposit received…" under the Withdraw
@@ -1584,6 +1606,47 @@ function onFilterEdit() {
   }, 450);
 }
 ['f_vol', 'f_mc', 'f_age', 'f_volmc'].forEach(id => { document.getElementById(id).oninput = onFilterEdit; });
+/* Downscaled to 160px before storing: a phone photo is several megabytes and
+   localStorage holds about five in total, so the raw file would fill it and
+   throw. 160 is ample for a 46px circle at 2x. */
+function paintPfp() {
+  const p = myPic();
+  const dot = document.getElementById('pfpdot');
+  const clr = document.getElementById('pfpclr');
+  if (!dot) return;
+  dot.style.backgroundImage = p ? `url(${p})` : '';
+  if (clr) clr.style.display = p ? '' : 'none';
+}
+
+document.getElementById('pfpin').onchange = e => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const S = 160, c = document.createElement('canvas');
+      c.width = c.height = S;
+      const g = c.getContext('2d');
+      const side = Math.min(img.width, img.height);
+      g.drawImage(img, (img.width - side) / 2, (img.height - side) / 2,
+                  side, side, 0, 0, S, S);
+      try { localStorage.setItem(PIC_KEY, c.toDataURL('image/jpeg', 0.85)); }
+      catch (err) { /* storage full — the card simply goes without one */ }
+      paintPfp();
+    };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(f);
+  e.target.value = '';
+};
+
+document.getElementById('pfpclr').onclick = () => {
+  try { localStorage.removeItem(PIC_KEY); } catch (e) {}
+  paintPfp();
+};
+paintPfp();
+
 document.getElementById('jshare').onclick = shareCard;
 document.getElementById('f_reset').onclick = () => {
   filters = { ...FILTER_DEFAULTS };
@@ -3094,6 +3157,7 @@ function paintAmount() {
 async function loadWallet() {
   try {
     const a = await api('/api/account');          // creates it on first call
+    MY_ADDRESS = a.address || '';
     document.getElementById('waddr').textContent = a.address;
     paintQR(a.address);
     document.querySelectorAll('.netrow').forEach((r, i) =>
@@ -3774,6 +3838,25 @@ function wireNotifyToggle() {
    fixed regardless of the viewer's window, and nothing here can pick up a coin
    name or a wallet address that was on screen at the time. */
 const CARD_W = 1200, CARD_H = 675, CARD_S = 2;
+const PIC_KEY = 'edgelvl_pfp';
+let MY_ADDRESS = '';
+
+/* Kept on the device rather than uploaded. A picture on a share card does not
+   justify an upload endpoint, a bucket and a moderation question. */
+function myPic() { try { return localStorage.getItem(PIC_KEY) || ''; } catch (e) { return ''; } }
+
+function shortAddr(a) {
+  return a && a.length > 12 ? `${a.slice(0, 4)}...${a.slice(-4)}` : (a || '');
+}
+
+function loadImg(src) {
+  return new Promise(res => {
+    if (!src) return res(null);
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = src;
+  });
+}
 
 const EDGE_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="97.350 166.297 180.303 39.203">' +
@@ -3819,12 +3902,19 @@ async function buildCard(sum, rangeLabel) {
   x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
   x.fillText('NET PROFIT', M, 208);
 
-  x.font = `600 108px ${MONO}`; x.fillStyle = up ? GREEN : RED;
+  // Fit the figure to a box instead of trusting one size: +0.413 and -12.345
+  // are very different widths, and a fixed 108px made the short one shout.
   const netTxt = `${up ? '+' : ''}${net.toFixed(3)}`;
-  x.fillText(netTxt, M, 300);
+  let size = 84;
+  x.font = `600 ${size}px ${MONO}`;
+  while (x.measureText(netTxt).width > 520 && size > 40) {
+    size -= 4; x.font = `600 ${size}px ${MONO}`;
+  }
+  x.fillStyle = up ? GREEN : RED;
+  x.fillText(netTxt, M, 296);
   const w = x.measureText(netTxt).width;
-  x.font = `500 34px ${MONO}`; x.fillStyle = DIM;
-  x.fillText(' SOL', M + w, 300);
+  x.font = `500 ${Math.round(size * 0.34)}px ${MONO}`; x.fillStyle = DIM;
+  x.fillText(' SOL', M + w, 296);
 
   // Stats, evenly spaced on one baseline so the eye reads across them.
   const wr = sum.win_rate == null ? null : Math.round(sum.win_rate * 100);
@@ -3844,12 +3934,30 @@ async function buildCard(sum, rangeLabel) {
     x.fillText(v, cx, top + 100);
   });
 
-  x.beginPath(); x.moveTo(M, CARD_H - 108); x.lineTo(CARD_W - M, CARD_H - 108); x.stroke();
-  x.font = `500 19px ${MONO}`; x.fillStyle = INK;
-  x.fillText('edgelvl.app', M, CARD_H - 66);
-  x.font = `400 15px ${MONO}`; x.fillStyle = DIMMER;
+  x.beginPath(); x.moveTo(M, CARD_H - 112); x.lineTo(CARD_W - M, CARD_H - 112); x.stroke();
+
+  // Whose card this is: picture then wallet, the way these are read elsewhere.
+  const baseY = CARD_H - 62, pic = await loadImg(myPic()), D = 46;
+  let cursor = M;
+  if (pic) {
+    x.save();
+    x.beginPath();
+    x.arc(M + D / 2, baseY - 15, D / 2, 0, Math.PI * 2);
+    x.clip();
+    const side = Math.min(pic.width, pic.height);
+    x.drawImage(pic, (pic.width - side) / 2, (pic.height - side) / 2, side, side,
+                M, baseY - 15 - D / 2, D, D);
+    x.restore();
+    cursor = M + D + 16;
+  }
+  if (MY_ADDRESS) {
+    x.font = `500 21px ${MONO}`; x.fillStyle = INK;
+    x.fillText(shortAddr(MY_ADDRESS), cursor, baseY - 7);
+  }
   x.textAlign = 'right';
-  x.fillText('you pick the coin, the bot runs the trade', CARD_W - M, CARD_H - 66);
+  x.font = `500 19px ${MONO}`; x.fillStyle = INK;
+  x.fillText('edgelvl.app', CARD_W - M, baseY - 7);
+  x.textAlign = 'left';
 
   return cv;
 }
