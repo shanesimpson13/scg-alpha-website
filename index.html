@@ -2086,7 +2086,9 @@ function paintAmtPct(c) {
 
 function paintStrat(c) {
   const el = document.getElementById('stratnm');
-  if (el) el.textContent = coinPreset.get(c.mint) || OWN_NAME;
+  // Mirror the server: no per-coin choice means the default preset runs, not
+  // the base settings. Naming the wrong one here is worse than naming none.
+  if (el) el.textContent = coinPreset.get(c.mint) || DEFAULT_PRESET || OWN_NAME;
 }
 
 /* The button refuses what can't be spent, and says why.
@@ -2189,7 +2191,9 @@ async function openStrategy(c) {
     return;
   }
 
-  const chosen = coinPreset.get(c.mint) || '';
+  // Same fallback as the server, so the tick sits on the strategy that will
+  // actually run rather than on the base settings.
+  const chosen = coinPreset.get(c.mint) || DEFAULT_PRESET || '';
   const row = (name, vals, label) => {
     const on = (name || '') === chosen;
     // Only which one is SELECTED. Which is default belongs on the settings
