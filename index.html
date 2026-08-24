@@ -2331,6 +2331,34 @@ const NOTIFY_KEY = 'edgelvl_notify';
    install offer is held for the button in Settings. Chrome fires
    beforeinstallprompt once, and only when it considers the site installable —
    there is no way to summon it later, so it has to be captured here. */
+/* ── picking up new builds ─────────────────────────────────────────────────
+   Installed as an app there is no address bar and no reload, so this window
+   would otherwise run its original HTML forever. Compare the page's ETag on
+   focus and reload when the deployment changes.
+
+   Reloading is safe whenever: the bot runs server-side, so this page is a view
+   of a position rather than the thing managing it. */
+let BUILD_TAG = null;
+
+async function currentBuild() {
+  try {
+    const r = await fetch('/', { method: 'HEAD', cache: 'no-store' });
+    return r.headers.get('etag') || r.headers.get('last-modified');
+  } catch (e) { return null; }
+}
+
+currentBuild().then(t => { BUILD_TAG = t; });
+
+async function checkForUpdate() {
+  if (!BUILD_TAG || document.hidden) return;
+  const now = await currentBuild();
+  if (now && now !== BUILD_TAG) location.reload();
+}
+
+document.addEventListener('visibilitychange', checkForUpdate);
+window.addEventListener('focus', checkForUpdate);
+setInterval(checkForUpdate, 5 * 60 * 1000);
+
 let installPrompt = null;
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
