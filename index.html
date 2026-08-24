@@ -302,6 +302,19 @@
     /* Pushed to the far end of the range row: it is an action, not another
        range to choose between. */
     .jshareb { margin-left: auto; }
+    #cardwrap { position: fixed; inset: 0; background: rgba(0,0,0,.55);
+                display: grid; place-items: center; z-index: 90; padding: 20px; }
+    .cardbox { background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+               padding: 14px; max-width: min(760px, 94vw); }
+    .cardbox img { width: 100%; display: block; border-radius: 8px; border: 1px solid var(--hair); }
+    .cardacts { display: flex; gap: 10px; margin-top: 12px; }
+    .cardacts a, .cardacts button {
+      background: none; border: 1px solid var(--line); border-radius: 7px;
+      padding: 9px 14px; font-family: inherit; font-size: 12px; color: var(--dim);
+      cursor: pointer; text-decoration: none; }
+    .cardacts a:hover, .cardacts button:hover { background: var(--hover); color: var(--fg); }
+    .cardacts .carddl { color: var(--fg); border-color: var(--dim); }
+    .cardhint { font-size: 10.5px; color: var(--dimmer); margin-top: 9px; }
     .jcoin { color: var(--fg); text-decoration: none; }
     .jcoin:hover { text-decoration: underline; }
     footer a { color: var(--dim); text-decoration: none; }
@@ -3802,6 +3815,34 @@ async function buildCard(sum, rangeLabel) {
   return cv;
 }
 
+function cardBlob(cv) {
+  return new Promise(res => cv.toBlob(res, 'image/png'));
+}
+
+/* Put the card on screen. Handing over a file is the unreliable part — a
+   detached <a download> can be ignored outright in an installed app, with no
+   error to catch — so the image is shown first and saving is offered from
+   there. Worst case you right-click it, which always works. */
+function showCard(url, filename) {
+  document.getElementById('cardwrap')?.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'cardwrap';
+  wrap.innerHTML = `
+    <div class="cardbox">
+      <img src="${url}" alt="Your EdgeLvl results">
+      <div class="cardacts">
+        <a class="carddl" href="${url}" download="${filename}">Download PNG</a>
+        <button id="cardshare" style="display:none">Share</button>
+        <button id="cardclose">Close</button>
+      </div>
+      <div class="cardhint">Right-click the image to copy it, or use Download.</div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.onclick = e => { if (e.target === wrap) wrap.remove(); };
+  document.getElementById('cardclose').onclick = () => wrap.remove();
+  return wrap;
+}
+
 async function shareCard() {
   const btn = document.getElementById('jshare');
   const was = btn.textContent;
@@ -3813,15 +3854,27 @@ async function shareCard() {
     const d = await api('/api/trades?limit=500' + (days ? `&days=${days}` : ''));
     const label = days ? `last ${days} day${String(days) === '1' ? '' : 's'}` : 'all time';
     const cv = await buildCard(d.summary || {}, label);
-    const a = document.createElement('a');
-    a.download = `edgelvl-${label.replace(/\s+/g, '-')}.png`;
-    a.href = cv.toDataURL('image/png');
-    a.click();
-    btn.textContent = 'Saved';
-    setTimeout(() => { btn.textContent = was; btn.disabled = false; }, 1600);
+    const name = `edgelvl-${label.replace(/\s+/g, '-')}.png`;
+    const blob = await cardBlob(cv);
+    const url = URL.createObjectURL(blob);
+    showCard(url, name);
+
+    // Where the browser has a real share sheet, offer it: on a phone or in the
+    // installed app that is the shortest path from here to a post.
+    const file = new File([blob], name, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      const sb = document.getElementById('cardshare');
+      sb.style.display = '';
+      sb.onclick = () => navigator.share({ files: [file] }).catch(() => {});
+    }
+    btn.textContent = was; btn.disabled = false;
   } catch (e) {
-    btn.textContent = 'Failed';
-    setTimeout(() => { btn.textContent = was; btn.disabled = false; }, 1600);
+    // Say which part failed. "Failed" on its own is how the wrong endpoint went
+    // unnoticed for two rounds.
+    const why = e && e.message === 'bad-key' ? 'Sign in first'
+              : `Failed: ${(e && e.message) || e}`;
+    btn.textContent = why;
+    setTimeout(() => { btn.textContent = was; btn.disabled = false; }, 3200);
   }
 }
 
