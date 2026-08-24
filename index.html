@@ -301,7 +301,16 @@
        hover, so a column of them does not turn into a wall of blue. */
     /* Pushed to the far end of the range row: it is an action, not another
        range to choose between. */
-    .jshareb { margin-left: auto; }
+    /* Beside the heading, not among the ranges: it acts on the journal rather
+       than choosing which slice of it to show. Being outside #jrange also keeps
+       it clear of the range switcher's querySelectorAll, which would otherwise
+       claim its click handler. */
+    .jhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .jshareb { flex: 0 0 auto; background: none; border: 1px solid var(--line);
+               border-radius: 7px; padding: 8px 14px; font-family: inherit;
+               font-size: 12px; color: var(--dim); cursor: pointer; }
+    .jshareb:hover { background: var(--hover); color: var(--fg); }
+    .jshareb:disabled { opacity: .55; cursor: default; }
     #cardwrap { position: fixed; inset: 0; background: rgba(0,0,0,.55);
                 display: grid; place-items: center; z-index: 90; padding: 20px; }
     .cardbox { background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
@@ -995,16 +1004,18 @@
   <div id="detail"></div>
 
   <div id="journal" style="display:none">
-    <div class="sethead">
-      <h2>Trade journal</h2>
-      <p>Every coin you greenlit, and what it did.</p>
+    <div class="sethead jhead">
+      <div>
+        <h2>Trade journal</h2>
+        <p>Every coin you greenlit, and what it did.</p>
+      </div>
+      <button id="jshare" class="jshareb" title="Build a PNG of your results">Share card</button>
     </div>
     <div class="jrange" id="jrange">
       <button data-days="1">1D</button>
       <button data-days="7">7D</button>
       <button data-days="30">30D</button>
       <button data-days="" class="on">All</button>
-      <button id="jshare" class="jshareb" title="Save a PNG for sharing">Share card</button>
     </div>
     <div id="jlock">
       <div id="jbody">
