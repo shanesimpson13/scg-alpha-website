@@ -299,6 +299,9 @@
              font-size: 11px; color: var(--dimmer); line-height: 1.7; }
     /* Reads as the coin's name first and a link second: underlined only on
        hover, so a column of them does not turn into a wall of blue. */
+    /* Pushed to the far end of the range row: it is an action, not another
+       range to choose between. */
+    .jshareb { margin-left: auto; }
     .jcoin { color: var(--fg); text-decoration: none; }
     .jcoin:hover { text-decoration: underline; }
     footer a { color: var(--dim); text-decoration: none; }
@@ -988,6 +991,7 @@
       <button data-days="7">7D</button>
       <button data-days="30">30D</button>
       <button data-days="" class="on">All</button>
+      <button id="jshare" class="jshareb" title="Save a PNG for sharing">Share card</button>
     </div>
     <div id="jlock">
       <div id="jbody">
@@ -1556,6 +1560,7 @@ function onFilterEdit() {
   }, 450);
 }
 ['f_vol', 'f_mc', 'f_age', 'f_volmc'].forEach(id => { document.getElementById(id).oninput = onFilterEdit; });
+document.getElementById('jshare').onclick = shareCard;
 document.getElementById('f_reset').onclick = () => {
   filters = { ...FILTER_DEFAULTS };
   localStorage.setItem('edgelvl_filters', JSON.stringify(filters));
@@ -3709,6 +3714,113 @@ function wireNotifyToggle() {
     }
     el.setAttribute('data-asked', '1');
   };
+}
+
+
+/* ── shareable PnL card ────────────────────────────────────────────────────
+   Canvas rather than a screenshot: the numbers stay crisp at 2x, the layout is
+   fixed regardless of the viewer's window, and nothing here can pick up a coin
+   name or a wallet address that was on screen at the time. */
+const CARD_W = 1200, CARD_H = 675, CARD_S = 2;
+
+const EDGE_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="97.350 166.297 180.303 39.203">' +
+  '<g fill="%COL%">' +
+  document.querySelector('.brand .wordmark').innerHTML.replace(/fill="[^"]*"/g, '') +
+  '</g></svg>';
+
+function edgeMark(colour) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = 'data:image/svg+xml;charset=utf-8,'
+            + encodeURIComponent(EDGE_SVG.replace('%COL%', colour));
+  });
+}
+
+async function buildCard(sum, rangeLabel) {
+  const cv = document.createElement('canvas');
+  cv.width = CARD_W * CARD_S; cv.height = CARD_H * CARD_S;
+  const x = cv.getContext('2d');
+  x.scale(CARD_S, CARD_S);
+
+  const INK = '#14140f', DIM = 'rgba(0,0,0,0.58)', DIMMER = 'rgba(0,0,0,0.38)';
+  const LINE = 'rgba(0,0,0,0.11)', GREEN = '#12924b', RED = '#c0362c';
+  const MONO = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace';
+
+  x.fillStyle = '#fbfbfa'; x.fillRect(0, 0, CARD_W, CARD_H);
+  x.strokeStyle = LINE; x.lineWidth = 1;
+  x.strokeRect(28.5, 28.5, CARD_W - 57, CARD_H - 57);
+
+  const M = 76;
+  const mark = await edgeMark(INK);
+  if (mark) x.drawImage(mark, M, 62, 132, 132 * (39.203 / 180.303));
+
+  x.font = `500 15px ${MONO}`; x.fillStyle = DIMMER;
+  x.textAlign = 'right';
+  x.fillText(rangeLabel.toUpperCase(), CARD_W - M, 88);
+  x.textAlign = 'left';
+
+  const net = Number(sum.net_sol || 0);
+  const up = net >= 0;
+  x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
+  x.fillText('NET PROFIT', M, 208);
+
+  x.font = `600 108px ${MONO}`; x.fillStyle = up ? GREEN : RED;
+  const netTxt = `${up ? '+' : ''}${net.toFixed(3)}`;
+  x.fillText(netTxt, M, 300);
+  const w = x.measureText(netTxt).width;
+  x.font = `500 34px ${MONO}`; x.fillStyle = DIM;
+  x.fillText(' SOL', M + w, 300);
+
+  // Stats, evenly spaced on one baseline so the eye reads across them.
+  const wr = sum.win_rate == null ? null : Math.round(sum.win_rate * 100);
+  const cells = [
+    ['GREENLIGHTS', String(sum.greenlights ?? 0)],
+    ['ENTERED', String(sum.entered ?? 0)],
+    ['WIN RATE', wr == null ? '—' : wr + '%'],
+  ];
+  const top = 392, colW = (CARD_W - M * 2) / cells.length;
+  x.strokeStyle = LINE;
+  x.beginPath(); x.moveTo(M, top); x.lineTo(CARD_W - M, top); x.stroke();
+  cells.forEach(([k, v], i) => {
+    const cx = M + colW * i;
+    x.font = `500 14px ${MONO}`; x.fillStyle = DIMMER;
+    x.fillText(k, cx, top + 40);
+    x.font = `600 52px ${MONO}`; x.fillStyle = INK;
+    x.fillText(v, cx, top + 100);
+  });
+
+  x.beginPath(); x.moveTo(M, CARD_H - 108); x.lineTo(CARD_W - M, CARD_H - 108); x.stroke();
+  x.font = `500 19px ${MONO}`; x.fillStyle = INK;
+  x.fillText('edgelvl.app', M, CARD_H - 66);
+  x.font = `400 15px ${MONO}`; x.fillStyle = DIMMER;
+  x.textAlign = 'right';
+  x.fillText('you pick the coin, the bot runs the trade', CARD_W - M, CARD_H - 66);
+
+  return cv;
+}
+
+async function shareCard() {
+  const btn = document.getElementById('jshare');
+  const was = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Building…';
+  try {
+    const days = (document.querySelector('#jrange button.on') || {}).dataset?.days || '';
+    const d = await api(`/api/journal${days ? '?days=' + days : ''}`);
+    const label = days ? `last ${days} day${days === '1' ? '' : 's'}` : 'all time';
+    const cv = await buildCard(d.summary || {}, label);
+    const a = document.createElement('a');
+    a.download = `edgelvl-${label.replace(/\s+/g, '-')}.png`;
+    a.href = cv.toDataURL('image/png');
+    a.click();
+    btn.textContent = 'Saved';
+    setTimeout(() => { btn.textContent = was; btn.disabled = false; }, 1600);
+  } catch (e) {
+    btn.textContent = 'Failed';
+    setTimeout(() => { btn.textContent = was; btn.disabled = false; }, 1600);
+  }
 }
 
 /** One rung or two — keep the page honest about what actually gets sold. */
