@@ -3807,9 +3807,11 @@ async function shareCard() {
   const was = btn.textContent;
   btn.disabled = true; btn.textContent = 'Building…';
   try {
-    const days = (document.querySelector('#jrange button.on') || {}).dataset?.days || '';
-    const d = await api(`/api/journal${days ? '?days=' + days : ''}`);
-    const label = days ? `last ${days} day${days === '1' ? '' : 's'}` : 'all time';
+    // The same call and the same variable the journal itself uses, so the card
+    // can never disagree with the page it was made from.
+    const days = journalDays || '';
+    const d = await api('/api/trades?limit=500' + (days ? `&days=${days}` : ''));
+    const label = days ? `last ${days} day${String(days) === '1' ? '' : 's'}` : 'all time';
     const cv = await buildCard(d.summary || {}, label);
     const a = document.createElement('a');
     a.download = `edgelvl-${label.replace(/\s+/g, '-')}.png`;
