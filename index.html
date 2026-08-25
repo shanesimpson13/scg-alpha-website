@@ -853,6 +853,10 @@
              border: 1px solid var(--line); border-radius: 12px; padding: 13px 13px 12px;
              cursor: pointer; color: var(--fg); font-family: inherit; min-height: 84px; }
     .stile:hover { background: var(--hover); }
+    .stile[draggable="true"] { cursor: grab; }
+    .stile.dragging { opacity: .4; cursor: grabbing; }
+    /* Marks where it would land, on the leading edge it will be inserted at. */
+    .stile.dragover { box-shadow: inset 3px 0 0 var(--green); }
     .stile.on { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
     .stile .nm { font-size: 13px; font-weight: 600; padding-right: 24px;
                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3464,13 +3468,66 @@ function strategyTilesHTML() {
   };
   return `<div class="stiles">
     ${tile('', OWN, OWN_NAME)}
-    ${Object.keys(PRESETS).map(n => tile(n, { ...OWN, ...PRESETS[n] }, n)).join('')}
+    ${presetOrder().map(n => tile(n, { ...OWN, ...PRESETS[n] }, n)).join('')}
     <div class="stile add" id="addstrat" role="button" tabindex="0"
          title="New strategy"><span>+</span></div>
   </div>
   <div class="setactions">
-    <span class="hintline">Click one to pick it. The default runs when a coin doesn't name a strategy.</span>
+    <span class="hintline">Click one to pick it, drag to reorder. The default runs when a coin doesn't name a strategy.</span>
   </div>`;
+}
+
+const ORDER_KEY = 'edgelvl_preset_order';
+
+/* Stored order first, then anything not in it. A strategy made on another
+   device is absent from the list and would otherwise disappear from the grid. */
+function presetOrder() {
+  const all = Object.keys(PRESETS);
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(ORDER_KEY) || '[]'); } catch (e) {}
+  const known = saved.filter(n => all.includes(n));
+  return known.concat(all.filter(n => !known.includes(n)));
+}
+
+function saveOrder(names) {
+  try { localStorage.setItem(ORDER_KEY, JSON.stringify(names)); } catch (e) {}
+}
+
+/* HTML5 drag rather than pointer maths: it gives keyboard and accessibility
+   behaviour for free and is about a tenth of the code. */
+function wireReorder() {
+  let from = null;
+  document.querySelectorAll('.stile[data-s]').forEach(el => {
+    if (!el.dataset.s) return;            // the base settings tile stays put
+    el.draggable = true;
+    el.ondragstart = e => {
+      from = el.dataset.s;
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      // Firefox refuses to start a drag without data set.
+      e.dataTransfer.setData('text/plain', from);
+    };
+    el.ondragend = () => {
+      from = null;
+      document.querySelectorAll('.stile').forEach(t =>
+        t.classList.remove('dragging', 'dragover'));
+    };
+    el.ondragover = e => {
+      if (from === null || el.dataset.s === from) return;
+      e.preventDefault();
+      el.classList.add('dragover');
+    };
+    el.ondragleave = () => el.classList.remove('dragover');
+    el.ondrop = e => {
+      e.preventDefault();
+      const to = el.dataset.s;
+      if (!from || !to || from === to) return;
+      const names = presetOrder();
+      names.splice(names.indexOf(to), 0, ...names.splice(names.indexOf(from), 1));
+      saveOrder(names);
+      renderSettings();
+    };
+  });
 }
 
 function wireStrategyTiles() {
@@ -3596,6 +3653,7 @@ function renderSettings() {
     + '</div>';
 
   wireStrategyTiles();
+  wireReorder();
   wireNotifyToggle();
   wireTheme();
 
