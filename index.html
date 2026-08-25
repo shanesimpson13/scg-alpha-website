@@ -329,19 +329,14 @@
     .cardbox img { width: 100%; display: block; border-radius: 8px; border: 1px solid var(--hair); }
     .cardbox { position: relative; }
     .cardacts { display: flex; gap: 10px; margin-top: 12px; }
-    /* Square, so the glyph sits centred rather than floating in a text button. */
-    .cardic { display: inline-grid; place-items: center; width: 40px; height: 40px;
+    /* Glyph then label, so the icon carries it and the word confirms it. */
+    .cardic { display: inline-flex; align-items: center; gap: 8px;
               background: none; border: 1px solid var(--line); border-radius: 8px;
-              color: var(--dim); cursor: pointer; text-decoration: none; padding: 0; }
-    .cardic svg { width: 19px; height: 19px; display: block; }
+              padding: 9px 14px; font-family: inherit; font-size: 12px;
+              color: var(--dim); cursor: pointer; text-decoration: none; }
+    .cardic svg { width: 17px; height: 17px; display: block; flex: 0 0 auto; }
     .cardic:hover { background: var(--hover); color: var(--fg); }
     .cardic.carddl { color: var(--fg); border-color: var(--dim); }
-    .cardx { position: absolute; top: -14px; right: -14px; width: 32px; height: 32px;
-             display: grid; place-items: center; border-radius: 50%;
-             background: var(--bg); border: 1px solid var(--line); color: var(--dim);
-             cursor: pointer; padding: 0; z-index: 1; }
-    .cardx svg { width: 15px; height: 15px; display: block; }
-    .cardx:hover { color: var(--fg); border-color: var(--dim); }
     .cardhint { font-size: 10.5px; color: var(--dimmer); margin-top: 9px; }
     .jcoin { color: var(--fg); text-decoration: none; }
     .jcoin:hover { text-decoration: underline; }
@@ -3994,25 +3989,21 @@ function showCard(url, filename) {
   wrap.id = 'cardwrap';
   wrap.innerHTML = `
     <div class="cardbox">
-      <button id="cardclose" class="cardx" title="Close" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
+      <button class="modal-x" id="cardclose" aria-label="Close">&times;</button>
       <img src="${url}" alt="Your EdgeLvl results">
       <div class="cardacts">
-        <a class="cardic carddl" href="${url}" download="${filename}"
-           title="Download PNG" aria-label="Download PNG">
+        <a class="cardic carddl" href="${url}" download="${filename}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <span>Download</span>
         </a>
-        <button id="cardshare" class="cardic" style="display:none"
-                title="Share" aria-label="Share">
+        <button id="cardshare" class="cardic" style="display:none">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 3v13"/><path d="m8 7 4-4 4 4"/>
             <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+          <span>Share</span>
         </button>
       </div>
       <div class="cardhint">Right-click the image to copy it, or use the download button.</div>
