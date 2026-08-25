@@ -3921,7 +3921,7 @@ async function buildCard(sum, rangeLabel) {
 
   // The return leads, the amount follows it, the way a P&L line is read.
   x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
-  x.fillText('REALIZED PNL', M, 392);
+  x.fillText('REALIZED PNL', M, 394);
 
   const staked = Number(sum.staked || 0);
   const pctTxt = staked > 0
@@ -3929,19 +3929,19 @@ async function buildCard(sum, rangeLabel) {
     : `${up ? '+' : ''}${net.toFixed(3)} SOL`;
 
   // Fit rather than trust one size: +4.8% and -128.4% are different widths.
-  let size = 88;
+  let size = 54;
   x.font = `600 ${size}px ${MONO}`;
-  while (x.measureText(pctTxt).width > 520 && size > 44) {
-    size -= 4; x.font = `600 ${size}px ${MONO}`;
+  while (x.measureText(pctTxt).width > 420 && size > 32) {
+    size -= 3; x.font = `600 ${size}px ${MONO}`;
   }
   x.fillStyle = up ? GREEN : RED;
-  x.fillText(pctTxt, M, 470);
+  x.fillText(pctTxt, M, 456);
 
   if (staked > 0) {
     const w = x.measureText(pctTxt).width;
-    x.font = `600 ${Math.round(size * 0.38)}px ${MONO}`;
+    x.font = `600 ${Math.round(size * 0.44)}px ${MONO}`;
     x.fillStyle = up ? GREEN : RED;
-    x.fillText(`  ${up ? '+' : ''}${net.toFixed(3)} SOL`, M + w, 470);
+    x.fillText(`  ${up ? '+' : ''}${net.toFixed(3)} SOL`, M + w, 456);
   }
 
   x.beginPath(); x.moveTo(M, CARD_H - 112); x.lineTo(CARD_W - M, CARD_H - 112); x.stroke();
