@@ -16,6 +16,7 @@
 
     /* One theme. The accents are the darker set, so they read against white. */
     :root {
+      color-scheme: light dark;
       --bg: #fbfbfa;
       --panel: #f2f2f0;
       --fg: #14140f;
@@ -28,6 +29,27 @@
       --green: #12924b;
       --amber: #a86a00;
       --red: #c0362c;
+      --ink-on-accent: #ffffff;   /* text that sits ON a green/red fill */
+    }
+
+    /* One theme, chosen explicitly. The app is a tool people leave open for
+       hours, so it follows the stored preference rather than the OS: switching
+       the system at sunset should not restyle a chart mid-trade. */
+    :root[data-theme="dark"] {
+      --bg: #0e0e10;
+      --panel: #16161a;
+      --fg: #f2f2ef;
+      --line: rgba(255, 255, 255, 0.14);
+      --hair: rgba(255, 255, 255, 0.08);
+      --dim: rgba(255, 255, 255, 0.62);
+      --dimmer: rgba(255, 255, 255, 0.40);
+      --field: rgba(255, 255, 255, 0.045);
+      --hover: rgba(255, 255, 255, 0.06);
+      /* Lifted: the paper greens and reds go muddy on near-black. */
+      --green: #2ecc71;
+      --amber: #e0a12a;
+      --red: #ff5f52;
+      --ink-on-accent: #0e0e10;
     }
 
     body {
@@ -86,8 +108,8 @@
        between adjacent buttons, which still leaves clear space between the
        hover plates. */
     .icobtn + .icobtn { margin-left: -10px; }
-    .icobtn:hover { background: rgba(0, 0, 0, 0.07); color: var(--fg); }
-    .icobtn:active { background: rgba(0, 0, 0, 0.12); }
+    .icobtn:hover { background: var(--hover); color: var(--fg); }
+    .icobtn:active { background: var(--line); }
     .icobtn svg { width: 14px; height: 14px; display: block; }
     /* .status a dims every link in the header; the balance shouldn't be dim. */
 
@@ -362,7 +384,7 @@
       color: var(--fg); padding: 13px 14px; font-family: inherit; font-size: 13px;
       border-radius: 7px; text-align: center;
     }
-    #gate input:focus { outline: none; border-color: rgba(124,255,160,.45); }
+    #gate input:focus { outline: none; border-color: var(--green); }
     #gate button {
       width: 100%; margin-top: 10px; background: var(--green); color: #000;
       border: 0; padding: 13px; font-family: inherit; font-size: 13px; font-weight: 600;
@@ -492,13 +514,13 @@
       color: var(--dimmer); opacity: 0; transition: opacity .12s, background .12s;
     }
     tr:hover .hidex { opacity: 1; }
-    .hidex:hover { background: rgba(0,0,0,.07); color: var(--fg); }
+    .hidex:hover { background: var(--hover); color: var(--fg); }
     .hidex:focus-visible { opacity: 1; outline: 2px solid var(--dim); }
     .hiddenbtn {
       font-size: 11.5px; color: var(--dim); background: none; border: 0;
       cursor: pointer; padding: 3px 7px; border-radius: 6px;
     }
-    .hiddenbtn:hover { background: rgba(0,0,0,.07); color: var(--fg); }
+    .hiddenbtn:hover { background: var(--hover); color: var(--fg); }
     /* Why the bot is not buying. Amber rather than red: nothing is wrong, a
        rule is doing its job — but it has to be legible at a glance, because
        otherwise a held trade is indistinguishable from a stuck one. */
@@ -618,7 +640,7 @@
       font-family: inherit; font-size: 10.5px; padding: 4px 9px; border-radius: 5px;
       cursor: pointer; text-decoration: none;
     }
-    .mintline button:hover, .mintline a:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    .mintline button:hover, .mintline a:hover { color: var(--fg); border-color: var(--dim); }
     .earlier { font-size: 10.5px; color: var(--dimmer); margin-top: 4px; }
     .earlier b.up { color: var(--green); }
     .earlier b.down { color: var(--red); }
@@ -652,7 +674,7 @@
     #dstatus b { font-weight: 600; }
     #dstatus .when { margin-left: auto; color: var(--dimmer); font-size: 11px; }
 
-    .glbtn { width: 100%; background: var(--green); color: #000; border: 0; padding: 16px;
+    .glbtn { width: 100%; background: var(--green); color: var(--ink-on-accent); border: 0; padding: 16px;
              font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 9px;
              cursor: pointer; letter-spacing: .04em; }
     .glbtn:hover:not(:disabled) { opacity: .88; }
@@ -696,7 +718,7 @@
                      cursor: pointer; }
     .amtrow button:last-child { border-right: 0; flex: 0 0 38px; font-size: 11px; }
     .amtrow button:hover { background: var(--hover); color: var(--fg); }
-    .amtrow button.on { background: rgba(127,127,127,.16); color: var(--fg); font-weight: 700; }
+    .amtrow button.on { background: var(--hover); color: var(--fg); font-weight: 700; }
     /* The strategy picker is a real control, not a hidden gear — which one runs
        matters as much as the amount, so it reads at the same weight. */
     .stratwrap { position: relative; }
@@ -800,8 +822,8 @@
       border-radius: 6px; padding: 5px 10px; font: inherit; font-size: 11.5px;
       cursor: pointer; transition: background .12s, color .12s;
     }
-    .jrange button:hover { background: rgba(0, 0, 0, 0.07); color: var(--fg); }
-    .jrange button:active { background: rgba(0, 0, 0, 0.12); }
+    .jrange button:hover { background: var(--hover); color: var(--fg); }
+    .jrange button:active { background: var(--line); }
     .jrange button.on { color: var(--fg); font-weight: 500; }
     .sethead { margin-bottom: 26px; }
     .sethead h2 { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
@@ -904,7 +926,7 @@
            overflow: hidden; width: 100%; }
     .seg button { flex: 1; background: none; border: 0; color: var(--dim);
                   font-family: inherit; font-size: 11.5px; padding: 8px 4px; cursor: pointer; }
-    .seg button.on { background: rgba(127,127,127,.16); color: var(--fg); font-weight: 700; }
+    .seg button.on { background: var(--hover); color: var(--fg); font-weight: 700; }
     .setrow:last-child { border-bottom: 0; }
     .setrow.off { opacity: .38; }
     .setrow .lab { font-size: 13px; }
@@ -915,7 +937,7 @@
       color: var(--fg); padding: 9px 34px 9px 11px; font-family: inherit; font-size: 13px;
       border-radius: 6px; text-align: right;
     }
-    .setfield input:focus { outline: none; border-color: rgba(124,255,160,.45); }
+    .setfield input:focus { outline: none; border-color: var(--green); }
     .setfield input.bad { border-color: var(--red); }
     .setfield input:disabled { opacity: .45; cursor: not-allowed; }
     .setfield .unit {
@@ -928,7 +950,8 @@
     .tgl input { display: none; }
     .tgl .box {
       width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--line);
-      display: grid; place-items: center; font-size: 10px; color: #000; flex-shrink: 0;
+      display: grid; place-items: center; font-size: 10px; color: var(--ink-on-accent);
+      flex-shrink: 0;
     }
     .tgl input:checked + .box { background: var(--green); border-color: var(--green); }
     .tgl input:checked + .box::after { content: "✓"; }
@@ -952,7 +975,7 @@
       font-family: inherit; font-size: 12.5px; padding: 13px 20px;
       border-radius: 9px; cursor: pointer;
     }
-    .ghost:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    .ghost:hover { color: var(--fg); border-color: var(--dim); }
     #setmsg { font-size: 12px; }
     /* margin-top:auto pins the footer to the bottom of a short page, but it
        collapses to zero once the content is taller than the viewport — which
@@ -969,6 +992,14 @@
     }
   </style>
 </head>
+<script>
+  /* Ahead of the stylesheet on purpose: setting this after first paint means a
+     white flash on every load for anyone using dark. */
+  try {
+    var t = localStorage.getItem('edgelvl_theme');
+    if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  } catch (e) {}
+</script>
 <body>
 
 <div class="wrap" id="app">
@@ -3561,10 +3592,12 @@ function renderSettings() {
     + '<div class="everysec"><div class="everyhead">Applies to <b>every</b> strategy</div>'
     + ACCOUNT_SECTIONS.map(secHTML(OWN)).join('')
     + notifySectionHTML()
+    + themeSectionHTML()
     + '</div>';
 
   wireStrategyTiles();
   wireNotifyToggle();
+  wireTheme();
 
   /* Account-wide fields save themselves. There is no Apply on this page — that
      button belongs to a strategy — so anything here has to commit on change or
@@ -3684,6 +3717,32 @@ function wireStrategyForm() {
    not on your account, because the permission it depends on is per-browser too.
    Saying so avoids the obvious surprise of enabling it on a laptop and finding
    it off on a phone. */
+function themeSectionHTML() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return `<div class="setsec"><h3>Appearance</h3>
+    <div class="setrow">
+      <div>
+        <div class="lab"><label class="tgl">
+          <input type="checkbox" id="set_dark" ${dark ? 'checked' : ''}>
+          <span class="box"></span><span>Dark mode</span></label></div>
+        <div class="hint">Applies everywhere, including share cards.</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function wireTheme() {
+  const el = document.getElementById('set_dark');
+  if (!el) return;
+  el.onchange = e => setTheme(e.target.checked ? 'dark' : 'light');
+}
+
+function setTheme(mode) {
+  if (mode === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  try { localStorage.setItem('edgelvl_theme', mode); } catch (e) {}
+}
+
 function notifySectionHTML() {
   if (!('Notification' in window)) {
     return `<div class="setsec"><h3>Notifications</h3>
@@ -3885,11 +3944,21 @@ async function buildCard(sum, rangeLabel) {
   const x = cv.getContext('2d');
   x.scale(CARD_S, CARD_S);
 
-  const INK = '#14140f', DIM = 'rgba(0,0,0,0.58)', DIMMER = 'rgba(0,0,0,0.38)';
-  const LINE = 'rgba(0,0,0,0.11)', GREEN = '#12924b', RED = '#c0362c';
+  /* A canvas inherits nothing, so the palette is read from the live tokens
+     rather than repeated here — one definition, and the card cannot drift out
+     of step with the app. */
+  const css = getComputedStyle(document.documentElement);
+  const tok = (n, fallback) => (css.getPropertyValue(n) || '').trim() || fallback;
+  const PAPER  = tok('--bg', '#fbfbfa');
+  const INK    = tok('--fg', '#14140f');
+  const DIM    = tok('--dim', 'rgba(0,0,0,0.58)');
+  const DIMMER = tok('--dimmer', 'rgba(0,0,0,0.38)');
+  const LINE   = tok('--line', 'rgba(0,0,0,0.11)');
+  const GREEN  = tok('--green', '#12924b');
+  const RED    = tok('--red', '#c0362c');
   const MONO = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace';
 
-  x.fillStyle = '#fbfbfa'; x.fillRect(0, 0, CARD_W, CARD_H);
+  x.fillStyle = PAPER; x.fillRect(0, 0, CARD_W, CARD_H);
   x.strokeStyle = LINE; x.lineWidth = 1;
   x.strokeRect(28.5, 28.5, CARD_W - 57, CARD_H - 57);
 

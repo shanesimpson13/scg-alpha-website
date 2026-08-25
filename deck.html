@@ -20,6 +20,16 @@
     --field: rgba(0,0,0,0.03);
     --green: #12924b; --red: #c0362c;
   }
+  /* Same tokens, dark. Set by the script below from the shared preference, so
+     a link out of the terminal keeps the theme it was opened in. */
+  :root[data-theme="dark"] {
+    --bg: #0e0e10; --panel: #16161a; --fg: #f2f2ef;
+    --line: rgba(255,255,255,0.14); --hair: rgba(255,255,255,0.08);
+    --dim: rgba(255,255,255,0.62); --dimmer: rgba(255,255,255,0.40);
+    --field: rgba(255,255,255,0.045); --hover: rgba(255,255,255,0.06);
+    --green: #2ecc71; --amber: #e0a12a; --red: #ff5f52;
+  }
+
   body {
     background: var(--bg); color: var(--fg);
     font: 13px/1.75 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -173,6 +183,10 @@
   .fsocial a { display: inline-flex; color: var(--dimmer); }
   .fsocial svg { width: 15px; height: 15px; }
 </style>
+<script>
+  try { if (localStorage.getItem('edgelvl_theme') === 'dark')
+          document.documentElement.setAttribute('data-theme','dark'); } catch (e) {}
+</script>
 </head>
 <body>
 <div class="wrap">

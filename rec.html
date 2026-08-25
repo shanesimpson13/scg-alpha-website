@@ -1,3 +1,7 @@
+<script>
+  try { if (localStorage.getItem('edgelvl_theme') === 'dark')
+          document.documentElement.setAttribute('data-theme','dark'); } catch (e) {}
+</script>
 <title>Rec — screen + camera</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
@@ -26,6 +30,16 @@
     --bg: #0d1117; --panel: #161b22; --line: #262c36;
     --fg: #e6edf3; --dim: #8b949e; --accent: #14F195; --rec: #f85149;
   }
+  /* Same tokens, dark. Set by the script below from the shared preference, so
+     a link out of the terminal keeps the theme it was opened in. */
+  :root[data-theme="dark"] {
+    --bg: #0e0e10; --panel: #16161a; --fg: #f2f2ef;
+    --line: rgba(255,255,255,0.14); --hair: rgba(255,255,255,0.08);
+    --dim: rgba(255,255,255,0.62); --dimmer: rgba(255,255,255,0.40);
+    --field: rgba(255,255,255,0.045); --hover: rgba(255,255,255,0.06);
+    --green: #2ecc71; --amber: #e0a12a; --red: #ff5f52;
+  }
+
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--fg); min-height: 100vh;
