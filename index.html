@@ -324,15 +324,16 @@
     .jshareb:disabled { opacity: .55; cursor: default; }
     #cardwrap { position: fixed; inset: 0; background: rgba(0,0,0,.55);
                 display: grid; place-items: center; z-index: 90; padding: 20px; }
+    /* padding-top leaves a clear band across the top for the close button, so
+       it sits in the panel's corner without landing on the image outline. */
     .cardbox { background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
-               padding: 14px; max-width: min(760px, 94vw); }
-    /* Deliberately no border: the PNG draws its own frame, and a second one
-       here landed right under the close button. */
-    .cardbox img { width: 100%; display: block; border-radius: 8px; }
+               padding: 38px 14px 14px; max-width: min(760px, 94vw); }
+    .cardbox img { width: 100%; display: block; border-radius: 8px;
+                   border: 1px solid var(--hair); }
     .cardbox { position: relative; }
     /* Scoped to the card: nudged into the corner itself rather than inset like
        the wallet and strategy dialogs, whose .modal-x must not move. */
-    .cardbox .modal-x { top: 2px; right: 4px; }
+    .cardbox .modal-x { top: 4px; right: 6px; }
     .cardacts { display: flex; gap: 10px; margin-top: 12px; }
     /* Glyph then label, so the icon carries it and the word confirms it. */
     .cardic { display: inline-flex; align-items: center; gap: 8px;
@@ -3699,27 +3700,25 @@ function notifySectionHTML() {
           <input type="checkbox" id="set_notify" ${notifyOn() ? 'checked' : ''} ${blocked ? 'disabled' : ''}>
           <span class="box"></span><span>Desktop notifications</span></label></div>
         <div class="hint" id="hint_notify">${blocked
-          ? 'Blocked by your browser. Click the padlock in the address bar, set Notifications to Allow, then reload this page.'
-          : 'New coins on the board, entries, take-profits and stops. Works while this tab is open, even in the background.'}</div>
+          ? 'Blocked. Allow notifications for this site in your browser, then reload.'
+          : 'New coins, entries, take-profits and stops.'}</div>
       </div>
     </div>
     <div class="setrow">
       <div>
-        <div class="lab">Check it works</div>
-        <div class="hint" id="notify_diag">Browser permission: <b>${permTxt}</b>. ${
+        <div class="lab">Test</div>
+        <div class="hint" id="notify_diag">Permission: <b>${permTxt}</b>. ${
           window.matchMedia('(display-mode: standalone)').matches
-            ? 'Running as the app, so alerts come from EdgeLvl.'
-            : 'Running in a browser tab, so alerts come from your browser. Open the installed app for them to arrive as EdgeLvl.'}${
-          perm === 'granted' && !notifyOn()
-            ? ' The switch above is off, so nothing is being sent.' : ''}</div>
+            ? 'Sent as EdgeLvl.'
+            : 'Sent as your browser.'}${
+          perm === 'granted' && !notifyOn() ? ' Switch is off.' : ''}</div>
       </div>
       <button type="button" id="notify_test" class="notiftest">Send a test</button>
     </div>
     <div class="setrow" id="row_install">
       <div>
-        <div class="lab">Install EdgeLvl</div>
-        <div class="hint" id="install_hint">Notifications arrive from <b>EdgeLvl</b> rather
-          than from your browser, and the terminal gets its own window.</div>
+        <div class="lab">Install as an app</div>
+        <div class="hint" id="install_hint">Alerts arrive as <b>EdgeLvl</b>, in its own window.</div>
       </div>
       <button type="button" id="do_install" class="notiftest">Install</button>
     </div>
@@ -3801,10 +3800,8 @@ function wireNotifyToggle() {
       /* No prompt to fire, so point at the path that always works. */
       ibtn.style.display = 'none';
       document.getElementById('install_hint').innerHTML =
-        'Your browser is not offering it right now, which is normal for a while '
-        + 'after uninstalling. Install it by hand from the browser menu: '
-        + '<b>\u22ee \u2192 Cast, save and share \u2192 Install page as app</b>. '
-        + 'Then notifications arrive from <b>EdgeLvl</b> rather than your browser.';
+        'Not offered right now. Install from the browser menu: '
+        + '<b>\u22ee \u2192 Cast, save and share \u2192 Install page as app</b>.';
     }
   }
   if (ibtn) ibtn.onclick = async () => {
@@ -4011,7 +4008,7 @@ function showCard(url, filename) {
           <span>Share</span>
         </button>
       </div>
-      <div class="cardhint">Right-click the image to copy it, or use the download button.</div>
+      <div class="cardhint">Right-click the image to copy it.</div>
     </div>`;
   document.body.appendChild(wrap);
   wrap.onclick = e => { if (e.target === wrap) wrap.remove(); };
@@ -4028,7 +4025,9 @@ async function shareCard() {
     // can never disagree with the page it was made from.
     const days = journalDays || '';
     const d = await api('/api/trades?limit=500' + (days ? `&days=${days}` : ''));
-    const label = days ? `last ${days} day${String(days) === '1' ? '' : 's'}` : 'all time';
+    // Short forms, matching the buttons that produced them.
+    const label = !days ? 'ALL TIME'
+                : String(days) === '1' ? '24H' : `${days}D`;
     // The address comes from loadWallet(), which only runs if the wallet panel
     // has been opened. Fetch it here when it has not, or the footer loses the
     // one thing that says whose card this is.
