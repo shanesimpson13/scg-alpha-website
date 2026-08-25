@@ -4003,7 +4003,7 @@ function wireNotifyToggle() {
    Canvas rather than a screenshot: the numbers stay crisp at 2x, the layout is
    fixed regardless of the viewer's window, and nothing here can pick up a coin
    name or a wallet address that was on screen at the time. */
-const CARD_W = 1200, CARD_H = 675, CARD_S = 2;
+const CARD_W = 1200, CARD_H = 600, CARD_S = 2;
 const PIC_KEY = 'edgelvl_pfp';
 let MY_ADDRESS = '';
 
@@ -4087,17 +4087,17 @@ async function buildCard(sum, rangeLabel) {
   cells.forEach(([k, v], i) => {
     const cx = M + colW * i;
     x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
-    x.fillText(k, cx, 226);
+    x.fillText(k, cx, 184);
     x.font = `600 54px ${MONO}`; x.fillStyle = INK;
-    x.fillText(v, cx, 288);
+    x.fillText(v, cx, 246);
   });
 
   x.strokeStyle = LINE;
-  x.beginPath(); x.moveTo(M, 342); x.lineTo(CARD_W - M, 342); x.stroke();
+  x.beginPath(); x.moveTo(M, 300); x.lineTo(CARD_W - M, 300); x.stroke();
 
   // The return leads, the amount follows it, the way a P&L line is read.
   x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
-  x.fillText('REALIZED PNL', M, 394);
+  x.fillText('REALIZED PNL', M, 350);
 
   const staked = Number(sum.staked || 0);
   const pctTxt = staked > 0
@@ -4111,13 +4111,13 @@ async function buildCard(sum, rangeLabel) {
     size -= 3; x.font = `600 ${size}px ${MONO}`;
   }
   x.fillStyle = up ? GREEN : RED;
-  x.fillText(pctTxt, M, 456);
+  x.fillText(pctTxt, M, 412);
 
   if (staked > 0) {
     const w = x.measureText(pctTxt).width;
     x.font = `600 ${Math.round(size * 0.44)}px ${MONO}`;
     x.fillStyle = up ? GREEN : RED;
-    x.fillText(`  ${up ? '+' : ''}${net.toFixed(3)} SOL`, M + w, 456);
+    x.fillText(`  ${up ? '+' : ''}${net.toFixed(3)} SOL`, M + w, 412);
   }
 
   x.beginPath(); x.moveTo(M, CARD_H - 112); x.lineTo(CARD_W - M, CARD_H - 112); x.stroke();
