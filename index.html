@@ -2039,7 +2039,11 @@ function renderBand(c) {
     }
     el.innerHTML = `<span class="bk">Dipped · buys between${warm}</span>` +
       `<span class="step"><b>${esc(b.buy_from || '—')}</b> and <b>${esc(b.buy_to || '—')}</b></span>` +
-      `<span class="step" style="color:var(--dimmer)">high ${esc(b.hi || '—')}</span>` + gap + held;
+      /* The low, not just the high. Once a dip is on record the reclaim is
+         measured off the BOTTOM, so the high alone leaves the distance to the
+         window looking arbitrary — and for a while the panel quoted a floor
+         derived from the high that the bot had stopped using. */
+      `<span class="step" style="color:var(--dimmer)">low ${esc(b.low || '—')} · high ${esc(b.hi || '—')}</span>` + gap + held;
     return;
   }
 
