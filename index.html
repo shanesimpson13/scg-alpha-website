@@ -607,10 +607,14 @@
     .chartdown { height: 100%; display: flex; flex-direction: column;
                  align-items: center; justify-content: center; gap: 8px;
                  text-align: center; padding: 24px; }
-    .chartdown > div { font-size: 13px; font-weight: 600; color: var(--fg); }
-    .chartdown p { font-size: 11.5px; color: var(--dimmer); max-width: 40ch;
+    /* Fixed light, not tokens: .chartwrap is #0d0d0d in BOTH themes because the
+       embedded chart is dark, so text here has one background to sit on and
+       var(--fg) would be near-black on near-black in light mode. */
+    .chartdown > div { font-size: 13px; font-weight: 600; color: #f2f2ef; }
+    .chartdown p { font-size: 11.5px; color: rgba(255,255,255,.55); max-width: 40ch;
                    line-height: 1.6; margin: 0; }
-    .chartdown a { font-size: 11.5px; color: var(--dim); }
+    .chartdown a { font-size: 11.5px; color: rgba(255,255,255,.75); }
+    .chartdown a:hover { color: #fff; }
     .chartwrap {
       position: relative; width: 100%; height: 62vh; min-height: 420px; max-height: 760px;
       border: 1px solid rgba(0, 0, 0, 0.16); border-radius: 10px; overflow: hidden;
