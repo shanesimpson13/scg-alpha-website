@@ -322,30 +322,27 @@
                font-size: 12px; color: var(--dim); cursor: pointer; }
     .jshareb:hover { background: var(--hover); color: var(--fg); }
     .jshareb:disabled { opacity: .55; cursor: default; }
-    /* Darker than a normal scrim: the controls sit on it as white now that
-       the panel is gone, and .55 over a light page left them washed out. */
-    #cardwrap { position: fixed; inset: 0; background: rgba(0,0,0,.74);
+    #cardwrap { position: fixed; inset: 0; background: rgba(0,0,0,.55);
                 display: grid; place-items: center; z-index: 90; padding: 20px; }
-    .cardbox { max-width: min(760px, 94vw); }
-    /* No border here: the PNG draws its own frame, so one more would be a box
-       around a box. */
-    .cardbox img { width: 100%; display: block; border-radius: 10px; }
+    .cardbox { background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+               padding: 14px; max-width: min(760px, 94vw); }
+    /* Deliberately no border: the PNG draws its own frame, and a second one
+       here landed right under the close button. */
+    .cardbox img { width: 100%; display: block; border-radius: 8px; }
     .cardbox { position: relative; }
     /* Scoped to the card: nudged into the corner itself rather than inset like
        the wallet and strategy dialogs, whose .modal-x must not move. */
-    /* Sitting on the backdrop now rather than on paper, so it inverts. */
-    .cardbox .modal-x { top: -34px; right: -2px; color: rgba(255,255,255,.62); }
-    .cardbox .modal-x:hover { color: #fff; }
+    .cardbox .modal-x { top: 2px; right: 4px; }
     .cardacts { display: flex; gap: 10px; margin-top: 12px; }
     /* Glyph then label, so the icon carries it and the word confirms it. */
     .cardic { display: inline-flex; align-items: center; gap: 8px;
-              background: none; border: 1px solid rgba(255,255,255,.28); border-radius: 8px;
+              background: none; border: 1px solid var(--line); border-radius: 8px;
               padding: 9px 14px; font-family: inherit; font-size: 12px;
-              color: rgba(255,255,255,.78); cursor: pointer; text-decoration: none; }
+              color: var(--dim); cursor: pointer; text-decoration: none; }
     .cardic svg { width: 17px; height: 17px; display: block; flex: 0 0 auto; }
-    .cardic:hover { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.5); }
-    .cardic.carddl { color: #fff; border-color: rgba(255,255,255,.5); }
-    .cardhint { font-size: 10.5px; color: rgba(255,255,255,.5); margin-top: 9px; }
+    .cardic:hover { background: var(--hover); color: var(--fg); }
+    .cardic.carddl { color: var(--fg); border-color: var(--dim); }
+    .cardhint { font-size: 10.5px; color: var(--dimmer); margin-top: 9px; }
     .jcoin { color: var(--fg); text-decoration: none; }
     .jcoin:hover { text-decoration: underline; }
     footer a { color: var(--dim); text-decoration: none; }
