@@ -328,6 +328,9 @@
                padding: 14px; max-width: min(760px, 94vw); }
     .cardbox img { width: 100%; display: block; border-radius: 8px; border: 1px solid var(--hair); }
     .cardbox { position: relative; }
+    /* Scoped to the card: nudged into the corner itself rather than inset like
+       the wallet and strategy dialogs, whose .modal-x must not move. */
+    .cardbox .modal-x { top: 2px; right: 4px; }
     .cardacts { display: flex; gap: 10px; margin-top: 12px; }
     /* Glyph then label, so the icon carries it and the word confirms it. */
     .cardic { display: inline-flex; align-items: center; gap: 8px;
