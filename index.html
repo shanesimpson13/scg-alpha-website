@@ -3511,13 +3511,14 @@ function strategyTilesHTML() {
     </div>`;
   };
   return `<div class="stiles">
-    ${tile('', OWN, OWN_NAME)}
-    ${presetOrder().map(n => tile(n, { ...OWN, ...PRESETS[n] }, n)).join('')}
+    ${tileOrder().map(n => n === ''
+        ? tile('', OWN, OWN_NAME)
+        : tile(n, { ...OWN, ...PRESETS[n] }, n)).join('')}
     <div class="stile add" id="addstrat" role="button" tabindex="0"
          title="New strategy"><span>+</span></div>
   </div>
   <div class="setactions">
-    <span class="hintline">Click one to pick it, drag to reorder. The default runs when a coin doesn't name a strategy.</span>
+    <span class="hintline">Click one to pick it. Drag to reorder — first place is the default, which runs when a coin doesn't name a strategy.</span>
   </div>`;
 }
 
@@ -3525,12 +3526,40 @@ const ORDER_KEY = 'edgelvl_preset_order';
 
 /* Stored order first, then anything not in it. A strategy made on another
    device is absent from the list and would otherwise disappear from the grid. */
+/* Every tile, base settings included, with the default first. Whichever one
+   runs when a coin names no strategy is the one at the front — the grid says so
+   by its shape rather than by a badge to hunt for. */
+function tileOrder() {
+  const rest = ['', ...presetOrder()].filter(n => n !== (DEFAULT_PRESET || ''));
+  return [DEFAULT_PRESET || '', ...rest];
+}
+
 function presetOrder() {
   const all = Object.keys(PRESETS);
   let saved = [];
   try { saved = JSON.parse(localStorage.getItem(ORDER_KEY) || '[]'); } catch (e) {}
   const known = saved.filter(n => all.includes(n));
   return known.concat(all.filter(n => !known.includes(n)));
+}
+
+/* Shared by the button and by a drag to first place, so both routes leave the
+   account and the grid saying the same thing. */
+async function makeDefault(n) {
+  if ((DEFAULT_PRESET || '') === (n || '')) return;      // already it
+  try {
+    const d = await api('/api/settings/default',
+                        { method: 'POST', body: JSON.stringify({ name: n }) });
+    DEFAULT_PRESET = d.default_preset || '';
+    if (n) {
+      // Front of the stored order too, so it stays first if it stops being
+      // the default later.
+      const names = presetOrder().filter(x => x !== n);
+      saveOrder([n, ...names]);
+    }
+    setMsg(`✓ "${n || OWN_NAME}" runs when a coin names no strategy.`, 'var(--green)');
+  } catch (err) {
+    setMsg(err.detail || "Couldn't set that as default.", 'var(--red)');
+  }
 }
 
 function saveOrder(names) {
@@ -3562,13 +3591,18 @@ function wireReorder() {
       el.classList.add('dragover');
     };
     el.ondragleave = () => el.classList.remove('dragover');
-    el.ondrop = e => {
+    el.ondrop = async e => {
       e.preventDefault();
       const to = el.dataset.s;
-      if (!from || !to || from === to) return;
+      const moved = from;
+      if (!moved || !to || moved === to) return;
       const names = presetOrder();
-      names.splice(names.indexOf(to), 0, ...names.splice(names.indexOf(from), 1));
+      names.splice(names.indexOf(to), 0, ...names.splice(names.indexOf(moved), 1));
       saveOrder(names);
+      // Dropped onto the front: position and default mean the same thing here,
+      // so moving something to first place is how you promote it.
+      const landedFirst = tileOrder()[0] === to || to === (DEFAULT_PRESET || '');
+      if (landedFirst) await makeDefault(moved);
       renderSettings();
     };
   });
@@ -3595,15 +3629,8 @@ function wireStrategyTiles() {
   document.querySelectorAll('.tileacts [data-def]').forEach(r => {
     r.onclick = async e => {
       e.stopPropagation();
-      const n = r.dataset.def;
-      if ((DEFAULT_PRESET || '') === (n || '')) return;    // already it
-      try {
-        const d = await api('/api/settings/default',
-                            { method: 'POST', body: JSON.stringify({ name: n }) });
-        DEFAULT_PRESET = d.default_preset || '';
-        renderSettings();
-        setMsg(`✓ "${n || OWN_NAME}" runs when a coin names no strategy.`, 'var(--green)');
-      } catch (err) { setMsg(err.detail || "Couldn't set that as default.", 'var(--red)'); }
+      await makeDefault(r.dataset.def);
+      renderSettings();
     };
   });
 
