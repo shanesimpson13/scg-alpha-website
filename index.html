@@ -3911,17 +3911,17 @@ async function buildCard(sum, rangeLabel) {
   cells.forEach(([k, v], i) => {
     const cx = M + colW * i;
     x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
-    x.fillText(k, cx, 196);
-    x.font = `600 96px ${MONO}`; x.fillStyle = INK;
-    x.fillText(v, cx, 292);
+    x.fillText(k, cx, 226);
+    x.font = `600 54px ${MONO}`; x.fillStyle = INK;
+    x.fillText(v, cx, 288);
   });
 
   x.strokeStyle = LINE;
-  x.beginPath(); x.moveTo(M, 352); x.lineTo(CARD_W - M, 352); x.stroke();
+  x.beginPath(); x.moveTo(M, 342); x.lineTo(CARD_W - M, 342); x.stroke();
 
   // Net sits underneath as the consequence, still coloured, no longer the hero.
   x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
-  x.fillText('NET PROFIT', M, 402);
+  x.fillText('NET PROFIT', M, 394);
 
   // Fit rather than trust one size: +0.413 and -12.345 are very different
   // widths and a fixed size makes one of them wrong.
@@ -3932,10 +3932,10 @@ async function buildCard(sum, rangeLabel) {
     size -= 3; x.font = `600 ${size}px ${MONO}`;
   }
   x.fillStyle = up ? GREEN : RED;
-  x.fillText(netTxt, M, 462);
+  x.fillText(netTxt, M, 456);
   const w = x.measureText(netTxt).width;
   x.font = `500 ${Math.round(size * 0.36)}px ${MONO}`; x.fillStyle = DIM;
-  x.fillText(' SOL', M + w, 462);
+  x.fillText(' SOL', M + w, 456);
 
   x.beginPath(); x.moveTo(M, CARD_H - 112); x.lineTo(CARD_W - M, CARD_H - 112); x.stroke();
 
