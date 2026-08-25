@@ -2187,7 +2187,9 @@ async function checkChartHost() {
     // renderDetail short-circuits while the mint is unchanged, deliberately, so
     // that a poll cannot restart the iframe mid-load. Swapping the chart for the
     // fallback IS a rebuild, so the guard has to be cleared first.
-    if (was !== CHART_UP && view === 'detail' && openMint) {
+    // was === null is the first answer of the session, not a change. Treating
+    // it as one rebuilt the iframe moments after it was created, every load.
+    if (was !== null && was !== CHART_UP && view === 'detail' && openMint) {
       const el = document.getElementById('detail');
       if (el) el.dataset.mint = '';
       renderDetail();
@@ -2513,6 +2515,9 @@ currentBuild().then(t => { BUILD_TAG = t; });
 
 async function checkForUpdate() {
   if (!BUILD_TAG || document.hidden) return;
+  // Never mid-coin: a reload restarts the chart and throws away what someone is
+  // reading. The board is the safe moment, and they return to it constantly.
+  if (view === 'detail') return;
   const now = await currentBuild();
   if (now && now !== BUILD_TAG) location.reload();
 }
