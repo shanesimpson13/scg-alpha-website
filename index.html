@@ -602,6 +602,15 @@
     /* The chart stays dark. It's GMGN's embed and it renders dark regardless,
        so the container matches it — otherwise you get a light frame around a
        dark chart, and a light flash in the hole before the iframe paints. */
+    /* Same footprint as the chart it replaces, so the page does not jump when a
+       third party recovers. */
+    .chartdown { height: 100%; display: flex; flex-direction: column;
+                 align-items: center; justify-content: center; gap: 8px;
+                 text-align: center; padding: 24px; }
+    .chartdown > div { font-size: 13px; font-weight: 600; color: var(--fg); }
+    .chartdown p { font-size: 11.5px; color: var(--dimmer); max-width: 40ch;
+                   line-height: 1.6; margin: 0; }
+    .chartdown a { font-size: 11.5px; color: var(--dim); }
     .chartwrap {
       position: relative; width: 100%; height: 62vh; min-height: 420px; max-height: 760px;
       border: 1px solid rgba(0, 0, 0, 0.16); border-radius: 10px; overflow: hidden;
@@ -1706,6 +1715,8 @@ document.querySelectorAll('thead th.sortable').forEach(th => th.onclick = () => 
 
 /* ── detail ── */
 async function openDetail(mint) {
+  // One check per visit to a coin, answered from a 60s server-side cache.
+  checkChartHost();
   openMint = mint;
   // The coin may have dropped off the filtered board while the bot still works
   // it — resolve it from the last 30 minutes rather than refusing to open it.
@@ -1763,7 +1774,15 @@ function renderDetail() {
     <div class="dgrid">
       <div class="dmain">
       <div class="chartwrap">
-        <iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>
+        ${CHART_UP === false
+          ? `<div class="chartdown">
+               <div>Chart unavailable</div>
+               <p>GMGN's chart service is down. Your bot is unaffected: prices
+                  come from Jupiter and it keeps trading normally.</p>
+               <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank"
+                  rel="noopener">Open on GMGN &#8599;</a>
+             </div>`
+          : `<iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>`}
       </div>
       <div class="tier">
       <div class="stats">
@@ -2151,6 +2170,27 @@ function markSent(c) {
    only notice after it has spent the money. */
 const AMT_CHIPS = [0.01, 0.1, 0.5, 1];
 const coinAmt = new Map();      // mint -> SOL. Absent means "use my strategy's size".
+/* null until asked, so nothing is claimed before the answer arrives — a false
+   "chart is down" is worse than a blank frame for a second. */
+let CHART_UP = null;
+
+async function checkChartHost() {
+  try {
+    const d = await api('/api/health/chart');
+    const was = CHART_UP;
+    CHART_UP = d.ok !== false;
+    // Only repaint if the answer actually changed and a coin is on screen.
+    // renderDetail short-circuits while the mint is unchanged, deliberately, so
+    // that a poll cannot restart the iframe mid-load. Swapping the chart for the
+    // fallback IS a rebuild, so the guard has to be cleared first.
+    if (was !== CHART_UP && view === 'detail' && openMint) {
+      const el = document.getElementById('detail');
+      if (el) el.dataset.mint = '';
+      renderDetail();
+    }
+  } catch (e) { /* leave it as-is: assume the chart works */ }
+}
+
 const coinPreset = new Map();   // mint -> preset name. Absent means my own settings.
 let PRESETS = {};               // name -> the fields that preset overrides
 let MYSET = {};                 // my account settings, for showing what each one does
