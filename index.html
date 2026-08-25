@@ -4120,7 +4120,9 @@ async function buildCard(sum, rangeLabel) {
     x.fillText(`  ${up ? '+' : ''}${net.toFixed(3)} SOL`, M + w, 412);
   }
 
-  x.beginPath(); x.moveTo(M, CARD_H - 112); x.lineTo(CARD_W - M, CARD_H - 112); x.stroke();
+  // Nudged up so the space above the rule and below it are about equal,
+  // rather than the P&L line sitting in the larger of the two.
+  x.beginPath(); x.moveTo(M, CARD_H - 126); x.lineTo(CARD_W - M, CARD_H - 126); x.stroke();
 
   // Whose card this is: picture then wallet, the way these are read elsewhere.
   const baseY = CARD_H - 62, pic = await loadImg(myPic()), D = 46;
