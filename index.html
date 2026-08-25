@@ -3919,23 +3919,30 @@ async function buildCard(sum, rangeLabel) {
   x.strokeStyle = LINE;
   x.beginPath(); x.moveTo(M, 342); x.lineTo(CARD_W - M, 342); x.stroke();
 
-  // Net sits underneath as the consequence, still coloured, no longer the hero.
+  // The return leads, the amount follows it, the way a P&L line is read.
   x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
-  x.fillText('NET PROFIT', M, 394);
+  x.fillText('REALIZED PNL', M, 392);
 
-  // Fit rather than trust one size: +0.413 and -12.345 are very different
-  // widths and a fixed size makes one of them wrong.
-  const netTxt = `${up ? '+' : ''}${net.toFixed(3)}`;
-  let size = 54;
+  const staked = Number(sum.staked || 0);
+  const pctTxt = staked > 0
+    ? `${up ? '+' : ''}${(net / staked * 100).toFixed(1)}%`
+    : `${up ? '+' : ''}${net.toFixed(3)} SOL`;
+
+  // Fit rather than trust one size: +4.8% and -128.4% are different widths.
+  let size = 88;
   x.font = `600 ${size}px ${MONO}`;
-  while (x.measureText(netTxt).width > 420 && size > 30) {
-    size -= 3; x.font = `600 ${size}px ${MONO}`;
+  while (x.measureText(pctTxt).width > 520 && size > 44) {
+    size -= 4; x.font = `600 ${size}px ${MONO}`;
   }
   x.fillStyle = up ? GREEN : RED;
-  x.fillText(netTxt, M, 456);
-  const w = x.measureText(netTxt).width;
-  x.font = `500 ${Math.round(size * 0.36)}px ${MONO}`; x.fillStyle = DIM;
-  x.fillText(' SOL', M + w, 456);
+  x.fillText(pctTxt, M, 470);
+
+  if (staked > 0) {
+    const w = x.measureText(pctTxt).width;
+    x.font = `600 ${Math.round(size * 0.38)}px ${MONO}`;
+    x.fillStyle = up ? GREEN : RED;
+    x.fillText(`  ${up ? '+' : ''}${net.toFixed(3)} SOL`, M + w, 470);
+  }
 
   x.beginPath(); x.moveTo(M, CARD_H - 112); x.lineTo(CARD_W - M, CARD_H - 112); x.stroke();
 
@@ -4009,7 +4016,12 @@ async function shareCard() {
     if (!MY_ADDRESS) {
       try { MY_ADDRESS = (await api('/api/account')).address || ''; } catch (e) {}
     }
-    const cv = await buildCard(d.summary || {}, label);
+    // Cost basis for the percentage: what was actually staked on the trades
+    // that entered. The summary does not carry it, the rows do.
+    const staked = (d.trades || [])
+      .filter(r => r.entered)
+      .reduce((a, r) => a + (r.spent_sol || 0), 0);
+    const cv = await buildCard({ ...(d.summary || {}), staked }, label);
     const name = `edgelvl-${label.replace(/\s+/g, '-')}.png`;
     const blob = await cardBlob(cv);
     const url = URL.createObjectURL(blob);
