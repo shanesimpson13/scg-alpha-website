@@ -4003,6 +4003,12 @@ async function shareCard() {
     const days = journalDays || '';
     const d = await api('/api/trades?limit=500' + (days ? `&days=${days}` : ''));
     const label = days ? `last ${days} day${String(days) === '1' ? '' : 's'}` : 'all time';
+    // The address comes from loadWallet(), which only runs if the wallet panel
+    // has been opened. Fetch it here when it has not, or the footer loses the
+    // one thing that says whose card this is.
+    if (!MY_ADDRESS) {
+      try { MY_ADDRESS = (await api('/api/account')).address || ''; } catch (e) {}
+    }
     const cv = await buildCard(d.summary || {}, label);
     const name = `edgelvl-${label.replace(/\s+/g, '-')}.png`;
     const blob = await cardBlob(cv);
