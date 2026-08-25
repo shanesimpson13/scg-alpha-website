@@ -3899,40 +3899,43 @@ async function buildCard(sum, rangeLabel) {
 
   const net = Number(sum.net_sol || 0);
   const up = net >= 0;
-  x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
-  x.fillText('NET PROFIT', M, 208);
-
-  // Fit the figure to a box instead of trusting one size: +0.413 and -12.345
-  // are very different widths, and a fixed 108px made the short one shout.
-  const netTxt = `${up ? '+' : ''}${net.toFixed(3)}`;
-  let size = 84;
-  x.font = `600 ${size}px ${MONO}`;
-  while (x.measureText(netTxt).width > 520 && size > 40) {
-    size -= 4; x.font = `600 ${size}px ${MONO}`;
-  }
-  x.fillStyle = up ? GREEN : RED;
-  x.fillText(netTxt, M, 296);
-  const w = x.measureText(netTxt).width;
-  x.font = `500 ${Math.round(size * 0.34)}px ${MONO}`; x.fillStyle = DIM;
-  x.fillText(' SOL', M + w, 296);
-
-  // Stats, evenly spaced on one baseline so the eye reads across them.
+  // The three that describe how it was used, across the full width and large
+  // enough to be the first thing read.
   const wr = sum.win_rate == null ? null : Math.round(sum.win_rate * 100);
   const cells = [
     ['GREENLIGHTS', String(sum.greenlights ?? 0)],
     ['ENTERED', String(sum.entered ?? 0)],
     ['WIN RATE', wr == null ? '—' : wr + '%'],
   ];
-  const top = 392, colW = (CARD_W - M * 2) / cells.length;
-  x.strokeStyle = LINE;
-  x.beginPath(); x.moveTo(M, top); x.lineTo(CARD_W - M, top); x.stroke();
+  const colW = (CARD_W - M * 2) / cells.length;
   cells.forEach(([k, v], i) => {
     const cx = M + colW * i;
-    x.font = `500 14px ${MONO}`; x.fillStyle = DIMMER;
-    x.fillText(k, cx, top + 40);
-    x.font = `600 52px ${MONO}`; x.fillStyle = INK;
-    x.fillText(v, cx, top + 100);
+    x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
+    x.fillText(k, cx, 196);
+    x.font = `600 96px ${MONO}`; x.fillStyle = INK;
+    x.fillText(v, cx, 292);
   });
+
+  x.strokeStyle = LINE;
+  x.beginPath(); x.moveTo(M, 352); x.lineTo(CARD_W - M, 352); x.stroke();
+
+  // Net sits underneath as the consequence, still coloured, no longer the hero.
+  x.font = `500 16px ${MONO}`; x.fillStyle = DIMMER;
+  x.fillText('NET PROFIT', M, 402);
+
+  // Fit rather than trust one size: +0.413 and -12.345 are very different
+  // widths and a fixed size makes one of them wrong.
+  const netTxt = `${up ? '+' : ''}${net.toFixed(3)}`;
+  let size = 54;
+  x.font = `600 ${size}px ${MONO}`;
+  while (x.measureText(netTxt).width > 420 && size > 30) {
+    size -= 3; x.font = `600 ${size}px ${MONO}`;
+  }
+  x.fillStyle = up ? GREEN : RED;
+  x.fillText(netTxt, M, 462);
+  const w = x.measureText(netTxt).width;
+  x.font = `500 ${Math.round(size * 0.36)}px ${MONO}`; x.fillStyle = DIM;
+  x.fillText(' SOL', M + w, 462);
 
   x.beginPath(); x.moveTo(M, CARD_H - 112); x.lineTo(CARD_W - M, CARD_H - 112); x.stroke();
 
