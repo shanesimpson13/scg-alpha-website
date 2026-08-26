@@ -366,6 +366,38 @@
     .cardic:hover { background: var(--hover); color: var(--fg); }
     .cardic.carddl { color: var(--fg); border-color: var(--dim); }
     .cardhint { font-size: 10.5px; color: var(--dimmer); margin-top: 9px; }
+    /* ── trade replay ────────────────────────────────────────────────────
+       The chart is rebuilt from chain swaps, so it is history rather than a
+       feed. Market cap on the axis, never price — the same rule as everywhere
+       else, using supply derived from GMGN's own mcap/price pair so no second
+       vendor is involved. */
+    #replaywrap { position: fixed; inset: 0; background: rgba(0,0,0,.55);
+                  display: grid; place-items: center; z-index: 95; padding: 20px; }
+    .replaybox { position: relative; background: var(--bg); border: 1px solid var(--line);
+                 border-radius: 12px; padding: 34px 16px 16px;
+                 width: min(880px, 96vw); }
+    .replaybox .modal-x { top: 4px; right: 6px; }
+    .replayhead { display: flex; align-items: baseline; gap: 10px;
+                  margin: -22px 0 12px 2px; }
+    .replayhead .rnm { font-size: 14px; font-weight: 600; }
+    .replayhead .rsub { font-size: 11px; color: var(--dimmer); }
+    #replaycanvas { width: 100%; display: block; border: 1px solid var(--hair);
+                    border-radius: 8px; background: var(--field); }
+    .replaystats { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; }
+    .replaystats div { font-size: 11px; color: var(--dimmer); }
+    .replaystats b { display: block; font-size: 14px; color: var(--fg);
+                     font-weight: 600; margin-top: 3px; }
+    .replayacts { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+    .replayacts input[type=range] { flex: 1; accent-color: var(--fg); }
+    .replaynote { font-size: 10.5px; color: var(--dimmer); margin-top: 10px;
+                  line-height: 1.6; }
+    /* The button that opens all this. Sized to the journal row, not to itself:
+       a play glyph big enough to notice would push the rows apart. */
+    .jplay { background: none; border: none; color: var(--dimmer); cursor: pointer;
+             padding: 0 0 0 7px; font-family: inherit; font-size: 10px;
+             line-height: 1; vertical-align: middle; }
+    .jplay:hover { color: var(--fg); }
+    .jplay svg { width: 11px; height: 11px; display: block; }
     .jcoin { color: var(--fg); text-decoration: none; }
     .jcoin:hover { text-decoration: underline; }
     footer a { color: var(--dim); text-decoration: none; }
@@ -2715,12 +2747,16 @@ function stateLine(r) {
     // an open position looked frozen.
     const now = (r.mc && t.entry && r.mc !== t.entry)
       ? ` · now <b>${esc(r.mc)}</b>${r.pnl != null ? ` ${pnl(r.pnl)}` : ''}` : '';
-    /* Entry is the MARKET cap at the fill, so it can be found on the chart.
-       `paid` is what our own order actually cost once it moved the book, and
-       it only appears when the two differ — it is the number the rungs are
-       measured from, so hiding it would make the gap to TP1 look wrong. */
-    const paid = t.paid && t.paid !== t.entry ? ` (paid ${esc(t.paid)})` : '';
-    return `In position — entered <b>${esc(t.entry || r.mc || '—')}</b>${paid}${now}` +
+    /* One number: the fill that landed on chain. It briefly showed the market
+       cap beside it, which was worse — both rungs and the stop are derived
+       from the fill, so leading with a figure nothing else is measured against
+       broke the relationship the settings promise. */
+    /* `paid` is the fill under the old two-number shape; `entry` is the fill
+       once the bot restarts and stops sending both. Either way this resolves
+       to the number that landed on chain, so a position open across the
+       restart never flips to a different figure mid-trade. */
+    const filled = t.paid || t.entry;
+    return `In position — entered <b>${esc(filled || r.mc || '—')}</b>${now}` +
            (tps ? ` · takes profit at ${tps}` : '') +
            (t.stop ? ` · stop ${esc(t.stop)}` : '');
   }
@@ -3017,7 +3053,13 @@ function paintJournal(d) {
     return `<tr>
       <td>${r.mint
         ? `<a class="jcoin" href="https://gmgn.ai/sol/token/${esc(r.mint)}" target="_blank" rel="noopener" title="Open the chart on GMGN">${esc(r.name || '')}</a>`
-        : `<span class="s">${esc(r.name || '')}</span>`}</td>
+        : `<span class="s">${esc(r.name || '')}</span>`}${
+        /* Only a taken trade has anything to replay — a greenlight that never
+           filled has no fills to mark on the chart. */
+        r.entered && r.mint ? `<button class="jplay" data-replay="${esc(r.mint)}"
+          data-nm="${esc(r.name || '')}" title="Replay this trade">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M8 5v14l11-7z"/></svg></button>` : ''}</td>
       <td style="text-align:right">${res}</td>
       <td style="text-align:right" class="${cls(p)}">${p == null ? '—' : pct(p)}</td>
       <td style="text-align:right;color:var(--dimmer)">${(r.ts || '').slice(11, 16)}</td>
@@ -4283,6 +4325,183 @@ function showCard(url, filename) {
   document.getElementById('cardclose').onclick = () => wrap.remove();
   return wrap;
 }
+
+/* ── trade replay ──────────────────────────────────────────────────────────
+   Rebuilt from chain swaps by a companion service, drawn here so it looks like
+   the rest of the terminal rather than like somebody else's product.
+
+   Market cap on the axis, never price. Supply comes from GMGN's own mcap and
+   price in ONE response, so the ratio is exact and no second vendor is
+   involved — the same rule that took DexScreener off the board. */
+const TRICKSHOT_BASE = (() => {
+  try { return localStorage.getItem('trickshot') || 'http://localhost:5180'; }
+  catch (e) { return 'http://localhost:5180'; }
+})();
+
+let replayTimer = null;
+
+async function openReplay(mint, name) {
+  clearInterval(replayTimer);
+  document.getElementById('replaywrap')?.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'replaywrap';
+  wrap.innerHTML = `
+    <div class="replaybox">
+      <button class="modal-x" id="replayclose" aria-label="Close">&times;</button>
+      <div class="replayhead">
+        <span class="rnm">${esc(name || '')}</span>
+        <span class="rsub" id="replaysub">rebuilding from the chain…</span>
+      </div>
+      <canvas id="replaycanvas" width="1600" height="720"></canvas>
+      <div class="replaystats" id="replaystats"></div>
+      <div class="replayacts">
+        <button class="cardic" id="replayplay" style="display:none">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <span>Replay</span>
+        </button>
+        <input type="range" id="replayscrub" min="1" max="1" value="1" style="display:none">
+      </div>
+      <div class="replaynote" id="replaynote"></div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.onclick = e => { if (e.target === wrap) closeReplay(); };
+  document.getElementById('replayclose').onclick = closeReplay;
+
+  const sub = document.getElementById('replaysub');
+  const note = document.getElementById('replaynote');
+  try {
+    /* Supply, from the pair GMGN returns together. Doing it this way rather
+       than reading a supply field means the number is consistent with every
+       other market cap on the page by construction. */
+    let supply = 0;
+    try {
+      const live = await api(`/api/coin/${mint}/live`);
+      if (live && live.price > 0) supply = Number(live.mcap) / Number(live.price);
+    } catch (e) { /* fall through — the chart still draws in price */ }
+
+    const url = `${TRICKSHOT_BASE}/api/history?mint=${encodeURIComponent(mint)}`
+              + `&lead=300&wallet=${encodeURIComponent(MY_ADDRESS)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`replay service returned ${res.status}`);
+    const d = await res.json();
+    if (!d.candles || !d.candles.length) throw new Error('no swaps found for this trade');
+
+    sub.textContent = `${d.candles.length} bars · ${d.swaps || 0} swaps · rebuilt from chain`;
+    renderReplay(d, supply);
+    note.innerHTML = 'Rebuilt from on-chain swaps, so it is history rather than a live feed. '
+      + 'It follows the busiest pool, so it may differ slightly from the GMGN chart.';
+  } catch (e) {
+    sub.textContent = '';
+    note.innerHTML = `Couldn't build the replay — ${esc(e.message || 'the service is unreachable')}.`
+      + `<br>The replay service runs separately; it is expected at <b>${esc(TRICKSHOT_BASE)}</b>.`;
+  }
+}
+
+function closeReplay() {
+  clearInterval(replayTimer);
+  replayTimer = null;
+  document.getElementById('replaywrap')?.remove();
+}
+
+function renderReplay(d, supply) {
+  const cv = document.getElementById('replaycanvas');
+  if (!cv) return;
+  const cs = getComputedStyle(document.documentElement);
+  const tok = n => cs.getPropertyValue(n).trim();
+  const bars = d.candles;
+  const fills = (d.trades || []).filter(t => t.kind !== 'transfer');
+  const toMc = p => (supply > 0 ? p * supply : p);
+
+  const stats = document.getElementById('replaystats');
+  const buys = fills.filter(f => f.isBuy), sells = fills.filter(f => !f.isBuy);
+  const inUsd = buys.reduce((a, f) => a + f.usd, 0);
+  const outUsd = sells.reduce((a, f) => a + f.usd, 0);
+  const hi = Math.max(...bars.map(b => b.h));
+  const entry = buys.length ? buys[0].priceUsd : null;
+  const mk = (k, v) => `<div>${k}<b>${v}</b></div>`;
+  stats.innerHTML =
+    mk('entry', entry ? money(toMc(entry)) : '—') +
+    mk('peak', money(toMc(hi))) +
+    mk('peak from entry', entry ? (hi / entry).toFixed(2) + 'x' : '—') +
+    mk('fills', `${buys.length} in / ${sells.length} out`) +
+    mk('result', (outUsd - inUsd >= 0 ? '+' : '') + '$' + (outUsd - inUsd).toFixed(2));
+
+  let upto = bars.length;
+  const scrub = document.getElementById('replayscrub');
+  const play = document.getElementById('replayplay');
+  scrub.max = bars.length; scrub.value = bars.length;
+  scrub.style.display = ''; play.style.display = '';
+  scrub.oninput = () => { clearInterval(replayTimer); draw(Number(scrub.value)); };
+  play.onclick = () => {
+    clearInterval(replayTimer);
+    let i = 1;
+    replayTimer = setInterval(() => {
+      draw(i); scrub.value = i;
+      if (++i > bars.length) clearInterval(replayTimer);
+    }, Math.max(16, 4000 / bars.length));
+  };
+
+  function draw(n) {
+    upto = Math.max(1, Math.min(bars.length, n));
+    const W = cv.width, H = cv.height, PAD = 64, TOP = 18, BOT = 34;
+    const g = cv.getContext('2d');
+    g.clearRect(0, 0, W, H);
+    const shown = bars.slice(0, upto);
+    // Scale to the WHOLE trade, not to what has been drawn — a window that
+    // rescales every frame makes a flat coin look like a rocket.
+    let lo = Math.min(...bars.map(b => b.l)), hh = Math.max(...bars.map(b => b.h));
+    const pad = (hh - lo) * 0.08 || hh * 0.08;
+    lo -= pad; hh += pad;
+    const x = i => PAD + (i + 0.5) * ((W - PAD - 14) / bars.length);
+    const y = p => TOP + (1 - (p - lo) / (hh - lo)) * (H - TOP - BOT);
+
+    g.font = '20px ui-monospace, SFMono-Regular, Menlo, monospace';
+    g.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+      const p = lo + (hh - lo) * (i / 4), yy = y(p);
+      g.strokeStyle = tok('--hair'); g.lineWidth = 1;
+      g.beginPath(); g.moveTo(PAD, yy); g.lineTo(W - 14, yy); g.stroke();
+      g.fillStyle = tok('--dimmer'); g.textAlign = 'right';
+      g.fillText(money(toMc(p)), PAD - 8, yy);
+    }
+
+    const bw = Math.max(1.5, (W - PAD - 14) / bars.length * 0.62);
+    for (let i = 0; i < shown.length; i++) {
+      const b = shown[i], up = b.c >= b.o;
+      g.strokeStyle = g.fillStyle = up ? tok('--green') : tok('--red');
+      g.lineWidth = Math.max(1, bw * 0.16);
+      g.beginPath(); g.moveTo(x(i), y(b.h)); g.lineTo(x(i), y(b.l)); g.stroke();
+      const top = y(Math.max(b.o, b.c)), h = Math.max(1.5, Math.abs(y(b.o) - y(b.c)));
+      g.fillRect(x(i) - bw / 2, top, bw, h);
+    }
+
+    // Our own fills, only once the replay has reached them.
+    const t0 = bars[0].t, iv = d.interval || 15;
+    for (const f of fills) {
+      const bi = Math.floor((f.ts - t0) / iv);
+      if (bi < 0 || bi >= upto) continue;
+      const px = x(bi), py = y(f.priceUsd);
+      g.fillStyle = f.isBuy ? tok('--green') : tok('--red');
+      g.beginPath(); g.arc(px, py, Math.max(4, bw * 0.5), 0, Math.PI * 2); g.fill();
+      g.strokeStyle = tok('--bg'); g.lineWidth = 2; g.stroke();
+      g.textAlign = 'center'; g.fillStyle = tok('--fg');
+      g.fillText(f.isBuy ? 'BUY' : 'SELL', px, f.isBuy ? py + 26 : py - 24);
+    }
+  }
+  draw(bars.length);
+}
+
+/* Delegated: the journal is re-rendered on every refresh, so a handler bound
+   to each button would be lost the moment the table repaints. */
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.jplay');
+  if (!b) return;
+  e.preventDefault();
+  openReplay(b.dataset.replay, b.dataset.nm);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('replaywrap')) closeReplay();
+});
 
 async function shareCard() {
   const btn = document.getElementById('jshare');
