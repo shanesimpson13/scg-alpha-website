@@ -2715,7 +2715,12 @@ function stateLine(r) {
     // an open position looked frozen.
     const now = (r.mc && t.entry && r.mc !== t.entry)
       ? ` · now <b>${esc(r.mc)}</b>${r.pnl != null ? ` ${pnl(r.pnl)}` : ''}` : '';
-    return `In position — entered <b>${esc(t.entry || r.mc || '—')}</b>${now}` +
+    /* Entry is the MARKET cap at the fill, so it can be found on the chart.
+       `paid` is what our own order actually cost once it moved the book, and
+       it only appears when the two differ — it is the number the rungs are
+       measured from, so hiding it would make the gap to TP1 look wrong. */
+    const paid = t.paid && t.paid !== t.entry ? ` (paid ${esc(t.paid)})` : '';
+    return `In position — entered <b>${esc(t.entry || r.mc || '—')}</b>${paid}${now}` +
            (tps ? ` · takes profit at ${tps}` : '') +
            (t.stop ? ` · stop ${esc(t.stop)}` : '');
   }
