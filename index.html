@@ -373,24 +373,39 @@
        vendor is involved. */
     #replaywrap { position: fixed; inset: 0; background: rgba(0,0,0,.55);
                   display: grid; place-items: center; z-index: 95; padding: 20px; }
-    .replaybox { position: relative; background: var(--bg); border: 1px solid var(--line);
-                 border-radius: 12px; padding: 34px 16px 16px;
+    /* One dark panel, chart and numbers together.
+       The chart is drawn on black whatever theme the page is in — a candle
+       chart is read the way every venue draws one, and repainting it for light
+       mode makes the same information harder to read. Leaving the surrounding
+       card on paper split it into a dark picture with a light footer, so the
+       whole panel goes dark and it reads as one object. */
+    .replaybox { position: relative; background: #0f1115; border: 1px solid #242a33;
+                 border-radius: 12px; padding: 30px 16px 16px;
                  width: min(880px, 96vw); }
-    .replaybox .modal-x { top: 4px; right: 6px; }
-    .replayhead { display: flex; align-items: baseline; gap: 10px;
-                  margin: -22px 0 12px 2px; }
-    .replayhead .rnm { font-size: 14px; font-weight: 600; }
-    .replayhead .rsub { font-size: 11px; color: var(--dimmer); }
-    #replaycanvas { width: 100%; display: block; border: 1px solid var(--hair);
-                    border-radius: 8px; background: var(--field); }
-    .replaystats { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; }
-    .replaystats div { font-size: 11px; color: var(--dimmer); }
-    .replaystats b { display: block; font-size: 14px; color: var(--fg);
-                     font-weight: 600; margin-top: 3px; }
-    .replayacts { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
-    .replayacts input[type=range] { flex: 1; accent-color: var(--fg); }
-    .replaynote { font-size: 10.5px; color: var(--dimmer); margin-top: 10px;
-                  line-height: 1.6; }
+    .replaybox .modal-x { top: 4px; right: 6px; color: #7a8494; }
+    .replaybox .modal-x:hover { color: #e8ecf2; }
+    /* The coin's name is drawn INSIDE the canvas, so a screenshot of the chart
+       carries it. This line is only what the canvas cannot say for itself. */
+    .replayhead { margin: -18px 0 10px 2px; }
+    .replayhead .rsub { font-size: 10.5px; color: #7a8494; }
+    #replaycanvas { width: 100%; display: block; border: 1px solid #242a33;
+                    border-radius: 10px; background: #0a0b0d; }
+    .replaystats { display: flex; flex-wrap: wrap; gap: 30px; margin-top: 14px;
+                   padding: 0 6px; }
+    .replaystats div { font-size: 9.5px; color: #7a8494; letter-spacing: .09em;
+                       text-transform: uppercase; }
+    .replaystats b { display: block; font-size: 17px; font-weight: 600;
+                     margin-top: 5px; letter-spacing: 0; text-transform: none;
+                     color: #e8ecf2; }
+    .replaystats b.up { color: #35d399; }
+    .replaystats b.down { color: #ff5a5a; }
+    .replayacts { display: flex; align-items: center; gap: 10px; margin-top: 14px;
+                  padding: 0 6px; }
+    .replayacts .cardic { color: #98a2b0; border-color: #242a33; }
+    .replayacts .cardic:hover { color: #e8ecf2; background: #171a1f; }
+    .replayacts input[type=range] { flex: 1; accent-color: #ffb224; }
+    .replaynote { font-size: 10.5px; color: #5f6875; margin-top: 12px;
+                  padding: 0 6px; line-height: 1.6; }
     /* The button that opens all this. Sized to the journal row, not to itself:
        a play glyph big enough to notice would push the rows apart. */
     .jplay { background: none; border: none; color: var(--dimmer); cursor: pointer;
@@ -4421,7 +4436,6 @@ async function openReplay(mint, name) {
     <div class="replaybox">
       <button class="modal-x" id="replayclose" aria-label="Close">&times;</button>
       <div class="replayhead">
-        <span class="rnm">${esc(name || '')}</span>
         <span class="rsub" id="replaysub">rebuilding from the chain…</span>
       </div>
       <canvas id="replaycanvas" width="1600" height="720"></canvas>
@@ -4472,30 +4486,42 @@ function closeReplay() {
   document.getElementById('replaywrap')?.remove();
 }
 
+/* The chart's own palette, not the terminal's tokens.
+   Drawn on black whatever theme the page is in, because a candle chart is read
+   the way every venue draws one. Repainting it for light mode would make the
+   same information harder to read in the name of consistency. */
+const RC = {
+  ground: '#0a0b0d', text: '#e8ecf2', dim: '#98a2b0', dimmer: '#7a8494',
+  up: '#35d399', down: '#ff5a5a', accent: '#ffb224', line: '#242a33',
+};
+
 function renderReplay(d, supply) {
   const cv = document.getElementById('replaycanvas');
   if (!cv) return;
-  const cs = getComputedStyle(document.documentElement);
-  const tok = n => cs.getPropertyValue(n).trim();
   const bars = d.candles;
   const fills = (d.trades || []).filter(t => t.kind !== 'transfer');
   const toMc = p => (supply > 0 ? p * supply : p);
+  const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace';
 
-  const stats = document.getElementById('replaystats');
-  const buys = fills.filter(f => f.isBuy), sells = fills.filter(f => !f.isBuy);
-  const inUsd = buys.reduce((a, f) => a + f.usd, 0);
-  const outUsd = sells.reduce((a, f) => a + f.usd, 0);
-  const hi = Math.max(...bars.map(b => b.h));
-  const entry = buys.length ? buys[0].priceUsd : null;
-  const mk = (k, v) => `<div>${k}<b>${v}</b></div>`;
-  stats.innerHTML =
-    mk('entry', entry ? money(toMc(entry)) : '—') +
-    mk('peak', money(toMc(hi))) +
-    mk('peak from entry', entry ? (hi / entry).toFixed(2) + 'x' : '—') +
-    mk('fills', `${buys.length} in / ${sells.length} out`) +
-    mk('result', (outUsd - inUsd >= 0 ? '+' : '') + '$' + (outUsd - inUsd).toFixed(2));
+  /* Average-cost accounting, walked in order.
+     Realised is what a sale banked against the average price of what was held
+     at that moment — not sold-minus-bought, which reports a position that is
+     still open as a loss for as long as it stays open. */
+  function book(upTo) {
+    let qty = 0, cost = 0, realized = 0, bought = 0, sold = 0, sells = 0;
+    for (const f of fills) {
+      if (f.ts > upTo) break;
+      if (f.isBuy) { cost += f.usd; qty += f.base; bought += f.usd; }
+      else {
+        const avg = qty > 0 ? cost / qty : 0;
+        const base = Math.min(f.base, qty);
+        realized += f.usd - avg * base;
+        cost -= avg * base; qty -= base; sold += f.usd; sells += 1;
+      }
+    }
+    return { qty, cost, realized, bought, sold, sells };
+  }
 
-  let upto = bars.length;
   const scrub = document.getElementById('replayscrub');
   const play = document.getElementById('replayplay');
   scrub.max = bars.length; scrub.value = bars.length;
@@ -4507,59 +4533,109 @@ function renderReplay(d, supply) {
     replayTimer = setInterval(() => {
       draw(i); scrub.value = i;
       if (++i > bars.length) clearInterval(replayTimer);
-    }, Math.max(16, 4000 / bars.length));
+    }, Math.max(16, 5000 / bars.length));
   };
 
   function draw(n) {
-    upto = Math.max(1, Math.min(bars.length, n));
-    /* Left gutter sized to the widest label this axis can print, not to a
-       round number. At 64 it clipped the leading digit off "$338.3K" — the
-       axis was correct and unreadable, which is the worst of both. */
-    const W = cv.width, H = cv.height, TOP = 18, BOT = 34;
-    const PAD = 132;
+    const upto = Math.max(1, Math.min(bars.length, n));
+    const W = cv.width, H = cv.height;
+    /* Scale on the RIGHT, where every venue puts it — and where the newest bar
+       is, so the number and the thing it describes sit next to each other
+       rather than a chart-width apart. */
+    const AX = 190, TOP = 96, BOT = 54, L = 26;
     const g = cv.getContext('2d');
-    g.clearRect(0, 0, W, H);
+    g.fillStyle = RC.ground; g.fillRect(0, 0, W, H);
+
     const shown = bars.slice(0, upto);
-    // Scale to the WHOLE trade, not to what has been drawn — a window that
+    const last = shown[shown.length - 1];
+    // Scaled to the WHOLE trade, never to what has been drawn: a window that
     // rescales every frame makes a flat coin look like a rocket.
     let lo = Math.min(...bars.map(b => b.l)), hh = Math.max(...bars.map(b => b.h));
-    const pad = (hh - lo) * 0.08 || hh * 0.08;
+    const pad = (hh - lo) * 0.10 || hh * 0.10;
     lo -= pad; hh += pad;
-    const x = i => PAD + (i + 0.5) * ((W - PAD - 14) / bars.length);
+    const x = i => L + (i + 0.5) * ((W - AX - L) / bars.length);
     const y = p => TOP + (1 - (p - lo) / (hh - lo)) * (H - TOP - BOT);
 
-    g.font = '20px ui-monospace, SFMono-Regular, Menlo, monospace';
-    g.textBaseline = 'middle';
-    for (let i = 0; i <= 4; i++) {
-      const p = lo + (hh - lo) * (i / 4), yy = y(p);
-      g.strokeStyle = tok('--hair'); g.lineWidth = 1;
-      g.beginPath(); g.moveTo(PAD, yy); g.lineTo(W - 14, yy); g.stroke();
-      g.fillStyle = tok('--dimmer'); g.textAlign = 'right';
-      g.fillText(money(toMc(p)), PAD - 8, yy);
+    const b = book(last.t);
+    const unreal = b.qty * last.c - b.cost;
+    const total = b.realized + unreal;
+
+    g.textBaseline = 'alphabetic';
+    g.font = '600 22px ' + MONO;
+    g.fillStyle = RC.accent; g.textAlign = 'left';
+    g.fillText(String(d.symbol || d.name || '').toUpperCase(), L, 40);
+    g.font = '17px ' + MONO; g.fillStyle = RC.dim;
+    g.fillText(MY_ADDRESS || '', L, 68);
+
+    g.textAlign = 'right';
+    g.font = '600 54px ' + MONO;
+    g.fillStyle = total >= 0 ? RC.up : RC.down;
+    g.fillText((total >= 0 ? '+' : '−') + '$' + Math.abs(total).toFixed(2), W - L, 52);
+    g.font = '12px ' + MONO; g.fillStyle = RC.dimmer;
+    g.fillText('TOTAL PNL', W - L, 74);
+
+    g.font = '16px ' + MONO; g.textBaseline = 'middle'; g.textAlign = 'left';
+    for (let i = 0; i <= 6; i++) {
+      const p = lo + (hh - lo) * (i / 6), yy = y(p);
+      g.strokeStyle = RC.line; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(L, yy + 0.5); g.lineTo(W - AX, yy + 0.5); g.stroke();
+      g.fillStyle = RC.dimmer;
+      g.fillText(money(toMc(p)), W - AX + 16, yy);
     }
 
-    const bw = Math.max(1.5, (W - PAD - 14) / bars.length * 0.62);
+    const slot = (W - AX - L) / bars.length;
+    const bw = Math.max(1.5, slot * 0.66);
     for (let i = 0; i < shown.length; i++) {
-      const b = shown[i], up = b.c >= b.o;
-      g.strokeStyle = g.fillStyle = up ? tok('--green') : tok('--red');
-      g.lineWidth = Math.max(1, bw * 0.16);
-      g.beginPath(); g.moveTo(x(i), y(b.h)); g.lineTo(x(i), y(b.l)); g.stroke();
-      const top = y(Math.max(b.o, b.c)), h = Math.max(1.5, Math.abs(y(b.o) - y(b.c)));
-      g.fillRect(x(i) - bw / 2, top, bw, h);
+      const c = shown[i], up = c.c >= c.o;
+      g.strokeStyle = g.fillStyle = up ? RC.up : RC.down;
+      g.lineWidth = Math.max(1, bw * 0.18);
+      g.beginPath(); g.moveTo(x(i), y(c.h)); g.lineTo(x(i), y(c.l)); g.stroke();
+      g.fillRect(x(i) - bw / 2, y(Math.max(c.o, c.c)), bw,
+                 Math.max(1.5, Math.abs(y(c.o) - y(c.c))));
     }
 
-    // Our own fills, only once the replay has reached them.
+    const ly = y(last.c), lastUp = last.c >= last.o;
+    g.setLineDash([3, 6]); g.lineWidth = 1;
+    g.strokeStyle = lastUp ? RC.up : RC.down; g.globalAlpha = 0.7;
+    g.beginPath(); g.moveTo(L, ly + 0.5); g.lineTo(W - AX, ly + 0.5); g.stroke();
+    g.globalAlpha = 1; g.setLineDash([]);
+    const tag = money(toMc(last.c));
+    g.font = '600 16px ' + MONO;
+    g.fillStyle = lastUp ? RC.up : RC.down;
+    g.fillRect(W - AX + 8, ly - 13, g.measureText(tag).width + 22, 26);
+    g.fillStyle = RC.ground; g.textAlign = 'left';
+    g.fillText(tag, W - AX + 19, ly + 1);
+
     const t0 = bars[0].t, iv = d.interval || 15;
     for (const f of fills) {
       const bi = Math.floor((f.ts - t0) / iv);
       if (bi < 0 || bi >= upto) continue;
       const px = x(bi), py = y(f.priceUsd);
-      g.fillStyle = f.isBuy ? tok('--green') : tok('--red');
-      g.beginPath(); g.arc(px, py, Math.max(4, bw * 0.5), 0, Math.PI * 2); g.fill();
-      g.strokeStyle = tok('--bg'); g.lineWidth = 2; g.stroke();
-      g.textAlign = 'center'; g.fillStyle = tok('--fg');
-      g.fillText(f.isBuy ? 'BUY' : 'SELL', px, f.isBuy ? py + 26 : py - 24);
+      const col = f.isBuy ? RC.up : RC.down;
+      g.globalAlpha = 0.22; g.fillStyle = col;
+      g.beginPath(); g.arc(px, py, 13, 0, Math.PI * 2); g.fill();
+      g.globalAlpha = 1; g.fillStyle = col;
+      g.beginPath(); g.arc(px, py, 5.5, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = RC.ground; g.lineWidth = 2; g.stroke();
+      g.font = '600 15px ' + MONO; g.textAlign = 'center'; g.fillStyle = col;
+      g.fillText((f.isBuy ? 'BUY' : 'SELL') + ' $' + f.usd.toFixed(0),
+                 px, f.isBuy ? py + 32 : py - 22);
     }
+
+    g.font = '15px ' + MONO; g.fillStyle = RC.dimmer; g.textAlign = 'center';
+    g.fillText(new Date(last.t * 1000).toLocaleTimeString([], {
+      hour: '2-digit', minute: '2-digit' }), (L + W - AX) / 2, H - 22);
+
+    const cash = v => (v < 0 ? '−' : '') + '$' + Math.abs(v).toFixed(2);
+    const cl = v => v > 0 ? ' class="up"' : v < 0 ? ' class="down"' : '';
+    const row = (k, v, c) => '<div>' + k + '<b' + (c || '') + '>' + v + '</b></div>';
+    document.getElementById('replaystats').innerHTML =
+      row('bought', cash(b.bought)) +
+      row('sold', cash(b.sold)) +
+      row('realized', cash(b.realized), cl(b.realized)) +
+      row('unrealized', cash(unreal), cl(unreal)) +
+      row('holding', cash(b.qty * last.c)) +
+      row('sells', String(b.sells));
   }
   draw(bars.length);
 }
