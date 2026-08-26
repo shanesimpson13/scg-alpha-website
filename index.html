@@ -403,7 +403,13 @@
                   padding: 0 6px; }
     .replayacts .cardic { color: #98a2b0; border-color: #242a33; }
     .replayacts .cardic:hover { color: #e8ecf2; background: #171a1f; }
-    .replayacts input[type=range] { flex: 1; accent-color: #ffb224; }
+    .replayacts input[type=range] { flex: 1; accent-color: #ffb224; min-width: 90px; }
+    .rspeed { display: flex; gap: 2px; }
+    .rspeed button { background: none; border: 1px solid #242a33; color: #7a8494;
+                     font-family: inherit; font-size: 11px; padding: 7px 9px;
+                     cursor: pointer; border-radius: 6px; }
+    .rspeed button:hover { color: #e8ecf2; }
+    .rspeed button.on { color: #ffb224; border-color: #4a3a1a; background: #1b1710; }
     .replaynote { font-size: 10.5px; color: #5f6875; margin-top: 12px;
                   padding: 0 6px; line-height: 1.6; }
     /* The button that opens all this. Sized to the journal row, not to itself:
@@ -4358,8 +4364,6 @@ const TRICKSHOT_BASE = (() => {
   catch (e) { return 'http://localhost:5180'; }
 })();
 
-let replayTimer = null;
-
 /* Replays of a finished trade, kept locally.
    The upstream rebuild reads the chain and takes 13-50 seconds, and it does
    that work again on every call — its own cache does not persist between
@@ -4428,7 +4432,8 @@ async function warmReplays(mints) {
 }
 
 async function openReplay(mint, name) {
-  clearInterval(replayTimer);
+  // Whatever was playing belongs to the panel being replaced.
+  stopReplay();
   document.getElementById('replaywrap')?.remove();
   const wrap = document.createElement('div');
   wrap.id = 'replaywrap';
@@ -4443,9 +4448,22 @@ async function openReplay(mint, name) {
       <div class="replayacts">
         <button class="cardic" id="replayplay" style="display:none">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-          <span>Replay</span>
+          <span id="replayplaytxt">Replay</span>
         </button>
-        <input type="range" id="replayscrub" min="1" max="1" value="1" style="display:none">
+        <div class="rspeed" id="replayspeed" style="display:none">
+          <button type="button" data-s="0.25">0.25x</button>
+          <button type="button" data-s="0.5">0.5x</button>
+          <button type="button" data-s="1" class="on">1x</button>
+          <button type="button" data-s="2">2x</button>
+        </div>
+        <input type="range" id="replayscrub" min="0" max="1" step="0.01" value="1" style="display:none">
+        <button class="cardic" id="replayexport" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5"/>
+            <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <span id="replayexporttxt">Export clip</span>
+        </button>
       </div>
       <div class="replaynote" id="replaynote"></div>
     </div>`;
@@ -4481,8 +4499,7 @@ async function openReplay(mint, name) {
 }
 
 function closeReplay() {
-  clearInterval(replayTimer);
-  replayTimer = null;
+  stopReplay();
   document.getElementById('replaywrap')?.remove();
 }
 
@@ -4495,6 +4512,23 @@ const RC = {
   up: '#35d399', down: '#ff5a5a', accent: '#ffb224', line: '#242a33',
 };
 
+/* Playback state, held outside the renderer so closing the panel can stop it
+   and so opening a second replay cannot leave the first one running. */
+const RPL = { raf: null, playing: false, speed: 1, lo: null, hi: null };
+
+/* Bars per second at 1x. Slow on purpose: the point of a replay is watching a
+   move arrive, and a chart that finishes before you have read the axis is a
+   loading animation. */
+const RPL_RATE = 3.5;
+const RPL_WINDOW = 64;              // bars on screen at once
+
+function stopReplay() {
+  if (RPL.raf) cancelAnimationFrame(RPL.raf);
+  RPL.raf = null; RPL.playing = false;
+  const t = document.getElementById('replayplaytxt');
+  if (t) t.textContent = 'Replay';
+}
+
 function renderReplay(d, supply) {
   const cv = document.getElementById('replaycanvas');
   if (!cv) return;
@@ -4502,6 +4536,7 @@ function renderReplay(d, supply) {
   const fills = (d.trades || []).filter(t => t.kind !== 'transfer');
   const toMc = p => (supply > 0 ? p * supply : p);
   const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, monospace';
+  const LAST = bars.length - 1;
 
   /* Average-cost accounting, walked in order.
      Realised is what a sale banked against the average price of what was held
@@ -4522,56 +4557,41 @@ function renderReplay(d, supply) {
     return { qty, cost, realized, bought, sold, sells };
   }
 
-  const scrub = document.getElementById('replayscrub');
-  const play = document.getElementById('replayplay');
-  scrub.max = bars.length; scrub.value = bars.length;
-  scrub.style.display = ''; play.style.display = '';
-  scrub.oninput = () => { clearInterval(replayTimer); draw(Number(scrub.value)); };
-  play.onclick = () => {
-    clearInterval(replayTimer);
-    let i = 1;
-    replayTimer = setInterval(() => {
-      draw(i); scrub.value = i;
-      if (++i > bars.length) clearInterval(replayTimer);
-    }, Math.max(16, 5000 / bars.length));
-  };
-
-  function draw(n) {
-    const upto = Math.max(1, Math.min(bars.length, n));
+  function draw(pos, snap) {
+    pos = Math.max(0, Math.min(LAST, pos));
+    const upto = Math.floor(pos) + 1;
     const W = cv.width, H = cv.height;
-    /* Scale on the RIGHT, where every venue puts it — and where the newest bar
-       is, so the number and the thing it describes sit next to each other
-       rather than a chart-width apart. */
     const AX = 190, TOP = 96, BOT = 54, L = 26;
     const g = cv.getContext('2d');
     g.fillStyle = RC.ground; g.fillRect(0, 0, W, H);
 
-    const shown = bars.slice(0, upto);
-    const last = shown[shown.length - 1];
-
-    /* A player, not a picture.
-       The newest bar is PINNED here and older bars trail off to the left, so
-       the tape runs toward you into open space ahead — which is how a live
-       chart behaves and the reason it reads as playback at all. Laying the
-       whole window out flat and revealing it left to right, which is what
-       this did first, is a chart being uncovered rather than a market
-       happening. */
+    const last = bars[Math.floor(pos)];
+    /* The newest bar is pinned here and older bars trail off to the left, so
+       the tape runs toward you into open space ahead. `pos` is fractional, so
+       between two bars the whole chart slides by part of a bar width rather
+       than jumping one — that is the difference between scrolling and
+       stuttering. */
     const PIN = L + (W - AX - L) * 0.62;
-    const WINDOW = 64;                     // bars on screen at once
-    const slot = (W - AX - L) / WINDOW;
-    const x = i => PIN - (upto - 1 - i) * slot;
+    const slot = (W - AX - L) / RPL_WINDOW;
+    const x = i => PIN - (pos - i) * slot;
 
-    /* Scaled to what is ON SCREEN, not to the whole trade.
-       Fixing the scale to the finished range is steadier, and it also means
-       the first half of every replay is a flat line hugging the bottom while
-       the axis reserves room for a top that has not happened yet. Following
-       the visible window is what makes the move feel like it is arriving. */
-    const vis = shown.slice(Math.max(0, upto - WINDOW));
-    let lo = Math.min(...vis.map(b => b.l)), hh = Math.max(...vis.map(b => b.h));
-    if (!(hh > lo)) { hh = lo * 1.02 || 1; lo = lo * 0.98; }
-    const pad = (hh - lo) * 0.12;
-    lo -= pad; hh += pad;
-    const y = p => TOP + (1 - (p - lo) / (hh - lo)) * (H - TOP - BOT);
+    /* The camera EASES toward the visible range instead of being recomputed.
+       Snapping to the exact min and max of whatever is on screen makes the
+       chart jolt every time an extreme scrolls in or out; letting it glide is
+       what makes a run feel like it is being ridden rather than redrawn. */
+    const from = Math.max(0, Math.ceil(pos) - RPL_WINDOW);
+    const vis = bars.slice(from, upto);
+    let tLo = Math.min(...vis.map(b => b.l)), tHi = Math.max(...vis.map(b => b.h));
+    if (!(tHi > tLo)) { tHi = tLo * 1.02 || 1; tLo = tLo * 0.98; }
+    const gap = (tHi - tLo) * 0.12;
+    tLo -= gap; tHi += gap;
+    if (snap || RPL.lo === null) { RPL.lo = tLo; RPL.hi = tHi; }
+    else {
+      RPL.lo += (tLo - RPL.lo) * 0.10;
+      RPL.hi += (tHi - RPL.hi) * 0.10;
+    }
+    const lo = RPL.lo, hi = RPL.hi;
+    const y = p => TOP + (1 - (p - lo) / (hi - lo)) * (H - TOP - BOT);
 
     const b = book(last.t);
     const unreal = b.qty * last.c - b.cost;
@@ -4593,7 +4613,7 @@ function renderReplay(d, supply) {
 
     g.font = '16px ' + MONO; g.textBaseline = 'middle'; g.textAlign = 'left';
     for (let i = 0; i <= 6; i++) {
-      const p = lo + (hh - lo) * (i / 6), yy = y(p);
+      const p = lo + (hi - lo) * (i / 6), yy = y(p);
       g.strokeStyle = RC.line; g.lineWidth = 1;
       g.beginPath(); g.moveTo(L, yy + 0.5); g.lineTo(W - AX, yy + 0.5); g.stroke();
       g.fillStyle = RC.dimmer;
@@ -4601,13 +4621,10 @@ function renderReplay(d, supply) {
     }
 
     const bw = Math.max(2, slot * 0.62);
-    for (let i = 0; i < shown.length; i++) {
+    for (let i = 0; i < upto; i++) {
       const px = x(i);
-      // Scrolled off the left, or not yet reached. Skipping rather than
-      // clipping keeps the wick and the body from being drawn half over the
-      // price scale as a bar leaves the window.
       if (px < L - bw || px > W - AX) continue;
-      const c = shown[i], up = c.c >= c.o;
+      const c = bars[i], up = c.c >= c.o;
       g.strokeStyle = g.fillStyle = up ? RC.up : RC.down;
       g.lineWidth = Math.max(1, bw * 0.18);
       g.beginPath(); g.moveTo(px, y(c.h)); g.lineTo(px, y(c.l)); g.stroke();
@@ -4632,8 +4649,6 @@ function renderReplay(d, supply) {
       const bi = Math.floor((f.ts - t0) / iv);
       if (bi < 0 || bi >= upto) continue;
       const px = x(bi), py = y(f.priceUsd);
-      // Off the left edge with the bar it belongs to. Without this the marker
-      // outlives its own candle and ends up floating over the price scale.
       if (px < L || px > W - AX) continue;
       const col = f.isBuy ? RC.up : RC.down;
       g.globalAlpha = 0.22; g.fillStyle = col;
@@ -4661,7 +4676,110 @@ function renderReplay(d, supply) {
       row('holding', cash(b.qty * last.c)) +
       row('sells', String(b.sells));
   }
-  draw(bars.length);
+
+  const scrub = document.getElementById('replayscrub');
+  const play = document.getElementById('replayplay');
+  const playtxt = document.getElementById('replayplaytxt');
+  const speeds = document.getElementById('replayspeed');
+  const exp = document.getElementById('replayexport');
+  for (const el of [scrub, play, speeds, exp]) el.style.display = '';
+  scrub.min = 0; scrub.max = LAST; scrub.step = 0.01; scrub.value = LAST;
+
+  scrub.oninput = () => { stopReplay(); draw(Number(scrub.value), true); };
+  speeds.querySelectorAll('button').forEach(btn => {
+    btn.onclick = () => {
+      RPL.speed = Number(btn.dataset.s);
+      speeds.querySelectorAll('button').forEach(o => o.classList.toggle('on', o === btn));
+    };
+  });
+
+  /* One pass, driven by the frame clock rather than a timer.
+     Advancing by elapsed time means the speed setting is honoured whatever the
+     display is doing, and a dropped frame slows nothing down — it just moves
+     further next time. */
+  function run() {
+    return new Promise(resolve => {
+      stopReplay();
+      RPL.playing = true;
+      RPL.lo = null;                       // let the camera snap to the opening view
+      playtxt.textContent = 'Stop';
+      let pos = 0, prev = performance.now();
+      draw(0, true);
+      const step = now => {
+        if (!RPL.playing) { resolve(); return; }
+        pos += ((now - prev) / 1000) * RPL_RATE * RPL.speed;
+        prev = now;
+        if (pos >= LAST) {
+          draw(LAST, false); scrub.value = LAST;
+          stopReplay(); resolve(); return;
+        }
+        draw(pos, false);
+        scrub.value = pos;
+        RPL.raf = requestAnimationFrame(step);
+      };
+      RPL.raf = requestAnimationFrame(step);
+    });
+  }
+
+  play.onclick = () => { if (RPL.playing) stopReplay(); else run(); };
+
+  /* Record the canvas as it actually plays, rather than rendering frames to a
+     file separately. Whatever you watched is what you get, including the
+     speed you chose. */
+  exp.onclick = async () => {
+    const label = document.getElementById('replayexporttxt');
+    const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+      .find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+    if (!mime) {
+      label.textContent = 'Not supported here';
+      setTimeout(() => { label.textContent = 'Export clip'; }, 2600);
+      return;
+    }
+    /* A hidden page stops getting animation frames, so the loop freezes and
+       the recorder faithfully captures a still. Better to refuse than to hand
+       over a file that is one frame long. */
+    if (document.hidden) {
+      label.textContent = 'Keep this tab visible';
+      setTimeout(() => { label.textContent = 'Export clip'; }, 2600);
+      return;
+    }
+    exp.disabled = true; label.textContent = 'Recording…';
+    let stalled = false;
+    const watch = () => { if (document.hidden) stalled = true; };
+    document.addEventListener('visibilitychange', watch);
+    try {
+      const stream = cv.captureStream(30);
+      const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8e6 });
+      const chunks = [];
+      rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      const flushed = new Promise(r => { rec.onstop = r; });
+      rec.start();
+      await run();
+      // A moment past the end, so the last frame is in the file rather than
+      // cut off by the stop that follows it.
+      await new Promise(r => setTimeout(r, 400));
+      rec.stop();
+      await flushed;
+      const blob = new Blob(chunks, { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(d.symbol || d.name || 'replay')}-replay.webm`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      // Said plainly rather than silently: a clip recorded through a tab
+      // switch is short and looks like the export is broken.
+      label.textContent = stalled ? 'Saved (tab was hidden)' : 'Saved';
+    } catch (e) {
+      label.textContent = "Couldn't record";
+    } finally {
+      document.removeEventListener('visibilitychange', watch);
+      exp.disabled = false;
+      setTimeout(() => { label.textContent = 'Export clip'; }, 2600);
+    }
+  };
+
+  draw(LAST, true);
 }
 
 /* Delegated: the journal is re-rendered on every refresh, so a handler bound
