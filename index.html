@@ -3066,6 +3066,11 @@ function paintJournal(d) {
     </tr>`;
     })();
   }).join('') : `<tr><td colspan="4"><div class="empty">No trades yet.</div></td></tr>`;
+
+  /* Build the newest replays in the background so the play button is instant
+     when it is actually pressed. Newest first, because that is the trade
+     someone opening the journal is looking for. */
+  warmReplays(rows.filter(r => r.entered && r.mint).map(r => r.mint));
 }
 
 /** Read the numbers back as plain observations. No advice that the data
@@ -4340,6 +4345,73 @@ const TRICKSHOT_BASE = (() => {
 
 let replayTimer = null;
 
+/* Replays of a finished trade, kept locally.
+   The upstream rebuild reads the chain and takes 13-50 seconds, and it does
+   that work again on every call — its own cache does not persist between
+   requests. But a trade that closed yesterday cannot change, so the answer is
+   worth keeping. First view pays; every view after it is instant.
+   Versioned, because a fix to how a replay is drawn must not be served the
+   shape that predates it. */
+const RRKEY = 'replay:v1:';
+const RRMAX = 40;              // ~40 replays fits comfortably in localStorage
+
+function replayCached(mint) {
+  try {
+    const raw = localStorage.getItem(RRKEY + mint);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function replayStore(mint, d) {
+  try {
+    localStorage.setItem(RRKEY + mint, JSON.stringify(d));
+    // Evict oldest-first once there are too many. Quota errors are the normal
+    // failure here and they must not break the replay that just loaded.
+    const keys = Object.keys(localStorage).filter(k => k.startsWith(RRKEY));
+    if (keys.length > RRMAX) {
+      keys.slice(0, keys.length - RRMAX).forEach(k => localStorage.removeItem(k));
+    }
+  } catch (e) {
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith(RRKEY))
+        .slice(0, 10).forEach(k => localStorage.removeItem(k));
+      localStorage.setItem(RRKEY + mint, JSON.stringify(d));
+    } catch (e2) { /* out of room; the replay still works, it just re-fetches */ }
+  }
+}
+
+async function fetchReplay(mint) {
+  const hit = replayCached(mint);
+  if (hit) return hit;
+  const url = `${TRICKSHOT_BASE}/api/history?mint=${encodeURIComponent(mint)}`
+            + `&lead=300&wallet=${encodeURIComponent(MY_ADDRESS)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    let why = `replay service returned ${res.status}`;
+    try { why = (await res.json()).error || why; } catch (e) {}
+    throw new Error(why);
+  }
+  const d = await res.json();
+  if (!d.candles || !d.candles.length) throw new Error('no swaps found for this trade');
+  replayStore(mint, d);
+  return d;
+}
+
+/* Warm the newest trades in the background when the journal opens, ONE AT A
+   TIME. The rebuild is heavy upstream and firing ten at once would queue them
+   behind each other anyway while making the first one slower. */
+let warming = false;
+async function warmReplays(mints) {
+  if (warming || !MY_ADDRESS) return;
+  warming = true;
+  try {
+    for (const m of mints.slice(0, 6)) {
+      if (replayCached(m)) continue;
+      try { await fetchReplay(m); } catch (e) { /* next */ }
+    }
+  } finally { warming = false; }
+}
+
 async function openReplay(mint, name) {
   clearInterval(replayTimer);
   document.getElementById('replaywrap')?.remove();
@@ -4379,12 +4451,9 @@ async function openReplay(mint, name) {
       if (live && live.price > 0) supply = Number(live.mcap) / Number(live.price);
     } catch (e) { /* fall through — the chart still draws in price */ }
 
-    const url = `${TRICKSHOT_BASE}/api/history?mint=${encodeURIComponent(mint)}`
-              + `&lead=300&wallet=${encodeURIComponent(MY_ADDRESS)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`replay service returned ${res.status}`);
-    const d = await res.json();
-    if (!d.candles || !d.candles.length) throw new Error('no swaps found for this trade');
+    const warm = !!replayCached(mint);
+    if (!warm) sub.textContent = 'rebuilding from the chain — first time takes a moment…';
+    const d = await fetchReplay(mint);
 
     sub.textContent = `${d.candles.length} bars · ${d.swaps || 0} swaps · rebuilt from chain`;
     renderReplay(d, supply);
@@ -4443,7 +4512,11 @@ function renderReplay(d, supply) {
 
   function draw(n) {
     upto = Math.max(1, Math.min(bars.length, n));
-    const W = cv.width, H = cv.height, PAD = 64, TOP = 18, BOT = 34;
+    /* Left gutter sized to the widest label this axis can print, not to a
+       round number. At 64 it clipped the leading digit off "$338.3K" — the
+       axis was correct and unreadable, which is the worst of both. */
+    const W = cv.width, H = cv.height, TOP = 18, BOT = 34;
+    const PAD = 132;
     const g = cv.getContext('2d');
     g.clearRect(0, 0, W, H);
     const shown = bars.slice(0, upto);
