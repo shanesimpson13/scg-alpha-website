@@ -2919,6 +2919,7 @@ const SAMPLE_SETTINGS = {
   tp1: 1.5, frac1: 0.7, tp2: 2.0, kill: 0.5, trail_stop: 1,
   entry_timeout: 3600, max_hold: 21600, use_tp2: 1,
   slippage: 0.15, priority_fee: 0.002,
+  deadcat: 0.50, warmup_sec: 10, be_after_tp1: 0,
 };
 
 /* ── trade journal ──────────────────────────────────────────────────────── */
@@ -3057,6 +3058,10 @@ const SECTIONS = [
     // Stored as a ceiling (0.90) but read as a distance from the high (10%),
     // which is how you think about it. -100 with offset 1 gives (1 - v) * 100.
     ["pico", "Stay below the high by", "Must be smaller than your dip or nothing can fire. Lower it for near-market entries on a parabolic coin.", -100, "%", 1],
+    // Not a veto. A deeper dip still buys — it waits for the bounce to carry
+    // price back up to this line and buys there. Must be deeper than the dip.
+    ["deadcat", "Deepest entry", "How far below the high a buy may land. A deeper dip still buys, just up here rather than at its low.", 100, "%"],
+    ["warmup_sec", "Watch before buying", "Seconds of tape before a buy is allowed. Under 5s the high is barely one tick.", 1, "s"],
   ]],
   ["Exit", [
     ["tp1", "Take profit 1", "The first rung.", 1, "x"],
@@ -3064,6 +3069,7 @@ const SECTIONS = [
     ["tp2", "Take profit 2", "Fully out here.", 1, "x"],
     ["trail_stop", "Stop type", "Trailing follows the high — it locks in gains but can exit below your entry. Fixed measures from entry.", 1],
     ["kill", "Stop", "How far it may fall before selling out.", 100, "%"],
+    ["be_after_tp1", "Break even after TP1", "Once TP1 sells, the stop on the rest moves up to your entry, so the trade can't turn into a loss. Needs TP2 on.", 1],
   ]],
   ["Timing", [
     ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
@@ -3454,6 +3460,18 @@ function settingRowHTML(f, vals) {
     </div>`;
   }
 
+  /* Same reasoning as the stop mode: it is on or off, not a number. */
+  if (key === 'be_after_tp1') {
+    return `<div class="setrow" id="row_be_after_tp1">
+      <div><div class="lab"><span>${label}</span></div>
+        <div class="hint" id="hint_be_after_tp1">${hint}</div></div>
+      <div class="seg" id="segbe">
+        <button type="button" data-b="1"${beAfterTp1 ? ' class="on"' : ''}>On</button>
+        <button type="button" data-b="0"${beAfterTp1 ? '' : ' class="on"'}>Off</button>
+      </div>
+    </div>`;
+  }
+
   const v = vals[key];
   const val = v === undefined ? '' : toView(f)(v);
   // TP2 gets a checkbox in place of its label, so it can be switched off.
@@ -3477,15 +3495,36 @@ function settingRowHTML(f, vals) {
 function checkReachable() {
   const dipEl = document.getElementById('set_dip');
   const picoEl = document.getElementById('set_pico');
+  const dcEl = document.getElementById('set_deadcat');
   const hint = document.getElementById('hint_pico');
+  const dcHint = document.getElementById('hint_deadcat');
   if (!dipEl || !picoEl || !hint) return;
+
   const dip = Number(dipEl.value), gap = Number(picoEl.value);
-  const bad = isFinite(dip) && isFinite(gap) && dip > 0 && gap >= dip;
-  [dipEl, picoEl].forEach(el => el.classList.toggle('bad', bad));
-  hint.style.color = bad ? 'var(--red)' : '';
-  hint.textContent = bad
+  const dc = dcEl ? Number(dcEl.value) : NaN;
+
+  // Both guards measure down from the same high, and both can be set so that
+  // no price satisfies them. They are computed together and the dip field is
+  // marked ONCE at the end — marking it inside each check meant the second
+  // one silently cleared the first.
+  const badPico = isFinite(dip) && isFinite(gap) && dip > 0 && gap >= dip;
+  const badDead = isFinite(dip) && isFinite(dc) && dip > 0 && dc <= dip;
+
+  picoEl.classList.toggle('bad', badPico);
+  if (dcEl) dcEl.classList.toggle('bad', badDead);
+  dipEl.classList.toggle('bad', badPico || badDead);
+
+  hint.style.color = badPico ? 'var(--red)' : '';
+  hint.textContent = badPico
     ? `Nothing can fire — a ${dip}% dip enters around ${dip}% off the high. Drop this under ${dip}%.`
     : F.pico[2];
+
+  if (dcHint) {
+    dcHint.style.color = badDead ? 'var(--red)' : '';
+    dcHint.textContent = badDead
+      ? `Nothing can fire — this must be deeper than your ${dip}% dip.`
+      : F.deadcat[2];
+  }
 }
 
 /* Which strategy the form is editing. '' is the account's own settings — the
@@ -3493,6 +3532,7 @@ function checkReachable() {
 let editing = '';          // which strategy the PANEL is editing
 let selected = null;       // which tile is picked on the page; null = none
 let trailStop = true;
+let beAfterTp1 = false;
 let OWN = {};             // the account's own numbers, unresolved by any preset
 let DEFAULT_PRESET = '';
 let OWN_NAME = 'Default';   // renameable — it is a strategy like the others
@@ -3769,6 +3809,7 @@ function openStrategyEditor(name) {
   const vals = editing ? { ...OWN, ...(PRESETS[editing] || {}) } : OWN;
   useTp2 = vals.use_tp2 === undefined ? true : !!Number(vals.use_tp2);
   trailStop = vals.trail_stop === undefined ? true : !!Number(vals.trail_stop);
+  beAfterTp1 = !!Number(vals.be_after_tp1 || 0);
 
   document.getElementById('stratname').value = editing || OWN_NAME;
   document.getElementById('stratbody').innerHTML = SECTIONS.map(secHTML(vals)).join('');
@@ -3806,11 +3847,19 @@ function wireStrategyForm() {
   // Dip and the near-top guard can be set to values that cannot both be
   // satisfied. Said where they are set — the alternative is a coin that
   // watches for an hour and stands down with nothing to show for it.
-  ['dip', 'pico'].forEach(k => {
+  ['dip', 'pico', 'deadcat'].forEach(k => {
     const el = document.getElementById('set_' + k);
     if (el) el.oninput = checkReachable;
   });
   checkReachable();
+
+  const segbe = document.getElementById('segbe');
+  if (segbe) segbe.querySelectorAll('button').forEach(b => {
+    b.onclick = () => {
+      beAfterTp1 = b.dataset.b === '1';
+      segbe.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    };
+  });
 
   const tp2 = document.getElementById('set_use_tp2');
   if (tp2) tp2.onchange = e => { useTp2 = e.target.checked; applyTp2(); };
@@ -4305,7 +4354,8 @@ document.getElementById('stratmodal').onclick = e => {
 
 
 function collect() {
-  const body = { use_tp2: useTp2 ? 1 : 0, trail_stop: trailStop ? 1 : 0 };
+  const body = { use_tp2: useTp2 ? 1 : 0, trail_stop: trailStop ? 1 : 0,
+                 be_after_tp1: beAfterTp1 ? 1 : 0 };
   let bad = false;
   for (const key of Object.keys(F)) {
     const el = document.getElementById('set_' + key);
@@ -4358,14 +4408,15 @@ document.getElementById('savesettings').onclick = async () => {
 
 const SHIPPED = { tp1: 1.5, tp2: 2.0, use_tp2: 1, frac1: 0.70, kill: 0.50,
                   trail_stop: 1, dip: 0.15, bounce: 1.04, volr_min: 1.0,
-                  pico: 0.90, entry_timeout: 3600, max_hold: 21600 };
+                  pico: 0.90, entry_timeout: 3600, max_hold: 21600,
+                  deadcat: 0.50, warmup_sec: 10, be_after_tp1: 0 };
 
 document.getElementById('resetsettings').onclick = () => {
   /* Fills the open panel with the shipped defaults and saves NOTHING. It used
      to write immediately, so a misread of the button cost you a strategy you
      had tuned. Now Apply is still the only thing that commits. */
   const keep = editing;
-  useTp2 = true; trailStop = true;
+  useTp2 = true; trailStop = true; beAfterTp1 = false;
   document.getElementById('stratbody').innerHTML = SECTIONS.map(secHTML(SHIPPED)).join('');
   editing = keep;
   wireStrategyForm();
