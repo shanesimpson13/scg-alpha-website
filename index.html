@@ -4548,12 +4548,29 @@ function renderReplay(d, supply) {
 
     const shown = bars.slice(0, upto);
     const last = shown[shown.length - 1];
-    // Scaled to the WHOLE trade, never to what has been drawn: a window that
-    // rescales every frame makes a flat coin look like a rocket.
-    let lo = Math.min(...bars.map(b => b.l)), hh = Math.max(...bars.map(b => b.h));
-    const pad = (hh - lo) * 0.10 || hh * 0.10;
+
+    /* A player, not a picture.
+       The newest bar is PINNED here and older bars trail off to the left, so
+       the tape runs toward you into open space ahead — which is how a live
+       chart behaves and the reason it reads as playback at all. Laying the
+       whole window out flat and revealing it left to right, which is what
+       this did first, is a chart being uncovered rather than a market
+       happening. */
+    const PIN = L + (W - AX - L) * 0.62;
+    const WINDOW = 64;                     // bars on screen at once
+    const slot = (W - AX - L) / WINDOW;
+    const x = i => PIN - (upto - 1 - i) * slot;
+
+    /* Scaled to what is ON SCREEN, not to the whole trade.
+       Fixing the scale to the finished range is steadier, and it also means
+       the first half of every replay is a flat line hugging the bottom while
+       the axis reserves room for a top that has not happened yet. Following
+       the visible window is what makes the move feel like it is arriving. */
+    const vis = shown.slice(Math.max(0, upto - WINDOW));
+    let lo = Math.min(...vis.map(b => b.l)), hh = Math.max(...vis.map(b => b.h));
+    if (!(hh > lo)) { hh = lo * 1.02 || 1; lo = lo * 0.98; }
+    const pad = (hh - lo) * 0.12;
     lo -= pad; hh += pad;
-    const x = i => L + (i + 0.5) * ((W - AX - L) / bars.length);
     const y = p => TOP + (1 - (p - lo) / (hh - lo)) * (H - TOP - BOT);
 
     const b = book(last.t);
@@ -4583,14 +4600,18 @@ function renderReplay(d, supply) {
       g.fillText(money(toMc(p)), W - AX + 16, yy);
     }
 
-    const slot = (W - AX - L) / bars.length;
-    const bw = Math.max(1.5, slot * 0.66);
+    const bw = Math.max(2, slot * 0.62);
     for (let i = 0; i < shown.length; i++) {
+      const px = x(i);
+      // Scrolled off the left, or not yet reached. Skipping rather than
+      // clipping keeps the wick and the body from being drawn half over the
+      // price scale as a bar leaves the window.
+      if (px < L - bw || px > W - AX) continue;
       const c = shown[i], up = c.c >= c.o;
       g.strokeStyle = g.fillStyle = up ? RC.up : RC.down;
       g.lineWidth = Math.max(1, bw * 0.18);
-      g.beginPath(); g.moveTo(x(i), y(c.h)); g.lineTo(x(i), y(c.l)); g.stroke();
-      g.fillRect(x(i) - bw / 2, y(Math.max(c.o, c.c)), bw,
+      g.beginPath(); g.moveTo(px, y(c.h)); g.lineTo(px, y(c.l)); g.stroke();
+      g.fillRect(px - bw / 2, y(Math.max(c.o, c.c)), bw,
                  Math.max(1.5, Math.abs(y(c.o) - y(c.c))));
     }
 
@@ -4611,6 +4632,9 @@ function renderReplay(d, supply) {
       const bi = Math.floor((f.ts - t0) / iv);
       if (bi < 0 || bi >= upto) continue;
       const px = x(bi), py = y(f.priceUsd);
+      // Off the left edge with the bar it belongs to. Without this the marker
+      // outlives its own candle and ends up floating over the price scale.
+      if (px < L || px > W - AX) continue;
       const col = f.isBuy ? RC.up : RC.down;
       g.globalAlpha = 0.22; g.fillStyle = col;
       g.beginPath(); g.arc(px, py, 13, 0, Math.PI * 2); g.fill();
