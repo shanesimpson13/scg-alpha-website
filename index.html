@@ -2742,7 +2742,13 @@ function stateLine(r) {
      the bare label, so a state without its own case silently dropped the one
      number you look for. A closed position should never render without its
      result just because nobody wrote a special case for it. */
-  return `${label}${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
+  /* Rungs first, when the ladder fired before the exit. "Stopped out · +50%"
+     is a sentence that argues with itself — it stopped out AND made money,
+     because a rung had already banked most of it. Reporting only the last
+     thing that happened buries the half that worked. */
+  const rungs = (t.rungs || []).map(x => `TP${x.rung} ${x.mult}x`).join(' → ');
+  return `${rungs ? rungs + ' → ' : ''}${label}` +
+         `${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
 }
 
 /** Turn "$149.3K" back into a number so we can compare it to the live cap. */
