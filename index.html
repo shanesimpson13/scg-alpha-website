@@ -2268,7 +2268,30 @@ async function checkChartHost() {
   } catch (e) { /* leave it as-is: assume the chart works */ }
 }
 
-const coinPreset = new Map();   // mint -> preset name. Absent means my own settings.
+/* mint -> strategy name for that coin. "" means the account's own settings,
+   chosen deliberately; absent means nothing was chosen and the default runs.
+
+   Persisted, because it only ever lived in this tab's memory: pick a strategy,
+   reload for any reason, greenlight — and the choice was gone without a word,
+   so the coin traded the default while you believed otherwise. A silent switch
+   of the strategy a trade runs under is the worst kind of wrong here.
+   Capped so months of picks cannot grow without bound. */
+const PRESET_KEY = 'edgelvl_coin_preset';
+const PRESET_MAX = 300;
+const coinPreset = (() => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PRESET_KEY) || '{}');
+    return new Map(Object.entries(raw).filter(([, v]) => typeof v === 'string'));
+  } catch (e) { return new Map(); }
+})();
+function savePresetChoices() {
+  try {
+    const all = [...coinPreset.entries()].slice(-PRESET_MAX);
+    coinPreset.clear();
+    for (const [k, v] of all) coinPreset.set(k, v);
+    localStorage.setItem(PRESET_KEY, JSON.stringify(Object.fromEntries(all)));
+  } catch (e) { /* a full or blocked store must not break choosing */ }
+}
 let PRESETS = {};               // name -> the fields that preset overrides
 let MYSET = {};                 // my account settings, for showing what each one does
 
@@ -2498,6 +2521,7 @@ document.addEventListener('click', e => {
   // Recorded either way, including the empty name. Deleting it used to mean
   // the pick was indistinguishable from no pick, and no pick runs the default.
   coinPreset.set(openMint, b.dataset.p || '');
+  savePresetChoices();
   closeStrategyDrop();
   paintStrat();
   const c = findCoin(openMint);
@@ -3884,6 +3908,7 @@ function wireStrategyTiles() {
           // A coin still pointing at it falls back to the default rather than
           // holding a name the account no longer has.
           for (const [m, pn] of coinPreset) if (pn === n) coinPreset.delete(m);
+          savePresetChoices();
           if (editing === n) { editing = ''; closeStrategyEditor(); }
           if (selected === n) selected = null;
           renderSettings();
@@ -4053,6 +4078,7 @@ function wireStrategyForm() {
       // A coin already pointing at the old name must follow it, or its
       // greenlight would resolve to a strategy that no longer exists.
       for (const [m, pn] of coinPreset) if (pn === was) coinPreset.set(m, to);
+      savePresetChoices();
       if (selected === editing) selected = editing ? to : selected;
       if (editing) editing = to;
       renderSettings();
