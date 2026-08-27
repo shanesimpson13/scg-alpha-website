@@ -2772,6 +2772,19 @@ async function setNotify(want) {
 /* ── what your bot is doing ─────────────────────────────────────────────── */
 // Mirrored from the bot. It owns positions and P&L; this only displays what it
 // reported, so the two can never disagree about what's actually held.
+/* What to call a coin on a status row.
+
+   The bot sends a name when it has one, but a drop reported after a restart
+   has no session left to ask, so the name came through empty and the row
+   printed a raw mint prefix — six characters that identify nothing. The board
+   and the open coin already know the name; this looks there before giving up
+   and showing the address. */
+function coinName(r) {
+  if (r.name) return r.name;
+  const c = findCoin(r.mint) || extraCoins[r.mint];
+  return (c && (c.symbol || c.name)) || r.mint.slice(0, 6);
+}
+
 const STATE_UI = {
   watching:     ["watching", "Waiting for a dip and a reclaim", true],
   bought:       ["bought",   "In position",                     false],
@@ -2953,7 +2966,7 @@ async function refreshActivity() {
     const what = stateLine(r);
     return `<div class="actrow" data-open="${esc(r.mint)}">
       <div class="actdot ${dot}"></div>
-      <div class="actname">${esc(r.name || r.mint.slice(0, 6))}</div>
+      <div class="actname">${esc(coinName(r))}</div>
       <div class="actwhat">${what}</div>
       <div class="actwhen">${ago(r.ts)}</div>
       ${canUnarm ? `<button class="unarmbtn" data-unarm="${esc(r.mint)}">Unarm</button>` : ''}
