@@ -3447,11 +3447,13 @@ async function loadPositions() {
       + positions.map(p => `<div class="posrow">
            <div><div class="amt">${Number(p.amount).toLocaleString()}</div>
                 <div class="mint">${p.mint.slice(0, 16)}…</div></div>
+           <button class="ghost" data-sell="${p.mint}">Sell</button>
          </div>`).join('')
       + `<div class="poswarn">The bot only manages a position it opened. Anything
-         listed here it isn't watching — no take-profit, no stop. Sell one the
-         bot is running with Cancel, on that coin's page, so the trade is
-         recorded rather than just leaving the wallet.</div>`;
+         listed here it isn't watching — no take-profit, no stop. Use Cancel on
+         the coin's own page for one the bot IS running, so the trade is
+         recorded; this is the way out for one it has lost.</div>`;
+    box.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => sellPosition(b));
   } catch (e) { box.innerHTML = ''; }
 }
 
@@ -3481,6 +3483,31 @@ async function cancelPosition(mint, btn) {
     btn.disabled = false;
     btn.textContent = 'Cancel';
     alert(e.message || 'Could not sell it. Nothing was changed.');
+  }
+}
+
+/* Kept, despite Cancel replacing it for a position the bot is running.
+   The two are not the same job. Cancel needs the bot to be reporting the coin;
+   a position it could NOT resume — no price feed, so no stop — has no such
+   report, does not appear on a coin page as held, and would have no way out of
+   the app at all. That is precisely the holding you most need to be able to
+   sell, so this stays as the way to sell what the bot has lost. */
+async function sellPosition(btn) {
+  const mint = btn.dataset.sell;
+  btn.disabled = true; btn.textContent = 'Selling…';
+  wsay('wmsg', 'Selling — this can take a few seconds to confirm.');
+  try {
+    const r = await api('/api/position/close', {
+      method: 'POST', body: JSON.stringify({ mint }),
+    });
+    document.getElementById('wmsg').innerHTML = r.pending
+      ? `Sent, still confirming. <a href="${r.explorer}" target="_blank" rel="noopener">Track it</a>`
+      : `Sold for ~${Number(r.sol_received).toFixed(4)} SOL. <a href="${r.explorer}" target="_blank" rel="noopener">View it</a>`;
+    document.getElementById('wmsg').className = 'wmsg good';
+    loadWallet(); loadPositions();
+  } catch (e) {
+    wsay('wmsg', e.message, 'bad');
+    btn.disabled = false; btn.textContent = 'Sell';
   }
 }
 
