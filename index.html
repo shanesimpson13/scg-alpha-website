@@ -793,6 +793,12 @@
                 padding: 11px 12px; color: var(--fg); font-family: inherit; font-size: 12.5px;
                 cursor: pointer; text-align: left; }
     .stratbtn:hover { background: var(--hover); }
+    /* Locked while the bot holds the coin. The strategy was fixed when it
+       armed and travels with the position, so a control that still looks
+       editable could only ever mislead. */
+    .stratbtn:disabled { opacity: .58; cursor: default; }
+    .stratbtn:disabled:hover { background: var(--field); }
+    .stratbtn:disabled .chev { visibility: hidden; }
     .stratbtn .gi { font-size: 13px; color: var(--dim); line-height: 1; }
     .stratbtn .sname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
                        white-space: nowrap; font-weight: 600; }
@@ -2373,6 +2379,17 @@ function paintStrat() {
   const chosen = coinPreset.has(openMint) ? coinPreset.get(openMint)
                                          : (DEFAULT_PRESET || '');
   el.textContent = chosen || OWN_NAME;
+
+  /* Once the bot has the coin the choice is already made: it went with the
+     greenlight, the position carries it, and a restart restores it. Changing
+     the picker now would move the label and nothing else, which is exactly the
+     lie this is here to prevent. So it greys out and stops opening. */
+  const btn = document.getElementById('gearbtn');
+  if (!btn) return;
+  const locked = botHasCoin(botStatus[openMint]);
+  btn.disabled = locked;
+  btn.title = locked ? 'Set when the bot armed this coin. It cannot change mid-trade.' : '';
+  if (locked) closeStrategyDrop();      // in case it armed with the menu open
 }
 
 /* The button refuses what can't be spent, and says why.
@@ -2456,6 +2473,9 @@ async function openStrategy(c) {
   const btn = document.getElementById('gearbtn');
   if (!drop) return;
   if (!drop.hidden) { closeStrategyDrop(); return; }
+  // Belt and braces with the disabled button: a keyboard, or a handler left
+  // over from before it armed, must not reopen this on a coin being traded.
+  if (botHasCoin(botStatus[c.mint])) return;
   // Same rule as greenlighting: the account is what makes this mean anything.
   if (!KEY) { pendingCoin = c; openWallet(); return; }
 
