@@ -1892,7 +1892,7 @@ function renderDetail() {
     </div>
   `;
   renderAmt(c);
-  primeStrategies().then(() => paintStrat(c));
+  primeStrategies().then(paintStrat);
   document.getElementById('gearbtn').onclick = () => openStrategy(c);
   if (Date.now() - (sent.get(c.mint) || 0) < SENT_SHOW_MS) markSent(c);
   else renderGreenlight(c);
@@ -2002,7 +2002,14 @@ function renderDetailStatus() {
    the account's defaults. Showing one while the bot runs the other is how a
    preview becomes a lie. */
 function bandSettings(mint) {
-  const p = coinPreset.get(mint);
+  /* The same fallback as the server and as paintStrat: no per-coin choice
+     means your DEFAULT strategy runs, not your base settings. This used to
+     stop at the per-coin choice, so on every coin you had not explicitly set,
+     the header named your default strategy while the window underneath was
+     computed from the base numbers -- the exact lie the note above forbids.
+     It also made picking your own default look like a dead button: the name
+     was already showing, so the only thing that changed was numbers. */
+  const p = coinPreset.get(mint) || DEFAULT_PRESET || '';
   const v = p ? { ...MYSET, ...(PRESETS[p] || {}) } : MYSET;
   return { dip: v.dip ?? SET.dip, bounce: v.bounce ?? SET.bounce };
 }
@@ -2298,7 +2305,7 @@ function renderAmt(c) {
   val.onblur = () => renderAmt(c);
   val.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); val.blur(); } };
 
-  paintStrat(c);
+  paintStrat();
   paintAmtNote(c);
   paintAmtPct(c);
 }
@@ -2323,11 +2330,17 @@ function paintAmtPct(c) {
                  `<span>${sol4(walletTotal)} SOL</span>`;
 }
 
-function paintStrat(c) {
+/* Keyed off openMint rather than a coin object captured in a closure. The
+   handlers that set the choice and the code that paints it were reading their
+   mint from two different places, and a stale capture in either one shows up
+   as the label sitting on the default no matter what you press -- because a
+   miss on the Map falls straight through to it. One source, no capture. */
+function paintStrat() {
   const el = document.getElementById('stratnm');
+  if (!el || !openMint) return;
   // Mirror the server: no per-coin choice means the default preset runs, not
   // the base settings. Naming the wrong one here is worse than naming none.
-  if (el) el.textContent = coinPreset.get(c.mint) || DEFAULT_PRESET || OWN_NAME;
+  el.textContent = coinPreset.get(openMint) || DEFAULT_PRESET || OWN_NAME;
 }
 
 /* The button refuses what can't be spent, and says why.
@@ -2449,15 +2462,10 @@ async function openStrategy(c) {
     + Object.keys(PRESETS).map(n => row(n, { ...MYSET, ...PRESETS[n] }, n)).join('')
     + '<button class="edit" data-edit="1">Edit strategies…</button>';
 
-  drop.querySelectorAll('button[data-p]').forEach(b => {
-    b.onclick = () => {
-      const n = b.dataset.p;
-      if (n) coinPreset.set(c.mint, n); else coinPreset.delete(c.mint);
-      closeStrategyDrop();
-      paintStrat(c);
-      renderBand(c);          // the trigger levels belong to the strategy
-    };
-  });
+  // Choosing is handled by delegation further down, for the same reason the
+  // journal's play buttons are: this menu's innerHTML is rewritten every time
+  // it opens, and a handler bound to a button that gets replaced leaves a row
+  // that looks live and does nothing when pressed.
   const ed = drop.querySelector('button[data-edit]');
   if (ed) ed.onclick = () => { closeStrategyDrop(); openSettings(); };
 }
@@ -2469,6 +2477,20 @@ document.addEventListener('click', e => {
   if (!drop || drop.hidden) return;
   if (e.target.closest('#sdrop') || e.target.closest('#gearbtn')) return;
   closeStrategyDrop();
+});
+
+/* Picking a strategy for the open coin. Delegated to the document so it works
+   on whatever rows are on screen right now, not the ones that existed when the
+   menu was last built. */
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('#sdrop button[data-p]');
+  if (!b || !openMint) return;
+  const n = b.dataset.p;
+  if (n) coinPreset.set(openMint, n); else coinPreset.delete(openMint);
+  closeStrategyDrop();
+  paintStrat();
+  const c = findCoin(openMint);
+  if (c) renderBand(c);       // the trigger levels belong to the strategy
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
@@ -4979,6 +5001,7 @@ function start() {
       Object.assign(c, d);
       setLive(c);
       renderBand(c);        // 1s, so the warmup counts down like a clock
+      paintStrat();         // and the name can never sit on a stale choice
     } catch (e) { /* next tick */ }
   }, 1000);
 }
