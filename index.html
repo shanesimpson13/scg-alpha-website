@@ -1973,13 +1973,20 @@ function renderDetailStatus() {
       `${prev.pnl != null ? ` · <b class="${prev.pnl >= 0 ? 'up' : 'down'}">` +
         `${prev.pnl >= 0 ? '+' : ''}${(prev.pnl * 100).toFixed(0)}%</b>` : ''}</div>`
     : '';
+  // Unarm drops a coin it has not bought. Cancel is the other half: it sells
+  // what it holds and says so, instead of leaving you to do it in a wallet app
+  // and have the trade recorded as one the bot knew nothing about.
+  const canCancel = botHasCoin(r) && r.state !== 'watching';
   el.innerHTML = `<div class="actdot ${dot}"></div>` +
                  `<div>${stateLine(r)}${earlier}</div>` +
                  `<div class="when">${ago(r.ts)}</div>` +
-                 (canUnarm ? `<button class="unarmbtn" id="d_unarm">Unarm</button>` : '');
+                 (canUnarm ? `<button class="unarmbtn" id="d_unarm">Unarm</button>` : '') +
+                 (canCancel ? `<button class="unarmbtn" id="d_cancel">Cancel</button>` : '');
   // the button tracks the same status this panel just rendered
   const coin = findCoin(openMint);
   if (coin) renderGreenlight(coin);
+  const cb = document.getElementById('d_cancel');
+  if (cb) cb.onclick = () => cancelPosition(openMint, cb);
   const b = document.getElementById('d_unarm');
   if (b) b.onclick = async () => {
     b.disabled = true; b.textContent = 'Dropping…';
@@ -2779,6 +2786,10 @@ const STATE_UI = {
   // into "stopped": the stop did not fire, and labelling it as though it did
   // would hide the one thing worth noticing.
   "sold elsewhere": ["closed", "Sold outside the bot",          false],
+  // You pressed Cancel. Same money as the line above, but you did it on
+  // purpose and from here, so it should not read as something that happened
+  // while your back was turned.
+  cancelled:    ["closed",   "Order cancelled",                 false],
 };
 
 /** What actually happened, in the terms you set the strategy in.
@@ -3436,30 +3447,40 @@ async function loadPositions() {
       + positions.map(p => `<div class="posrow">
            <div><div class="amt">${Number(p.amount).toLocaleString()}</div>
                 <div class="mint">${p.mint.slice(0, 16)}…</div></div>
-           <button class="ghost" data-sell="${p.mint}">Sell</button>
          </div>`).join('')
       + `<div class="poswarn">The bot only manages a position it opened. Anything
-         listed here it isn't watching — no take-profit, no stop.</div>`;
-    box.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => sellPosition(b));
+         listed here it isn't watching — no take-profit, no stop. Sell one the
+         bot is running with Cancel, on that coin's page, so the trade is
+         recorded rather than just leaving the wallet.</div>`;
   } catch (e) { box.innerHTML = ''; }
 }
 
-async function sellPosition(btn) {
-  const mint = btn.dataset.sell;
-  btn.disabled = true; btn.textContent = 'Selling…';
-  wsay('wmsg', 'Selling — this can take a few seconds to confirm.');
+/* Selling a live position from the coin page.
+   Confirmed once, because it spends real money and cannot be undone, and the
+   button reports its own progress rather than a message in a panel you may not
+   have open. The bot learns about it from the same call — see the cancel
+   marker the API writes — so the trade lands in the journal as a cancellation
+   with the proceeds read off the chain, not as a sale nobody can explain. */
+async function cancelPosition(mint, btn) {
+  const c = findCoin(mint);
+  const what = (c && (c.symbol || c.name)) || 'this position';
+  if (!confirm(`Sell ${what} now and cancel the order?\n\n` +
+               `This sells everything the bot is holding, at the market.`)) return;
+  btn.disabled = true;
+  btn.textContent = 'Selling…';
   try {
     const r = await api('/api/position/close', {
       method: 'POST', body: JSON.stringify({ mint }),
     });
-    document.getElementById('wmsg').innerHTML = r.pending
-      ? `Sent, still confirming. <a href="${r.explorer}" target="_blank" rel="noopener">Track it</a>`
-      : `Sold for ~${Number(r.sol_received).toFixed(4)} SOL. <a href="${r.explorer}" target="_blank" rel="noopener">View it</a>`;
-    document.getElementById('wmsg').className = 'wmsg good';
-    loadWallet(); loadPositions();
+    btn.textContent = r.pending ? 'Sent' : 'Cancelled';
+    // The bot reconciles within its own loop and reports the result; until
+    // then the panel would still say "in position", which is no longer true.
+    delete botStatus[mint];
+    refresh();
   } catch (e) {
-    wsay('wmsg', e.message, 'bad');
-    btn.disabled = false; btn.textContent = 'Sell';
+    btn.disabled = false;
+    btn.textContent = 'Cancel';
+    alert(e.message || 'Could not sell it. Nothing was changed.');
   }
 }
 
