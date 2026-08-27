@@ -2492,41 +2492,6 @@ document.addEventListener('click', e => {
   const c = findCoin(openMint);
   if (c) renderBand(c);       // the trigger levels belong to the strategy
 });
-/* TEMPORARY, and only with ?diag=1 on the URL.
-   A picker that will not switch on a machine I cannot reach has to say what
-   it saw. This records what each click actually landed on, whether that
-   counted as a strategy row, and what the label did about it. Remove once the
-   cause is known. It is inert without the flag and cannot be clicked through. */
-if (new URLSearchParams(location.search).has('diag')) {
-  const box = document.createElement('div');
-  box.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:9999;max-width:94vw;' +
-    'background:#0d0f11;color:#5ef08a;font:11px/1.6 ui-monospace,monospace;padding:9px 11px;' +
-    'border:1px solid #2a3a33;border-radius:8px;white-space:pre-wrap;pointer-events:none';
-  box.textContent = 'diag on — open a coin, press a strategy';
-  document.body.appendChild(box);
-  const lines = [];
-  document.addEventListener('click', e => {
-    const t = e.target;
-    const row = t && t.closest ? t.closest('#sdrop button[data-p]') : null;
-    const inDrop = t && t.closest ? !!t.closest('#sdrop') : false;
-    const before = (document.getElementById('stratnm') || {}).textContent;
-    // after the handlers have had their turn, so the label reflects the result
-    setTimeout(() => {
-      lines.unshift(
-        'hit ' + (t.tagName || '?') + (t.id ? '#' + t.id : '') +
-          (t.className ? '.' + String(t.className).split(' ')[0] : '') +
-          (inDrop ? '  [in menu]' : '  [OUTSIDE menu]') +
-        '\nrow ' + (row ? JSON.stringify(row.dataset.p) : 'NOT A ROW') +
-        ' · openMint ' + (openMint ? 'ok' : 'NULL') +
-        ' · #stratnm x' + document.querySelectorAll('#stratnm').length +
-        '\nlabel ' + JSON.stringify(before) + ' -> ' +
-          JSON.stringify((document.getElementById('stratnm') || {}).textContent) +
-        ' · stored ' + JSON.stringify(coinPreset.get(openMint) || null));
-      box.textContent = lines.slice(0, 3).join('\n\n');
-    }, 80);
-  }, true);
-}
-
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   const drop = document.getElementById('sdrop');
