@@ -178,8 +178,7 @@
   .tok .nm { font-weight: 600; font-size: 13px; }
   .tok .sub { font-size: 10.5px; color: var(--dimmer); }
   .up { color: var(--green); } .down { color: var(--red); } .warm { color: var(--amber); }
-  @keyframes tickflash { from { background: rgba(18,146,75,.13); } to { background: transparent; } }
-  td.tick { animation: tickflash .75s ease-out; }
+
   .vol { font-weight: 600; }
 
   /* settings */
@@ -223,11 +222,12 @@
   .state .sthead { display: flex; align-items: center; gap: 10px; padding: 14px 18px;
                    font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--hair); }
   .state .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
-  /* Numbered, because these are a sequence and not three separate facts. */
-  .state .stnum { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%;
-                  background: var(--field); border: 1px solid var(--line);
-                  display: grid; place-items: center; font-size: 10px;
-                  font-weight: 600; color: var(--dim); }
+  /* Numbered outside the card, because these are one sequence and a digit
+     tucked inside a header reads as part of that card's content instead. */
+  .numbered { display: grid; gap: 9px; align-content: start; }
+  .ncap { width: 21px; height: 21px; border-radius: 50%; background: var(--fg);
+          color: var(--bg); display: grid; place-items: center;
+          font-size: 11px; font-weight: 600; }
   .dot.amber { background: var(--amber); }
   .dot.green { background: var(--green); animation: blip 1.8s ease-in-out infinite; }
   @keyframes blip { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
@@ -283,7 +283,7 @@
     <div class="rise">
       <h1>Semi-autonomous trading.</h1>
       <p class="lede">Finding the coin was never the hard part. Execution is.
-        EdgeLvl does the entry, the wait and the exit.</p>
+        You pick it. EdgeLvl does the entry, the wait and the exit.</p>
       <div class="acts">
         <a class="btn" href="#price">Get access</a>
         <a class="btn ghost" href="#how">See it work</a>
@@ -419,7 +419,8 @@
       <p class="lede">One tap. It shows you what would trigger a buy before
         you commit.</p>
       <div class="grid2">
-        <div style="display:grid;gap:16px">
+        <div style="display:grid;gap:22px">
+        <div class="numbered"><span class="ncap">1</span>
         <div class="surface">
           <div class="trig">
             <div class="k">What would trigger a buy</div>
@@ -437,36 +438,39 @@
             </button>
             <div class="glnote" id="glnote">Picked up within 5 seconds. Then it watches every second.</div>
           </div>
-        </div>
+        </div></div>
+          <div class="numbered"><span class="ncap">2</span>
           <div class="surface state">
-            <div class="sthead"><span class="stnum">1</span><span class="dot amber"></span>Waiting for a dip and a reclaim</div>
+            <div class="sthead"><span class="dot amber"></span>Waiting for a dip and a reclaim</div>
             <div class="stbody">
               <div class="k">Waiting for a dip · 20s of warmup left</div>
               needs to trade at or below <b>$90.7K</b><br>
               <span class="muted">high since you greenlit $113.4K</span>
               <div class="fine">No dip yet, so nothing can trigger.</div>
             </div>
-          </div>
+          </div></div>
         </div>
-        <div style="display:grid;gap:16px">
+        <div style="display:grid;gap:22px">
+          <div class="numbered"><span class="ncap">3</span>
           <div class="surface state">
-            <div class="sthead"><span class="stnum">2</span><span class="dot amber"></span>Dipped — waiting for the bounce</div>
+            <div class="sthead"><span class="dot amber"></span>Dipped — waiting for the bounce</div>
             <div class="stbody">
               <div class="k">Dipped · buys between</div>
               <b>$101.4K</b> and <b>$113.1K</b><br>
               <span class="muted">low $96.6K · high $125.6K</span>
               <div class="fine warmtx">Not buying yet — waiting for a 5% bounce off the low.</div>
             </div>
-          </div>
+          </div></div>
+          <div class="numbered"><span class="ncap">4</span>
           <div class="surface state">
-            <div class="sthead"><span class="stnum">3</span><span class="dot green"></span>In position</div>
+            <div class="sthead"><span class="dot green"></span>In position</div>
             <div class="stbody">
               <div class="k">In position · targets set</div>
               entered <b>$88.3K</b> · now <b>$94.9K</b> <span class="up">+7%</span><br>
               <span class="muted">takes profit at $176.5K → $353.1K · stop $44.1K</span>
               <div class="fine">Half out at 2x, the rest at 4x. Nothing left to decide.</div>
             </div>
-          </div>
+          </div></div>
         </div>
       </div>
     </div>
@@ -562,48 +566,37 @@ function paintBoard() {
       <td>${money(c.liq)}</td>
       <td class="vol ${c.vol > 2e5 ? 'up' : 'warm'}">${money(c.vol)}</td>
       <td class="${c.vm >= 40 ? 'up' : ''}">${c.vm.toFixed(0)}<span style="font-size:9px">%</span></td>
-      <td class="bs ${c.bs >= 1 ? 'up' : 'down'}">${c.bs.toFixed(2)}</td>
+      <td class="${c.bs >= 1 ? 'up' : 'down'}">${c.bs.toFixed(2)}</td>
       <td>${pct(c.ch)}</td>
     </tr>`).join('');
 }
 paintBoard();
 
-/* A drift, not a randomiser: each tick nudges the live columns by a fraction of
-   a percent so the table breathes. Anything bigger reads as fake.
+/* One small move, once, when you first reach the board.
 
-   It only runs while the board is on screen. Ticking from page load meant the
-   numbers had already been drifting for a minute by the time anyone scrolled
-   to them, so the one moment it was supposed to feel alive was the moment it
-   looked static. */
-let boardTimer = null;
-function tickBoard() {
-  for (const c of COINS) {
-    c.vol *= 1 + (Math.random() - 0.48) * 0.02;
-    c.bs = Math.max(0.6, Math.min(1.6, c.bs + (Math.random() - 0.5) * 0.015));
-    c.ch += (Math.random() - 0.5) * 0.7;
-  }
-  paintBoard();
-  // A brief tint on the columns that moved, so a small change is still legible
-  // as a change rather than a number that happens to differ if you look twice.
-  for (const el of document.querySelectorAll('#board .vol, #board .bs')) {
-    el.classList.remove('tick');
-    void el.offsetWidth;                 // restart the animation
-    el.classList.add('tick');
-  }
-}
-/* Driven by scroll position rather than an IntersectionObserver. The observer
-   is the more fashionable tool, but this page only needs "is it roughly on
-   screen", the check is two comparisons, and a scroll handler is something I
-   can actually watch work. */
+   It used to tick every 1.6 seconds with a green tint on whatever changed,
+   which read as a slot machine rather than a market. A single nudge across
+   every column says the same thing — these are live numbers — without asking
+   anyone to sit and watch them flicker. */
+let boardMoved = false;
 const onScreen = (el, slack = 0.12) => {
   const b = el.getBoundingClientRect();
   return b.top < innerHeight * (1 - slack) && b.bottom > innerHeight * slack;
 };
 const boardEl = document.querySelector('#board').closest('.surface');
 function boardWatch() {
-  const here = onScreen(boardEl, 0.02);
-  if (here && !boardTimer) { tickBoard(); boardTimer = setInterval(tickBoard, 1600); }
-  else if (!here && boardTimer) { clearInterval(boardTimer); boardTimer = null; }
+  if (boardMoved || !onScreen(boardEl, 0.04)) return;
+  boardMoved = true;
+  const jog = (v, pct) => v * (1 + (Math.random() - 0.5) * pct);
+  for (const c of COINS) {
+    c.mc  = jog(c.mc, 0.012);
+    c.liq = jog(c.liq, 0.014);
+    c.vol = jog(c.vol, 0.03);
+    c.vm  = Math.max(1, Math.round(jog(c.vm, 0.05)));
+    c.bs  = Math.max(0.6, Math.min(1.6, c.bs + (Math.random() - 0.5) * 0.05));
+    c.ch += (Math.random() - 0.5) * 1.6;
+  }
+  paintBoard();
 }
 
 /* ── reveal on scroll ─────────────────────────────────────────────────────
@@ -675,9 +668,23 @@ document.querySelectorAll('.setgroup .seg').forEach(seg => {
 
 /* Each story row lights as you reach it, not when the section does — so the
    three beats land one at a time, in the order you read them. */
+/* Staggered by row. All three rows can cross the line in the same frame — at
+   a normal scroll speed they usually do — and three beats arriving together is
+   one event, not a sequence. The delay is what makes it read in order. */
+document.querySelectorAll('.srow:not(.shead)').forEach((r, i) => {
+  const em = r.querySelector('.you em'), b = r.querySelector('.fix b');
+  if (em) em.style.transitionDelay = (i * 130) + 'ms';
+  if (b) b.style.transitionDelay = (i * 130 + 110) + 'ms';
+});
+
 function rowsWatch() {
+  /* Deliberately stricter than the rest: a row lights only once it has come up
+     into the top two thirds of the screen. At the looser threshold the rows
+     were already on screen when the page loaded — so they lit instantly and
+     the arrival, which is the entire point, was something nobody ever saw. */
   for (const r of document.querySelectorAll('.srow:not(.shead):not(.lit)')) {
-    if (onScreen(r, 0.10)) r.classList.add('lit');
+    const b = r.getBoundingClientRect();
+    if (b.top < innerHeight * 0.66 && b.bottom > 0) r.classList.add('lit');
   }
 }
 
@@ -685,6 +692,18 @@ function onScrollTick() { riseWatch(); boardWatch(); rowsWatch(); }
 addEventListener('scroll', onScrollTick, { passive: true });
 addEventListener('resize', onScrollTick);
 onScrollTick();
+
+/* A slow sweep beside the scroll handler, because of what failure looks like
+   here: every section starts at opacity 0, so a scroll event that never
+   arrives does not leave the page unanimated, it leaves it BLANK. Four checks
+   a second cost nothing, and it stops itself the moment there is nothing left
+   to reveal. */
+const sweep = setInterval(() => {
+  onScrollTick();
+  if (boardMoved &&
+      !document.querySelector('.rise:not(.in)') &&
+      !document.querySelector('.srow:not(.shead):not(.lit)')) clearInterval(sweep);
+}, 250);
 
 /* The greenlight button on the page does what it does in the product: it goes
    from a decision to a state, and then there is nothing left to press. */
