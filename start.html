@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EdgeLvl — you pick the coin</title>
+<meta name="description" content="Finding the coin was never the hard part. EdgeLvl handles the entry, the exit, and every second in between.">
+<style>
+  /* The terminal's own palette, unchanged. Someone who pays here and logs in
+     tomorrow should not feel like they bought a different product. */
+  :root {
+    --bg: #fbfbfa;
+    --panel: #f2f2f0;
+    --fg: #14140f;
+    --line: rgba(0, 0, 0, 0.11);
+    --hair: rgba(0, 0, 0, 0.06);
+    --dim: rgba(0, 0, 0, 0.58);
+    --dimmer: rgba(0, 0, 0, 0.38);
+    --field: rgba(0, 0, 0, 0.03);
+    --hover: rgba(0, 0, 0, 0.028);
+    --green: #12924b;
+    --amber: #a86a00;
+    --red: #c0362c;
+    --mono: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco,
+            'Cascadia Code', 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--mono); -webkit-font-smoothing: antialiased;
+    font-size: 14px; line-height: 1.6;
+  }
+  /* One spacing scale: 8 / 12 / 16 / 24 / 32 / 48 / 72. Every gap on this
+     page is one of those, so nothing is a one-off number that drifted in.
+     Inside a surface the horizontal padding is always 18px and rows are
+     always 14px tall, which is what makes the board, the settings, the
+     states and the story read as the same object. */
+  .wrap { width: min(1000px, 100% - 40px); margin: 0 auto; }
+
+  /* ── chrome ─────────────────────────────────────────────────────────── */
+  nav {
+    position: sticky; top: 0; z-index: 40; background: var(--bg);
+    border-bottom: 1px solid var(--hair);
+  }
+  nav .wrap { display: flex; align-items: center; height: 56px; gap: 16px; }
+  .brand { display: flex; align-items: center; color: var(--fg); text-decoration: none; }
+  /* The product's own sizing, to the pixel. It is the same inline SVG the
+     terminal uses, so it is vector at any zoom and takes its fill from
+     currentColor. */
+  .wordmark { height: 15px; width: auto; display: block; color: var(--fg);
+              aspect-ratio: 180.303 / 39.203; }
+  nav .sp { flex: 1; }
+  .navlink { color: var(--dim); text-decoration: none; font-size: 12.5px; }
+  .navlink:hover { color: var(--fg); }
+
+  /* ── shared ─────────────────────────────────────────────────────────── */
+  section { padding: 72px 0; }
+  .eyebrow {
+    font-size: 10.5px; letter-spacing: .17em; text-transform: uppercase;
+    color: var(--dimmer); margin-bottom: 24px;
+  }
+  h1 {
+    font-size: clamp(26px, 3.4vw, 35px); line-height: 1.15; font-weight: 600;
+    letter-spacing: -.03em; margin: 0 0 16px;
+  }
+  h2 {
+    font-size: clamp(19px, 2.2vw, 23px); line-height: 1.25; font-weight: 600;
+    letter-spacing: -.025em; margin: 0 0 12px;
+  }
+  .lede { font-size: 13.5px; color: var(--dim); max-width: 62ch; margin: 0; line-height: 1.65; }
+  .muted { color: var(--dim); }
+  .rule { height: 1px; background: var(--hair); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; background: var(--green);
+    color: #fff; border: 0; border-radius: 9px; padding: 14px 26px;
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    text-decoration: none; transition: transform .15s ease, filter .15s ease;
+  }
+  .btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+  .btn.ghost { background: none; color: var(--fg); border: 1px solid var(--line); }
+  .btn.ghost:hover { background: var(--hover); filter: none; }
+
+  /* Everything rises a little as it arrives. Enough to feel considered,
+     not enough to make a person wait for the page. */
+  .rise { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1); }
+  .rise.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .rise { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* ── hero ───────────────────────────────────────────────────────────── */
+  .hero { padding: 80px 0 72px; }
+  .hero .acts { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+  .hero .fine { font-size: 11.5px; color: var(--dimmer); margin-top: 16px; }
+
+  /* ── problem ────────────────────────────────────────────────────────── */
+  .story { border: 1px solid var(--line); border-radius: 12px;
+           overflow: hidden; margin-top: 24px; }
+  .srow { display: grid; grid-template-columns: 126px 1fr 1fr; }
+  .srow + .srow { border-top: 1px solid var(--hair); }
+  .srow > div { padding: 18px; }
+  .srow > .you, .srow > .fix { border-left: 1px solid var(--hair); }
+  .shead { background: var(--field); }
+  .shead > div { padding: 12px 18px; font-size: 9.5px; letter-spacing: .15em;
+                 text-transform: uppercase; color: var(--dimmer); }
+  .lab { font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+         font-weight: 600; line-height: 21px; }
+  .you { font-size: 13px; line-height: 21px; color: var(--dim); }
+  /* The two halves arrive from the side their column is on, a row at a time
+     as you reach it. The point is that a row is a beat -- what it costs you,
+     then what answers it -- and static text reads as one flat block. */
+  .you em { display: block; font-style: normal; color: var(--red);
+            opacity: 0; transform: translateX(-16px);
+            transition: opacity .55s cubic-bezier(.2,.7,.3,1),
+                        transform .55s cubic-bezier(.2,.7,.3,1); }
+  .fix b { opacity: 0; transform: translateX(16px);
+           transition: opacity .55s cubic-bezier(.2,.7,.3,1) .12s,
+                       transform .55s cubic-bezier(.2,.7,.3,1) .12s; }
+  .srow.lit .you em, .srow.lit .fix b { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .you em, .fix b { opacity: 1; transform: none; transition: none; }
+  }
+  .fix { font-size: 13px; line-height: 21px; }
+  .fix b { color: var(--green); font-weight: 600; }
+  /* declared after the transition block so both apply */
+  @media (max-width: 760px) {
+    .srow { grid-template-columns: 1fr; }
+    .srow > .you, .srow > .fix { border-left: 0; border-top: 1px solid var(--hair); }
+    .shead { display: none; }
+    .lab { padding-bottom: 0; }
+  }
+
+  .turn { font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+          margin: 24px 0 0; line-height: 1.6; }
+  .turn span { color: var(--dim); font-weight: 400; }
+
+  /* ── steps ──────────────────────────────────────────────────────────── */
+  /* The eyebrow already puts 24px under itself, so the first step adds
+     nothing on top of it -- that pair was stacking to 74px and reading as
+     a missing element. Between steps, one gap of 48px. */
+  /* :first-of-type would look at the first DIV among the siblings, and
+     that is the eyebrow's own wrapper -- so it never matched a step and
+     every step took the between-steps margin, the eyebrow included. The
+     gap belongs BETWEEN steps, so that is what it selects. */
+  .step { margin-top: 0; }
+  .step + .step { margin-top: 48px; }
+  .stephead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 8px; }
+  .stepno { font-size: 11px; color: var(--green); letter-spacing: .12em; font-weight: 600; }
+  .stephead h3 { font-size: 19px; font-weight: 600; margin: 0; letter-spacing: -.02em; }
+  .step .lede { font-size: 13.5px; margin: 0 0 24px; }
+
+  /* the product's own surfaces, rebuilt rather than screenshotted so they
+     stay sharp and can move */
+  .surface { border: 1px solid var(--line); border-radius: 12px; background: var(--bg);
+             overflow: hidden; }
+
+  /* board */
+  .bhead { display: flex; align-items: center; justify-content: space-between;
+           padding: 14px 18px; border-bottom: 1px solid var(--hair); }
+  .bhead .t { font-size: 10.5px; letter-spacing: .15em; text-transform: uppercase; color: var(--dimmer); }
+  .chips { display: flex; gap: 8px; }
+  .chip { border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px;
+          font-size: 10px; color: var(--dim); background: var(--field); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+       color: var(--dimmer); font-weight: 400; text-align: right; padding: 12px 18px;
+       border-bottom: 1px solid var(--hair); }
+  th:first-child { text-align: left; }
+  td { padding: 14px 18px; text-align: right; border-bottom: 1px solid var(--hair); }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { text-align: left; }
+  .tok { display: flex; align-items: center; gap: 12px; }
+  .av { width: 27px; height: 27px; border-radius: 50%; flex: 0 0 auto;
+        background: var(--panel); display: grid; place-items: center; font-size: 11px; }
+  .tok .nm { font-weight: 600; font-size: 13px; }
+  .tok .sub { font-size: 10.5px; color: var(--dimmer); }
+  .up { color: var(--green); } .down { color: var(--red); } .warm { color: var(--amber); }
+  @keyframes tickflash { from { background: rgba(18,146,75,.13); } to { background: transparent; } }
+  td.tick { animation: tickflash .75s ease-out; }
+  .vol { font-weight: 600; }
+
+  /* settings */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+  .setgroup { padding: 0; }
+  .setgroup .gk { font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+                  color: var(--dimmer); padding: 14px 18px; }
+  .setrow { display: flex; align-items: center; gap: 16px; padding: 14px 18px;
+            border-top: 1px solid var(--hair); }
+  .setrow .l { flex: 1; }
+  .setrow .n { font-size: 13.5px; font-weight: 600; }
+  .setrow .d { font-size: 11.5px; color: var(--dim); line-height: 1.5; margin-top: 4px; }
+  /* Real fields, because "your rules" is the claim and a picture of a number
+     is not the same thing as one you can change. They edit nothing real -- no
+     one is signed in yet -- but the panel behaves the way the product does. */
+  .val { min-width: 92px; display: flex; align-items: center; justify-content: space-between;
+         gap: 8px; background: var(--field); border: 1px solid var(--line);
+         border-radius: 8px; padding: 9px 11px; font-size: 13.5px; font-weight: 600;
+         transition: border-color .15s ease, background .15s ease; }
+  .val:focus-within { border-color: var(--green); background: var(--bg); }
+  .vin { width: 100%; min-width: 0; border: 0; background: none; padding: 0;
+         font: inherit; color: inherit; outline: none; }
+  .val .u { color: var(--dimmer); font-weight: 400; font-size: 11px; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg span { padding: 8px 13px; font-size: 12px; color: var(--dim); cursor: pointer;
+              user-select: none; transition: background .15s ease, color .15s ease; }
+  .seg span:hover:not(.on) { background: var(--hover); color: var(--fg); }
+  .seg span.on { background: var(--fg); color: var(--bg); font-weight: 600; }
+
+  /* greenlight */
+  .trig { padding: 18px; font-size: 13px; line-height: 1.75; }
+  .trig .k { font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+             color: var(--dimmer); margin-bottom: 12px; }
+  .trig b { font-weight: 600; }
+  .glbar { border-top: 1px solid var(--hair); padding: 18px; }
+  .glbtn2 { width: 100%; justify-content: center; font-size: 15px; padding: 16px; }
+  .glnote { font-size: 11px; color: var(--dimmer); margin-top: 12px; text-align: center; }
+
+  /* the states it moves through after the tap, lifted from the terminal */
+  .state .sthead { display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+                   font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--hair); }
+  .state .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  /* Numbered, because these are a sequence and not three separate facts. */
+  .state .stnum { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%;
+                  background: var(--field); border: 1px solid var(--line);
+                  display: grid; place-items: center; font-size: 10px;
+                  font-weight: 600; color: var(--dim); }
+  .dot.amber { background: var(--amber); }
+  .dot.green { background: var(--green); animation: blip 1.8s ease-in-out infinite; }
+  @keyframes blip { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+  .state .stbody { padding: 14px 18px; font-size: 12.5px; line-height: 1.85; }
+  .state .k { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
+              color: var(--dimmer); margin-bottom: 8px; }
+  .state .fine { font-size: 11.5px; color: var(--dimmer); margin-top: 8px; }
+  .state .warmtx { color: var(--amber); }
+
+  /* ── demo ───────────────────────────────────────────────────────────── */
+  .demoframe { border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+               background: #05080a; margin-top: 24px; }
+  /* A starting height only. The parent measures the real content once the
+     frame is up and sets it exactly, so the card ends where the chart does. */
+  .demoframe iframe { width: 100%; height: 560px; border: 0; display: block; }
+  @media (max-width: 820px) { .demoframe iframe { height: 420px; } }
+
+  /* ── price ──────────────────────────────────────────────────────────── */
+  .price { border: 1px solid var(--line); border-radius: 14px; padding: 32px;
+           margin-top: 24px; background: var(--bg); }
+  .amount { display: flex; align-items: baseline; gap: 10px; }
+  .amount .n { font-size: 40px; font-weight: 600; letter-spacing: -.03em; }
+  .amount .per { color: var(--dim); font-size: 14px; }
+  .incl { list-style: none; padding: 0; margin: 24px 0 32px; }
+  .incl li { display: flex; gap: 12px; padding: 8px 0; font-size: 13.5px; align-items: flex-start; }
+  .incl svg { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 4px; color: var(--green); }
+  .honest { border: 1px solid var(--hair); border-radius: 10px; background: var(--field);
+            padding: 18px; margin-top: 32px; font-size: 12.5px; color: var(--dim);
+            line-height: 1.75; }
+  .honest b { color: var(--fg); font-weight: 600; }
+
+  footer { border-top: 1px solid var(--hair); padding: 32px 0 48px; }
+  footer .wrap { display: flex; gap: 16px; align-items: center; }
+  footer a { color: var(--dim); text-decoration: none; font-size: 12px; }
+  footer a:hover { color: var(--fg); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="/" class="brand" title="EdgeLvl"><svg class="wordmark" viewBox="97.350 166.297 180.303 39.203" fill="currentColor" role="img" aria-label="EDGE"><g transform="translate(93.427734,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g><g transform="translate(140.461163,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 35.28125 -39.203125 L 35.28125 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 0 Z M 35.28125 -7.84375 L 35.28125 -31.359375 L 43.125 -31.359375 L 43.125 -7.84375 Z M 35.28125 -7.84375 "/></g><g transform="translate(187.494592,205.499987)"><path d="M 11.765625 0 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 -15.6875 L 19.59375 -15.6875 L 19.59375 -23.515625 L 43.125 -23.515625 L 43.125 0 Z M 3.921875 -7.84375 L 3.921875 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 Z M 11.765625 -31.359375 L 11.765625 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 Z M 11.765625 -31.359375 "/></g><g transform="translate(234.528021,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g></svg></a>
+    <span class="sp"></span>
+    <a class="navlink" href="#how">How it works</a>
+    <a class="navlink" href="#price">Pricing</a>
+    <a class="btn ghost" style="padding:8px 16px;font-size:12.5px" href="/">Sign in</a>
+  </div>
+</nav>
+
+<!-- ── hero ─────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="wrap">
+    <div class="rise">
+      <h1>Semi-autonomous trading.</h1>
+      <p class="lede">Finding the coin was never the hard part. Execution is.
+        EdgeLvl does the entry, the wait and the exit.</p>
+      <div class="acts">
+        <a class="btn" href="#price">Get access</a>
+        <a class="btn ghost" href="#how">See it work</a>
+      </div>
+      <p class="fine">No fee on your trades. Every other terminal takes 1%.</p>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<!-- ── the story ────────────────────────────────────────────────────────
+     One trade, in the order it goes wrong, with the answer in the next
+     column. The problem and the fix are the same three rows, so neither
+     needs a paragraph to explain it. -->
+<section>
+  <div class="wrap">
+    <div class="rise"><h2>Every trade goes wrong in the same three places.</h2></div>
+
+    <div class="story rise">
+      <div class="srow shead">
+        <div></div><div>You</div><div>EdgeLvl</div>
+      </div>
+      <div class="srow">
+        <div class="lab">The entry</div>
+        <div class="you">It dips. You wait to be sure.
+          <em>By the time you are, it has gone.</em></div>
+        <div class="fix">Buys the reclaim. <b>20% down, 5% off the low.</b></div>
+      </div>
+      <div class="srow">
+        <div class="lab">The wait</div>
+        <div class="you">You are up. It gives it back.
+          <em>You sell. Then it runs.</em></div>
+        <div class="fix">Holds. <b>Only your stop sells.</b></div>
+      </div>
+      <div class="srow">
+        <div class="lab">The exit</div>
+        <div class="you">It hits your number.
+          <em>You hold out. It round-trips.</em></div>
+        <div class="fix">Takes it. <b>Half at 2x, the rest at 4x.</b></div>
+      </div>
+    </div>
+
+    <p class="turn rise">You find the coin. It runs the trade.
+      <span>Nothing to sit and watch.</span></p>
+  </div>
+</section>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<!-- ── how ──────────────────────────────────────────────────────────── -->
+<section id="how">
+  <div class="wrap">
+    <div class="rise"><div class="eyebrow">The process</div></div>
+
+    <!-- 1. board -->
+    <div class="step rise">
+      <div class="stephead"><span class="stepno">01</span><h3>The board</h3></div>
+      <p class="lede">The highest volume coins on Solana.</p>
+      <div class="surface">
+        <div class="bhead">
+          <span class="t">Trending · 5m</span>
+          <span class="chips">
+            <span class="chip">min 5m vol&nbsp; <b>25000</b></span>
+            <span class="chip">min MC&nbsp; <b>50000</b></span>
+            <span class="chip">min vol/MC&nbsp; <b>10%</b></span>
+          </span>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Token</th><th>MC</th><th>Liq</th><th>5m vol</th>
+            <th>Vol / MC</th><th>B/S</th><th>5m</th>
+          </tr></thead>
+          <tbody id="board"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2. rules -->
+    <div class="step rise">
+      <div class="stephead"><span class="stepno">02</span><h3>Your rules</h3></div>
+      <p class="lede">The settings your bot runs, fully autonomously.</p>
+      <div class="grid2">
+        <div class="surface setgroup">
+          <div class="gk">Entry</div>
+          <div class="setrow"><div class="l"><div class="n">Dip required</div>
+            <div class="d">How far it must fall from the high before looking to buy.</div></div>
+            <div class="val"><input class="vin" value="20" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Reclaim</div>
+            <div class="d">Rise off the low that triggers the buy.</div></div>
+            <div class="val"><input class="vin" value="5" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">B/S floor</div>
+            <div class="d">Under 1 means more selling than buying. The buy waits.</div></div>
+            <div class="val"><input class="vin" value="0.95" inputmode="decimal" aria-label="value" spellcheck="false"></div></div>
+          <div class="setrow"><div class="l"><div class="n">Stay below the high by</div>
+            <div class="d">Refuses an entry too close to the top.</div></div>
+            <div class="val"><input class="vin" value="10" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Deepest entry</div>
+            <div class="d">How far below the high a buy may land.</div></div>
+            <div class="val"><input class="vin" value="70" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Watch before buying</div>
+            <div class="d">Seconds of tape before a buy is allowed.</div></div>
+            <div class="val"><input class="vin" value="30" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">s</span></div></div>
+        </div>
+        <div class="surface setgroup">
+          <div class="gk">Exit</div>
+          <div class="setrow"><div class="l"><div class="n">Take profit 1</div>
+            <div class="d">Sells half the position.</div></div>
+            <div class="val"><input class="vin" value="2" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">x</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Sold at TP1</div>
+            <div class="d">The rest rides to TP2.</div></div>
+            <div class="val"><input class="vin" value="50" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Take profit 2</div>
+            <div class="d">Fully out here.</div></div>
+            <div class="val"><input class="vin" value="4" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">x</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Stop type</div>
+            <div class="d">Trailing follows the high. Fixed measures from entry.</div></div>
+            <div class="seg"><span>Trailing</span><span class="on">Fixed</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Stop</div>
+            <div class="d">How far it may fall below your entry before selling out.</div></div>
+            <div class="val"><input class="vin" value="50" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Break even after TP1</div>
+            <div class="d">The stop on the rest moves up to your entry, so the
+              trade can't turn into a loss.</div></div>
+            <div class="seg"><span class="on">On</span><span>Off</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. greenlight -->
+    <div class="step rise">
+      <div class="stephead"><span class="stepno">03</span><h3>Greenlight</h3></div>
+      <p class="lede">One tap. It shows you what would trigger a buy before
+        you commit.</p>
+      <div class="grid2">
+        <div style="display:grid;gap:16px">
+        <div class="surface">
+          <div class="trig">
+            <div class="k">What would trigger a buy</div>
+            from <b>$3.26M</b><br>
+            a dip below <b>$2.45M</b><br>
+            then a reclaim above <b>$2.57M</b>
+            <div style="color:var(--dim);font-size:12px;margin-top:12px;line-height:1.65">
+              Once you greenlight, the bot measures from the high it sees.
+            </div>
+          </div>
+          <div class="glbar">
+            <button class="btn glbtn2" id="fakegl">
+              <span style="width:9px;height:9px;border-radius:50%;background:#fff;display:inline-block"></span>
+              GREENLIGHT
+            </button>
+            <div class="glnote" id="glnote">Picked up within 5 seconds. Then it watches every second.</div>
+          </div>
+        </div>
+          <div class="surface state">
+            <div class="sthead"><span class="stnum">1</span><span class="dot amber"></span>Waiting for a dip and a reclaim</div>
+            <div class="stbody">
+              <div class="k">Waiting for a dip · 20s of warmup left</div>
+              needs to trade at or below <b>$90.7K</b><br>
+              <span class="muted">high since you greenlit $113.4K</span>
+              <div class="fine">No dip yet, so nothing can trigger.</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;gap:16px">
+          <div class="surface state">
+            <div class="sthead"><span class="stnum">2</span><span class="dot amber"></span>Dipped — waiting for the bounce</div>
+            <div class="stbody">
+              <div class="k">Dipped · buys between</div>
+              <b>$101.4K</b> and <b>$113.1K</b><br>
+              <span class="muted">low $96.6K · high $125.6K</span>
+              <div class="fine warmtx">Not buying yet — waiting for a 5% bounce off the low.</div>
+            </div>
+          </div>
+          <div class="surface state">
+            <div class="sthead"><span class="stnum">3</span><span class="dot green"></span>In position</div>
+            <div class="stbody">
+              <div class="k">In position · targets set</div>
+              entered <b>$88.3K</b> · now <b>$94.9K</b> <span class="up">+7%</span><br>
+              <span class="muted">takes profit at $176.5K → $353.1K · stop $44.1K</span>
+              <div class="fine">Half out at 2x, the rest at 4x. Nothing left to decide.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<!-- ── demo ─────────────────────────────────────────────────────────── -->
+<section>
+  <div class="wrap">
+    <div class="rise">
+      <h2>One trade, start to finish.</h2>
+      <p class="lede">Everything after the greenlight happens without you.</p>
+    </div>
+    <div class="demoframe rise">
+      <iframe src="/demo.html?embed=1" title="EdgeLvl demo" loading="lazy" scrolling="no"></iframe>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<!-- ── price ────────────────────────────────────────────────────────── -->
+<section id="price">
+  <div class="wrap">
+    <div class="rise">
+      <div class="eyebrow">Access</div>
+      <h2>Pick coins. Not entries.</h2>
+    </div>
+    <div class="price rise">
+      <div class="amount"><span class="n">$49</span><span class="per">/ month</span></div>
+      <ul class="incl">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                 stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <b>No fee on your trades.</b></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                 stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          The live board, filtered top moving coins on Solana</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                 stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Unlimited greenlights and unlimited settings</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                 stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          A wallet only you can withdraw from</li>
+      </ul>
+      <a class="btn" href="#" id="buy">Get access</a>
+      <span style="font-size:11.5px;color:var(--dimmer);margin-left:14px">Cancel any time</span>
+
+      <div class="honest">
+        <b>What this is not.</b> It is not a signal service and it does not
+        predict anything. You choose every coin it touches, and it can lose money
+        — most trades that go wrong are cut at your stop, and the ones that work
+        have to pay for them. It removes hesitation, not risk.
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a href="/terms.html">Terms</a>
+    <a href="/privacy.html">Privacy</a>
+    <span class="sp" style="flex:1"></span>
+    <a href="/">Sign in</a>
+  </div>
+</footer>
+
+<script>
+/* ── the board, alive ────────────────────────────────────────────────────
+   Rebuilt rather than screenshotted so it stays sharp at any size and can
+   move. The numbers drift the way the real board's do — small, frequent, and
+   never enough to look like a slot machine. */
+const COINS = [
+  { n: 'FORTUNE',   s: 'The Gospel of For…', a: '19m', e: '🍀', mc: 2.40e6, liq: 142.7e3, vol: 1.01e6, vm: 42, bs: 1.04, ch:  31 },
+  { n: 'buni',      s: 'buni',               a: '1h',  e: '🐰', mc: 602.4e3, liq: 71.2e3, vol: 201.8e3, vm: 34, bs: 0.97, ch: -25 },
+  { n: 'Poopins',   s: 'Mary Poopins',       a: '4h',  e: '☂️', mc: 133.9e3, liq: 29.1e3, vol:  61.7e3, vm: 46, bs: 1.12, ch:  12 },
+  { n: 'so..higher',s: 'solana looking go…', a: '17m', e: '🚀', mc:  67.0e3, liq: 20.2e3, vol:  58.9e3, vm: 88, bs: 1.02, ch:  11 },
+  { n: 'GATO',      s: 'GTA6CAT',            a: '12m', e: '🐈', mc: 513.2e3, liq: 59.7e3, vol:  54.2e3, vm: 11, bs: 0.88, ch: -14 },
+];
+const money = v => v >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M'
+               : v >= 1e3 ? '$' + (v / 1e3).toFixed(1) + 'K' : '$' + v.toFixed(0);
+const pct = v => `<span class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '+' : ''}${v.toFixed(0)}%</span>`;
+
+function paintBoard() {
+  document.getElementById('board').innerHTML = COINS.map(c => `
+    <tr>
+      <td><div class="tok">
+        <span class="av">${c.e}</span>
+        <span><span class="nm">${c.n}</span><br><span class="sub">${c.a} · ${c.s}</span></span>
+      </div></td>
+      <td>${money(c.mc)}</td>
+      <td>${money(c.liq)}</td>
+      <td class="vol ${c.vol > 2e5 ? 'up' : 'warm'}">${money(c.vol)}</td>
+      <td class="${c.vm >= 40 ? 'up' : ''}">${c.vm.toFixed(0)}<span style="font-size:9px">%</span></td>
+      <td class="bs ${c.bs >= 1 ? 'up' : 'down'}">${c.bs.toFixed(2)}</td>
+      <td>${pct(c.ch)}</td>
+    </tr>`).join('');
+}
+paintBoard();
+
+/* A drift, not a randomiser: each tick nudges the live columns by a fraction of
+   a percent so the table breathes. Anything bigger reads as fake.
+
+   It only runs while the board is on screen. Ticking from page load meant the
+   numbers had already been drifting for a minute by the time anyone scrolled
+   to them, so the one moment it was supposed to feel alive was the moment it
+   looked static. */
+let boardTimer = null;
+function tickBoard() {
+  for (const c of COINS) {
+    c.vol *= 1 + (Math.random() - 0.48) * 0.02;
+    c.bs = Math.max(0.6, Math.min(1.6, c.bs + (Math.random() - 0.5) * 0.015));
+    c.ch += (Math.random() - 0.5) * 0.7;
+  }
+  paintBoard();
+  // A brief tint on the columns that moved, so a small change is still legible
+  // as a change rather than a number that happens to differ if you look twice.
+  for (const el of document.querySelectorAll('#board .vol, #board .bs')) {
+    el.classList.remove('tick');
+    void el.offsetWidth;                 // restart the animation
+    el.classList.add('tick');
+  }
+}
+/* Driven by scroll position rather than an IntersectionObserver. The observer
+   is the more fashionable tool, but this page only needs "is it roughly on
+   screen", the check is two comparisons, and a scroll handler is something I
+   can actually watch work. */
+const onScreen = (el, slack = 0.12) => {
+  const b = el.getBoundingClientRect();
+  return b.top < innerHeight * (1 - slack) && b.bottom > innerHeight * slack;
+};
+const boardEl = document.querySelector('#board').closest('.surface');
+function boardWatch() {
+  const here = onScreen(boardEl, 0.02);
+  if (here && !boardTimer) { tickBoard(); boardTimer = setInterval(tickBoard, 1600); }
+  else if (!here && boardTimer) { clearInterval(boardTimer); boardTimer = null; }
+}
+
+/* ── reveal on scroll ─────────────────────────────────────────────────────
+   On the same scroll tick as everything else. This was an IntersectionObserver,
+   and it is the one piece of motion whose failure mode is unacceptable: every
+   section starts at opacity 0 and only the observer brings it back, so an
+   observer that does not fire leaves a blank page. A scroll position cannot
+   fail to be readable. */
+document.querySelectorAll('.rise').forEach((el, i) => {
+  el.style.transitionDelay = (i % 3) * 70 + 'ms';
+});
+function riseWatch() {
+  for (const el of document.querySelectorAll('.rise:not(.in)')) {
+    if (onScreen(el, 0.06)) el.classList.add('in');
+  }
+}
+
+/* The demo starts when the READER reaches it, not when the iframe loads.
+   The frame is lazy, so the two events can land in either order -- hence both
+   are latched and whichever finishes last sends the go. */
+(() => {
+  const frame = document.querySelector('.demoframe iframe');
+
+  /* No dead black under the chart: the frame is exactly as tall as what is
+     inside it, remeasured whenever the chart reflows. */
+  const fit = () => {
+    const d = frame.contentDocument;
+    if (d && d.body) frame.style.height = d.body.scrollHeight + 'px';
+  };
+  frame.addEventListener('load', () => {
+    fit();
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(frame.contentDocument.body);
+  });
+  addEventListener('resize', fit);
+
+  let seen = false, loaded = frame.contentDocument?.readyState === 'complete';
+  const play = () => { if (seen && loaded) frame.contentWindow.postMessage('edgelvl:play', '*'); };
+  frame.addEventListener('load', () => { loaded = true; play(); });
+  new IntersectionObserver((es, o) => {
+    for (const e of es) if (e.intersectionRatio >= 0.75) {
+      o.disconnect();
+      setTimeout(() => { seen = true; play(); }, 700);
+    }
+  }, { threshold: [0, 0.5, 0.75, 1] }).observe(frame);
+})();
+
+/* The settings panel is where the page claims "your rules", so the numbers are
+   typeable and the toggles toggle. Nothing is saved and nothing is sent, since
+   there is no account yet -- but a panel of numbers you cannot touch is a
+   screenshot pretending to be a product. */
+document.querySelectorAll('.setgroup .vin').forEach(inp => {
+  inp.addEventListener('input', () => {
+    // Digits and a single point. Typed rubbish in a field that claims to be a
+    // stop percentage is worse than a field that refuses it.
+    let v = inp.value.replace(/[^\d.]/g, '');
+    const i = v.indexOf('.');
+    if (i !== -1) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/\./g, '');
+    if (v !== inp.value) inp.value = v;
+  });
+  inp.addEventListener('blur', () => { if (!inp.value) inp.value = '0'; });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+});
+document.querySelectorAll('.setgroup .seg').forEach(seg => {
+  seg.querySelectorAll('span').forEach(opt => {
+    opt.onclick = () => seg.querySelectorAll('span')
+      .forEach(x => x.classList.toggle('on', x === opt));
+  });
+});
+
+/* Each story row lights as you reach it, not when the section does — so the
+   three beats land one at a time, in the order you read them. */
+function rowsWatch() {
+  for (const r of document.querySelectorAll('.srow:not(.shead):not(.lit)')) {
+    if (onScreen(r, 0.10)) r.classList.add('lit');
+  }
+}
+
+function onScrollTick() { riseWatch(); boardWatch(); rowsWatch(); }
+addEventListener('scroll', onScrollTick, { passive: true });
+addEventListener('resize', onScrollTick);
+onScrollTick();
+
+/* The greenlight button on the page does what it does in the product: it goes
+   from a decision to a state, and then there is nothing left to press. */
+document.getElementById('fakegl').onclick = e => {
+  e.preventDefault();
+  const b = e.currentTarget, note = document.getElementById('glnote');
+  b.style.transition = 'opacity .3s ease';
+  b.style.opacity = '.55';
+  b.innerHTML = '<span style="width:9px;height:9px;border-radius:50%;background:#fff;' +
+                'display:inline-block"></span> GREENLIT — WATCHING';
+  note.textContent = 'That was the last decision you make on this coin.';
+  note.style.color = 'var(--green)';
+};
+</script>
+<!-- Whop: records the visit and attributes a purchase back to it. This is
+     analytics only — it renders nothing, and the button above still needs a
+     checkout link before it can take money. -->
+<script>!function(w,d,s,u,n,a,b){if(w[n])return;a=w[n]={q:[],t:+new Date,s:[],o:u,track:function(){a.q.push([+new Date].concat([].slice.call(arguments)))},setScope:function(){a.s=[].slice.call(arguments).filter(function(x){return typeof x==="string"});a.q.push([+new Date,"setScope"].concat(a.s))},scope:function(){var c=[].slice.call(arguments);return{track:function(){a.q.push([+new Date].concat([].slice.call(arguments)).concat([{__scope:c}]))}}}};b=d.createElement(s);b.async=1;b.src=u+"/s.js";d.getElementsByTagName(s)[0].parentNode.insertBefore(b,d.getElementsByTagName(s)[0])}(window,document,"script","https://t.whop.tw","whop");whop.setScope("biz_JkWIDteK3vVBW2");whop.track("page");</script>
+</body>
+</html>

@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EdgeLvl — how it works</title>
+<style>
+  :root {
+    --ground: #05080a; --panel: #0b1013; --line: #16211f;
+    --tx: #e8f0ee; --dim: #8fa39d; --dimmer: #5d6f6a;
+    --up: #26d97f; --down: #ff4d4d; --accent: #ffb224;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--tx);
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, monospace;
+    display: grid; place-items: center; min-height: 100vh; padding: 40px 24px;
+  }
+  .wrap { width: min(1100px, 100%); }
+  h1 { font-size: 21px; font-weight: 600; margin: 0 0 6px; letter-spacing: -.01em; }
+  .lede { font-size: 13px; color: var(--dim); margin: 0 0 20px; line-height: 1.6; }
+
+  /* The chart, and the greenlight control sitting on it exactly as it does in
+     the terminal — the demo has to be the product, not a picture of it. */
+  .stage { position: relative; }
+  canvas { width: 100%; display: block; border: 1px solid var(--line);
+           border-radius: 12px; background: var(--ground); }
+
+  .glbtn {
+    position: absolute; left: 22px; top: 20px; z-index: 3;
+    display: inline-flex; align-items: center; gap: 9px;
+    background: var(--up); color: #04120b; border: 0; border-radius: 9px;
+    padding: 11px 18px; font-family: inherit; font-size: 13px; font-weight: 600;
+    box-shadow: 0 0 0 0 rgba(38,217,127,.55);
+  }
+  .glbtn.pressed { animation: press .45s ease both; }
+  @keyframes press {
+    0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(38,217,127,.55); }
+    45%  { transform: scale(.94);  box-shadow: 0 0 0 16px rgba(38,217,127,0); }
+    100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(38,217,127,0); }
+  }
+  .glbtn.gone { opacity: 0; transform: translateY(-6px); transition: .35s ease; }
+
+  .armed {
+    position: absolute; left: 22px; top: 22px; z-index: 3;
+    font-size: 12px; color: var(--up); letter-spacing: .04em;
+    opacity: 0; transition: opacity .4s ease;
+  }
+  .armed.on { opacity: 1; }
+  .armed .dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--up); margin-right: 7px; vertical-align: 1px;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+
+  .say {
+    min-height: 44px; margin-top: 16px; font-size: 13.5px; line-height: 1.5;
+    color: var(--dim); display: flex; align-items: center; gap: 11px;
+  }
+  .say b { color: var(--tx); font-weight: 600; }
+  .say .tag {
+    font-size: 10px; letter-spacing: .11em; text-transform: uppercase;
+    padding: 5px 9px; border-radius: 5px; flex: 0 0 auto;
+  }
+  .tag.wait { color: var(--dimmer); border: 1px solid var(--line); }
+  .tag.buy  { color: #04120b; background: var(--up); }
+  .tag.sell { color: #180f00; background: var(--accent); }
+  .tag.done { color: #04120b; background: var(--up); }
+  .note { font-size: 10.5px; color: #4a5854; margin-top: 18px; line-height: 1.6; }
+  .replay { background: none; border: 1px solid var(--line); color: var(--dim);
+            font-family: inherit; font-size: 11.5px; padding: 8px 14px;
+            border-radius: 7px; cursor: pointer; margin-top: 14px; }
+  .replay:hover { color: var(--tx); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>You pick the coin. It handles the part you can't.</h1>
+  <p class="lede">Greenlight a coin and the rule takes over — waits for the dip,
+    waits for it to turn, buys the reclaim, and sells half at 2x and the
+    rest at 4x.</p>
+
+  <div class="stage">
+    <canvas id="cv" width="2200" height="1000"></canvas>
+    <button class="glbtn" id="glbtn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      Greenlight
+    </button>
+    <div class="armed" id="armed"><span class="dot"></span>GREENLIT — watching every second</div>
+  </div>
+
+  <div class="say" id="say"></div>
+  <button class="replay" id="replay" style="display:none">Watch it again</button>
+  <div class="note">
+    An illustration, not a trade record. The chart is synthetic — but where it
+    buys and sells is decided by the same rule the bot runs: a 20% dip, a 5%
+    reclaim off the low, half out at 2x and the rest at 4x.
+  </div>
+</div>
+
+<script>
+const C = {
+  ground: '#05080a', line: '#16211f', tx: '#e8f0ee',
+  dim: '#8fa39d', dimmer: '#5d6f6a',
+  up: '#26d97f', down: '#ff4d4d', accent: '#ffb224',
+};
+const MONO = "'SF Mono', SFMono-Regular, ui-monospace, Menlo, monospace";
+const SCALE = 1.2;                      // synthetic units -> market cap
+const INVESTED = 200;                   // dollars. what a real first size looks like
+/* Fixed, so the demo is the same every visit. A chart that differs on each
+   load cannot be pointed at, and being pointed at is its whole job. */
+const TAPE_SEED = 33;
+/* The bar the greenlight lands on. Everything before it is the coin moving
+   on its own, which is the only time anyone actually greenlights one. */
+const ARM_AT = 28;
+
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+}
+
+function gauss(r) {
+  const u = Math.max(1e-9, r());
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r());
+}
+
+/* A random walk, not a line with noise on it.
+   The first version drew every close as `target + small symmetric wobble`,
+   which gives bodies that are all the same size and a colour that just follows
+   whichever way the leg was heading. Real tape does not look like that: most
+   bars are small, a few are violent, quiet stretches alternate with bursts,
+   red bars appear inside rallies, and a wick is often several times its body.
+   Three things produce that, and none of them is more noise —
+
+     drift        pulls toward where the leg is going, so the story still holds
+     clustering   vol carries over bar to bar, giving calm and frantic patches
+     fat tails    a small chance of a move several times the going rate  */
+function buildTape(seed) {
+  const r = rng(seed);
+  const legs = [
+    [100, 128, 18],   // already running. this is what makes you look at it
+    [128, 146, 12],   // and it keeps going, which is when you greenlight
+    [146, 112, 14],   // the dip
+    [112, 106, 16],   // the bottom, which does not stop politely
+    [106, 122, 12],   // the reclaim
+    [122, 116, 13],
+    [116, 152, 15],
+    [152, 144, 11],
+    [144, 196, 16],   // through the first rung
+    // and then the part that matters: it gives back MORE than the rung, and
+    // sits there. this is the stretch where a person sells and the rule does
+    // not, and the demo is worth nothing if it is over in three bars.
+    [196, 158, 14],
+    [158, 176, 13],
+    [176, 154, 14],
+    [154, 181, 13],
+    [181, 162, 12],
+    [162, 258, 17],   // finally
+    [258, 236, 11],
+    [236, 372, 18],
+    [372, 476, 14],   // through the second rung
+    [476, 455,  9],
+    // and then it rolls over, with you already out. the exit only looks like a
+    // decision if the chart is allowed to carry on without you.
+    [455, 372, 12],
+    [372, 288, 11],
+  ];
+  const out = [];
+  let px = legs[0][0], vol = 1;
+  for (const [, target, n] of legs) {
+    for (let i = 0; i < n; i++) {
+      const left = n - i;
+      const drift = Math.log(target / px) / left;
+      // vol is sticky: today's is mostly yesterday's, which is what makes
+      // volatility arrive in patches rather than evenly.
+      vol = vol * 0.88 + 0.12 * (0.45 + r() * 2.1);
+      const jump = r() < 0.07 ? 2.4 + r() * 3.4 : 1;
+      const o = px;
+      const c = px * Math.exp(drift + 0.016 * vol * jump * gauss(r));
+      // Wicks are their own random variable, not a function of the body. That
+      // is what gives the long rejection candles and the occasional marubozu.
+      const reach = px * 0.014 * vol * (r() < 0.16 ? 2.8 + r() * 2 : r() * 1.1);
+      out.push({
+        o, c,
+        h: Math.max(o, c) + reach * r(),
+        l: Math.min(o, c) - reach * r(),
+      });
+      px = c;
+    }
+  }
+  return out;
+}
+
+/* The rule, run over the tape. Not hand-placed markers — if the tape changed,
+   these would move, which is the only reason the demo is worth anything. */
+function decide(tape, from) {
+  const DIP = .20, BOUNCE = 1.05, PICO = .90, TP1 = 2, TP2 = 4;
+  const ev = []; let hi = tape[from].h, low = null, entry = null, dipAt = null, one = false;
+  // From the greenlight, not from the first bar. The high the dip is measured
+  // against is the high SINCE YOU TAPPED — a coin that ran 3x last night is
+  // not in a 70% dip because it pulled back this morning.
+  for (let i = from; i < tape.length; i++) {
+    const p = tape[i].c; hi = Math.max(hi, tape[i].h);
+    if (entry === null) {
+      if (p <= hi * (1 - DIP)) { if (low === null) dipAt = i; low = low === null ? p : Math.min(low, p); }
+      if (low !== null && p >= low * BOUNCE && p < hi * PICO) {
+        entry = p; ev.push({ i, kind: 'buy', px: p });
+      }
+    } else if (!one && p >= entry * TP1) { one = true; ev.push({ i, kind: 'tp1', px: p, x: p / entry }); }
+    else if (one && p >= entry * TP2) { ev.push({ i, kind: 'tp2', px: p, x: p / entry }); break; }
+  }
+  return { ev, dipAt, entry };
+}
+
+const TAPE = buildTape(TAPE_SEED), PLAN = decide(TAPE, ARM_AT);
+const BUY = PLAN.ev.find(e => e.kind === 'buy');
+const TP1 = PLAN.ev.find(e => e.kind === 'tp1');
+const TP2 = PLAN.ev.find(e => e.kind === 'tp2');
+/* The whole tape, not just up to the last fill. What the coin does after you
+   are out is the point of being out. */
+const END = TAPE.length - 1;
+const REST = 12;   // bars on screen before it starts
+
+const cv = document.getElementById('cv'), g = cv.getContext('2d');
+const sayEl = document.getElementById('say');
+const glbtn = document.getElementById('glbtn');
+const armedEl = document.getElementById('armed');
+const replayBtn = document.getElementById('replay');
+let raf = null, view = null, started = false;
+/* Fills announce themselves.
+   A dot appearing on one candle is easy to miss, and the moment money actually
+   moves is the moment the whole demo exists to show. */
+let flash = null, done = false, summaryAt = 0, summaryAlpha = 0;
+function fire(text, sub, col, ms = 1600, size = 96) {
+  flash = { text, sub, col, at: performance.now(), ms, size };
+}
+
+const cap = v => '$' + (v * SCALE).toFixed(1) + 'K';
+
+/* Round numbers on the axis, the way a chart does it — not five slices of
+   whatever the visible range happens to be. */
+function niceStep(range) {
+  const raw = range / 6, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / mag;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+}
+
+function draw(pos) {
+  const W = cv.width, H = cv.height, AX = 340, TOP = 96, BOT = 76, L = 44;
+  g.fillStyle = C.ground; g.fillRect(0, 0, W, H);
+  const upto = Math.max(1, Math.min(TAPE.length, Math.floor(pos) + 1));
+  /* A FIXED window, which is the whole point of the thing.
+     This used to grow from 26 bars to 104, so the camera started tight and
+     scrolling and ended up pulled back into a wide static overview — the view
+     stopped moving and it became a picture of a chart rather than a seat in
+     front of one. Holding the count constant keeps the bars the same width and
+     the tape sliding past at the same rate from the first bar to the last.
+     Early on there are simply fewer bars on screen, which is correct: a coin
+     you greenlit thirty seconds ago has thirty seconds of history. */
+  const WINDOW = 46;
+  const PIN = L + (W - AX - L) * 0.74;
+  const slot = (W - AX - L) / WINDOW;
+  const x = i => PIN - (pos - i) * slot;
+
+  const from = Math.max(0, Math.ceil(pos) - WINDOW);
+  const vis = TAPE.slice(from, upto);
+  let tLo = Math.min(...vis.map(b => b.l)), tHi = Math.max(...vis.map(b => b.h));
+  const pad = (tHi - tLo) * 0.10; tLo -= pad; tHi += pad;
+  if (!view) view = { lo: tLo, hi: tHi };
+  else { view.lo += (tLo - view.lo) * .09; view.hi += (tHi - view.hi) * .09; }
+  const y = p => TOP + (1 - (p - view.lo) / (view.hi - view.lo)) * (H - TOP - BOT);
+
+  // grid on round numbers
+  const step = niceStep(view.hi - view.lo);
+  g.font = `34px ${MONO}`; g.textBaseline = 'middle'; g.textAlign = 'left';
+  for (let p = Math.ceil(view.lo / step) * step; p <= view.hi; p += step) {
+    const yy = y(p);
+    g.strokeStyle = C.line; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(L, yy + .5); g.lineTo(W - AX, yy + .5); g.stroke();
+    g.fillStyle = C.dimmer; g.fillText(cap(p), W - AX + 24, yy);
+  }
+
+  // candles
+  const bw = Math.max(4, slot * 0.66);
+  for (let i = 0; i < upto; i++) {
+    const px = x(i);
+    if (px < L - bw || px > W - AX) continue;
+    const b = TAPE[i], up = b.c >= b.o;
+    g.strokeStyle = g.fillStyle = up ? C.up : C.down;
+    g.lineWidth = Math.max(1.4, bw * .17);
+    g.beginPath(); g.moveTo(px, y(b.h)); g.lineTo(px, y(b.l)); g.stroke();
+    g.fillRect(px - bw / 2, y(Math.max(b.o, b.c)), bw,
+               Math.max(2, Math.abs(y(b.o) - y(b.c))));
+  }
+
+  const pill = (yy, text, col, label) => {
+    g.font = `600 34px ${MONO}`;
+    const tw = g.measureText(text).width + 34;
+    let lx = W - AX + 10;
+    if (label) {
+      g.font = `600 30px ${MONO}`;
+      const lw = g.measureText(label).width + 30;
+      g.fillStyle = col; g.fillRect(lx - lw - 6, yy - 26, lw, 52);
+      g.fillStyle = '#04120b'; g.textAlign = 'center';
+      g.fillText(label, lx - lw / 2 - 6, yy + 2);
+      g.font = `600 34px ${MONO}`;
+    }
+    g.fillStyle = col; g.fillRect(lx, yy - 26, tw, 52);
+    g.fillStyle = '#04120b'; g.textAlign = 'left';
+    g.fillText(text, lx + 17, yy + 2);
+  };
+
+  /* Entry, kept on screen even once it is out of range.
+     Holding the camera at a fixed zoom means the entry price drops out of the
+     frame as soon as the coin runs — and losing it is losing the number every
+     other number on screen is measured against. So when it is below the view
+     it is pinned to the bottom edge with an arrow, the way a chart marks any
+     level that is off-screen, rather than dragging the whole range down to
+     include it and undoing the zoom. */
+  if (BUY && upto > BUY.i && BUY.px < view.lo) {
+    const ey = H - BOT - 4;
+    g.globalAlpha = .45; g.setLineDash([4, 7]); g.lineWidth = 1.4;
+    g.strokeStyle = C.up;
+    g.beginPath(); g.moveTo(L, ey + .5); g.lineTo(W - AX, ey + .5); g.stroke();
+    g.globalAlpha = 1; g.setLineDash([]);
+    pill(ey, cap(BUY.px), C.up, 'ENTRY ↓');
+  }
+
+  // entry line, once there is one
+  if (BUY && upto > BUY.i && BUY.px >= view.lo) {
+    const ey = y(BUY.px);
+    g.setLineDash([4, 7]); g.globalAlpha = .85; g.lineWidth = 1.4;
+    g.strokeStyle = C.up;
+    g.beginPath(); g.moveTo(L, ey + .5); g.lineTo(W - AX, ey + .5); g.stroke();
+    g.globalAlpha = 1; g.setLineDash([]);
+    pill(ey, cap(BUY.px), C.up, 'ENTRY');
+  }
+
+  /* The rung, once it has fired. Worth its own line rather than just a dot on
+     one candle: the whole back half of this trade is the price sitting BELOW
+     the level it already sold half at, and that is invisible without a line to
+     see it against. */
+  if (TP1 && upto > TP1.i) {
+    const off = TP1.px < view.lo;
+    const ty = off ? H - BOT - 4 : y(TP1.px);
+    g.globalAlpha = off ? .45 : .8; g.setLineDash([4, 7]); g.lineWidth = 1.4;
+    g.strokeStyle = C.accent;
+    g.beginPath(); g.moveTo(L, ty + .5); g.lineTo(W - AX, ty + .5); g.stroke();
+    g.globalAlpha = 1; g.setLineDash([]);
+    if (!off) pill(ty, cap(TP1.px), C.accent, 'TP1');
+  }
+
+  // live price
+  const last = TAPE[Math.max(0, Math.min(TAPE.length - 1, Math.floor(pos)))],
+        ly = y(last.c), up = last.c >= last.o;
+  g.setLineDash([3, 6]); g.globalAlpha = .6; g.lineWidth = 1.2;
+  g.strokeStyle = up ? C.up : C.down;
+  g.beginPath(); g.moveTo(L, ly + .5); g.lineTo(W - AX, ly + .5); g.stroke();
+  g.globalAlpha = 1; g.setLineDash([]);
+  g.font = `600 34px ${MONO}`;
+  const t = cap(last.c), tw = g.measureText(t).width + 34;
+  g.fillStyle = up ? C.up : C.down;
+  g.fillRect(W - AX + 10, ly - 26, tw, 52);
+  g.fillStyle = up ? '#04120b' : '#1a0505'; g.textAlign = 'left';
+  g.fillText(t, W - AX + 27, ly + 2);
+
+  // markers
+  for (const e of PLAN.ev) {
+    if (e.i >= upto) continue;
+    const px = x(e.i), py = y(e.px);
+    if (px < L || px > W - AX) continue;
+    const col = e.kind === 'buy' ? C.up : C.accent;
+    g.globalAlpha = .18; g.fillStyle = col;
+    g.beginPath(); g.arc(px, py, 30, 0, Math.PI * 2); g.fill();
+    g.globalAlpha = 1; g.fillStyle = col;
+    g.beginPath(); g.arc(px, py, 12, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = C.ground; g.lineWidth = 4; g.stroke();
+    g.font = `600 30px ${MONO}`; g.textAlign = 'center'; g.fillStyle = col;
+    g.fillText(e.kind === 'buy' ? 'BUY' : e.kind === 'tp1' ? 'TP1 · 50% out' : 'TP2 · out',
+               px, e.kind === 'buy' ? py + 58 : py - 40);
+  }
+
+  if (BUY && upto > BUY.i) drawCard(last.c, upto);
+  drawFlash();
+  if (done) drawSummary();
+}
+
+/* The card, floating over the chart like the terminal's own.
+   Realised is shown separately from open once a rung has fired, because "half
+   banked, the rest still riding" is the whole idea and a single P&L number
+   hides it. */
+function drawCard(px, upto) {
+  const W = cv.width, H = cv.height, w = 760, h = 290, x0 = 44, y0 = H - h - 96;
+  const sold1 = TP1 && upto > TP1.i, sold2 = TP2 && upto > TP2.i;
+  const openFrac = sold2 ? 0 : sold1 ? 0.5 : 1;
+  const mult = px / BUY.px;
+  const realized = INVESTED * ((sold1 ? 0.5 * TP1.x : 0) + (sold2 ? 0.5 * TP2.x : 0));
+  const openVal = INVESTED * openFrac * mult;
+  const pnl = realized + openVal - INVESTED;
+
+  g.fillStyle = 'rgba(8,14,16,.93)';
+  g.strokeStyle = C.line; g.lineWidth = 2.5;
+  g.beginPath(); g.roundRect(x0, y0, w, h, 22); g.fill(); g.stroke();
+
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  g.font = `26px ${MONO}`; g.fillStyle = C.dimmer;
+  g.fillText('LIVE P&L', x0 + 42, y0 + 56);
+  g.font = `600 92px ${MONO}`; g.fillStyle = pnl >= 0 ? C.up : C.down;
+  g.fillText(`${pnl >= 0 ? '+' : '−'}$${Math.abs(pnl).toFixed(0)}`, x0 + 42, y0 + 146);
+
+  const row = (k, v, vy, col) => {
+    g.font = `26px ${MONO}`; g.fillStyle = C.dimmer;
+    g.fillText(k, x0 + 42, vy);
+    g.font = `600 30px ${MONO}`; g.fillStyle = col || C.tx;
+    g.textAlign = 'right'; g.fillText(v, x0 + w - 42, vy); g.textAlign = 'left';
+  };
+  // Plain dollars under a thousand. "$0.2K" is not how anyone says $200.
+  const usd = v => v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v.toFixed(0)}`;
+  row('INVESTED', usd(INVESTED), y0 + 206);
+  row(sold2 ? 'BANKED' : 'OPEN',
+      sold2 ? usd(realized) : `${usd(openVal)} · ${mult.toFixed(2)}x`,
+      y0 + 254, sold2 ? C.up : C.tx);
+  if (sold1 && !sold2) {
+    g.font = `26px ${MONO}`; g.fillStyle = C.accent; g.textAlign = 'right';
+    g.fillText(`$${realized.toFixed(0)} banked`, x0 + w - 42, y0 + 146);
+    g.textAlign = 'left';
+  }
+}
+
+/* Big, brief, and over the middle of the chart. 1.6s: long enough to read,
+   short enough that it is gone before it is in the way. */
+function drawFlash() {
+  if (!flash) return;
+  const t = (performance.now() - flash.at) / flash.ms;
+  if (t >= 1) { flash = null; return; }
+  const W = cv.width, H = cv.height;
+  const a = t < .12 ? t / .12 : t > .72 ? (1 - t) / .28 : 1;
+  const rise = (1 - Math.min(1, t / .3)) * 26;
+  g.save();
+  g.globalAlpha = Math.max(0, Math.min(1, a));
+
+  /* A band behind it, faded out top and bottom so it never reads as a box.
+     Without it the announcement lands on whatever candles happen to be there
+     and the second line disappears into them entirely. */
+  const my = H * 0.40 + flash.size * 0.4, bh = flash.size * 3.2;
+  const scrim = g.createLinearGradient(0, my - bh / 2, 0, my + bh / 2);
+  scrim.addColorStop(0, 'rgba(5,8,10,0)');
+  scrim.addColorStop(0.42, 'rgba(5,8,10,.88)');
+  scrim.addColorStop(0.58, 'rgba(5,8,10,.88)');
+  scrim.addColorStop(1, 'rgba(5,8,10,0)');
+  g.fillStyle = scrim; g.fillRect(0, my - bh / 2, W, bh);
+
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `600 ${flash.size}px ${MONO}`;
+  g.fillStyle = flash.col;
+  g.fillText(flash.text, W / 2, H * 0.40 + rise);
+  g.font = `30px ${MONO}`;
+  g.fillStyle = C.tx;
+  g.globalAlpha *= .72;
+  g.fillText(flash.sub, W / 2, H * 0.40 + flash.size * 0.79 + rise);
+  g.restore();
+}
+
+/* What it came to, once the tape has run out.
+   The number that matters is not the peak it touched, it is what was banked —
+   and it is worth saying next to a coin that has since given most of it back. */
+function drawSummary() {
+  summaryAlpha = Math.min(1, (performance.now() - summaryAt) / 700);
+  const W = cv.width, H = cv.height, w = 900, h = 250;
+  const x0 = (W - w) / 2, y0 = H / 2 - h / 2;
+  const banked = INVESTED * 0.5 * (TP1.x + TP2.x);
+  const pnl = banked - INVESTED;
+  g.save(); g.globalAlpha = summaryAlpha;
+  g.fillStyle = 'rgba(5,8,10,.9)'; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(11,16,19,.98)'; g.strokeStyle = C.up; g.lineWidth = 2.5;
+  g.beginPath(); g.roundRect(x0, y0, w, h, 22); g.fill(); g.stroke();
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `26px ${MONO}`; g.fillStyle = C.dimmer;
+  g.fillText('OUT, BOTH RUNGS', W / 2, y0 + 52);
+  g.font = `600 104px ${MONO}`; g.fillStyle = C.up;
+  g.fillText(`+$${pnl.toFixed(0)}`, W / 2, y0 + 130);
+  g.font = `28px ${MONO}`; g.fillStyle = C.dim;
+  g.fillText(`$${INVESTED} in · $${banked.toFixed(0)} out · ${(banked / INVESTED).toFixed(1)}x`,
+             W / 2, y0 + 200);
+  g.restore();
+}
+
+function say(tag, cls, html) {
+  sayEl.innerHTML = tag ? `<span class="tag ${cls}">${tag}</span><span>${html}</span>`
+                        : `<span>${html}</span>`;
+}
+
+function beat(i) {
+  if (i < ARM_AT)
+    say('running', 'wait', `A coin already moving. <b>You spot it and greenlight it</b> — that is your half of the job.`);
+  else if (TP2 && i >= TP2.i)
+    say('done', 'done', `Out at <b>${TP2.x.toFixed(1)}x</b>. Both rungs hit — and you decided nothing after the greenlight.`);
+  else if (TP1 && i >= TP1.i)
+    say('holding', 'wait', `<b>Half out at ${TP1.x.toFixed(1)}x.</b> It has given back more than that since — and the rule is still holding the other half.`);
+  else if (BUY && i >= BUY.i)
+    say('bought', 'buy', `Bought the reclaim — <b>not the bottom, not the top</b>. Targets set at 2x and 4x.`);
+  else if (PLAN.dipAt !== null && i >= PLAN.dipAt)
+    say('waiting', 'wait', `Down 20% from where you tapped. <b>Still not buying</b> — a falling coin has to turn first.`);
+  else
+    say('watching', 'wait', `Greenlit. Now it waits for a <b>20% dip</b>, however long that takes.`);
+}
+
+function run() {
+  cancelAnimationFrame(raf);
+  view = null;
+  replayBtn.style.display = 'none';
+  glbtn.classList.remove('gone', 'pressed');
+  armedEl.classList.remove('on');
+  draw(REST); beat(REST);
+
+  let pos = REST, prev = performance.now(), armed = false;
+  const fired = new Set();
+  done = false; summaryAt = 0; summaryAlpha = 0;
+  const RATE = 9;
+  const step = now => {
+    /* Clamped at both ends. Below: the observer fires inside a frame's
+       rendering steps, so the rAF it schedules reports that frame's start
+       time -- fractionally BEFORE run() read the clock. That made the first
+       step negative, floor() took the index to -1, and the whole animation
+       died on frame one. Above: a tab that was backgrounded comes back with
+       a delta of seconds, which would jump the tape past its own end. */
+    pos += Math.min(0.05, Math.max(0, (now - prev) / 1000)) * RATE; prev = now;
+
+    /* The greenlight happens PART WAY IN, on a coin that is already moving.
+       Starting armed would say the bot found the coin, which it does not —
+       you do. Everything before this is the half only a person can do. */
+    if (!armed && pos >= ARM_AT) {
+      armed = true;
+      fire('GREENLIGHT', 'your one decision on this coin', C.up, 2100, 118);
+      glbtn.classList.add('pressed');
+      setTimeout(() => {
+        glbtn.classList.remove('pressed');
+        glbtn.classList.add('gone');
+        armedEl.classList.add('on');
+      }, 420);
+    }
+
+    // announce each fill exactly once, as the tape reaches it
+    for (const e of PLAN.ev) {
+      if (fired.has(e) || pos < e.i) continue;
+      fired.add(e);
+      if (e.kind === 'buy')
+        fire(`BOUGHT $${INVESTED}`, `at ${cap(e.px)} market cap`, C.up);
+      else if (e.kind === 'tp1')
+        fire(`+$${(INVESTED * 0.5 * e.x).toFixed(0)}`, `half out at ${e.x.toFixed(1)}x`, C.accent);
+      else
+        fire(`+$${(INVESTED * 0.5 * e.x).toFixed(0)}`, `the rest out at ${e.x.toFixed(1)}x`, C.up);
+    }
+
+    if (pos >= END) {
+      draw(END); beat(END); done = true;
+      replayBtn.style.display = '';
+      // keep painting so the summary can fade in over the last frame
+      const hold = () => { draw(END); if (summaryAlpha < 1) requestAnimationFrame(hold); };
+      summaryAt = performance.now(); requestAnimationFrame(hold);
+      return;
+    }
+    draw(pos); beat(Math.floor(pos));
+    raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+}
+
+const EMBED = new URLSearchParams(location.search).has('embed');
+
+/* Nobody presses play on a landing page, so it starts itself -- but only when
+   the reader has actually arrived at it.
+
+   Embedded, the iframe cannot know that. Its own viewport is filled by the
+   canvas from the moment it loads, so an observer inside the frame reports
+   "on screen" while the reader is still four sections above it, and the whole
+   trade plays out to an empty room. Only the parent page knows where the
+   reader is, so when embedded it waits to be told. */
+if (EMBED) {
+  addEventListener('message', e => {
+    if (e.data === 'edgelvl:play' && !started) { started = true; run(); }
+  });
+} else {
+  new IntersectionObserver((es, o) => {
+    for (const e of es) {
+      if (e.isIntersecting && !started) { started = true; run(); o.disconnect(); }
+    }
+  }, { threshold: 0.4 }).observe(cv);
+}
+
+/* Embedded in the funnel page, the chart is the whole point and the page
+   around it already says what it is — so the heading, the lede and the note
+   are dropped and only the chart and its one-line narration remain. */
+if (EMBED) {
+  document.body.style.padding = '0';
+  document.body.style.minHeight = '0';
+  for (const sel of ['h1', '.lede', '.note']) {
+    const el = document.querySelector(sel);
+    if (el) el.remove();
+  }
+}
+
+replayBtn.onclick = run;
+draw(REST);
+say('', '', 'A coin dips, chops, and runs. Watch what the bot does with it.');
+</script>
+</body>
+</html>
