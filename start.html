@@ -582,26 +582,47 @@ const onScreen = (el, slack = 0.12) => {
   return b.top < innerHeight * (1 - slack) && b.bottom > innerHeight * slack;
 };
 const boardEl = document.querySelector('#board').closest('.surface');
+
+/* One move, once, when you have actually got the board in front of you — and
+   played out over about a second rather than swapped in a single frame.
+
+   Two things were wrong before. It fired as soon as the board's top edge
+   grazed the bottom of the screen, so the move was over before it was in
+   view; and it was an instant repaint, which at this size is indistinguishable
+   from a number that was always that. Tweening the digits is what makes a
+   small change legible as a change, without a flash of colour to announce it. */
+const jog  = (v, least, spread) =>
+  v * (1 + (Math.random() < 0.5 ? -1 : 1) * (least + Math.random() * spread));
+const step = (least, spread) =>
+  (Math.random() < 0.5 ? -1 : 1) * (least + Math.random() * spread);
+const FIELDS = ['mc', 'liq', 'vol', 'vm', 'bs', 'ch'];
+
 function boardWatch() {
-  if (boardMoved || !onScreen(boardEl, 0.04)) return;
+  if (boardMoved) return;
+  const b = boardEl.getBoundingClientRect();
+  if (!(b.top < innerHeight * 0.62 && b.bottom > 0)) return;
   boardMoved = true;
-  /* Every move clears the display's own resolution, or it isn't a move.
-     A 0.07% nudge on a $2.40M cap re-renders as $2.40M — the number changed
-     and the screen did not, which is the one outcome worth avoiding here.
-     `least` is the smallest fraction that reaches the last printed digit. */
-  const jog = (v, least, spread) =>
-    v * (1 + (Math.random() < 0.5 ? -1 : 1) * (least + Math.random() * spread));
-  const step = (least, spread) =>
-    (Math.random() < 0.5 ? -1 : 1) * (least + Math.random() * spread);
-  for (const c of COINS) {
-    c.mc  = jog(c.mc,  0.006, 0.010);   // $2.40M -> $2.42M
-    c.liq = jog(c.liq, 0.008, 0.012);
-    c.vol = jog(c.vol, 0.012, 0.020);
-    c.vm  = Math.max(1, c.vm + Math.round(step(1, 1)));
-    c.bs  = Math.max(0.6, Math.min(1.6, c.bs + step(0.01, 0.03)));
-    c.ch += step(0.8, 1.4);
-  }
-  paintBoard();
+
+  const from = COINS.map(c => Object.fromEntries(FIELDS.map(f => [f, c[f]])));
+  const to = from.map(v => ({
+    mc:  jog(v.mc,  0.006, 0.010),        // clears the last printed digit
+    liq: jog(v.liq, 0.008, 0.012),
+    vol: jog(v.vol, 0.012, 0.020),
+    vm:  Math.max(1, v.vm + step(1, 1)),
+    bs:  Math.max(0.6, Math.min(1.6, v.bs + step(0.01, 0.03))),
+    ch:  v.ch + step(0.8, 1.4),
+  }));
+
+  const t0 = Date.now(), DUR = 900;
+  const run = setInterval(() => {
+    const k = Math.min(1, (Date.now() - t0) / DUR);
+    const e = 1 - Math.pow(1 - k, 3);     // ease out, so it settles
+    COINS.forEach((c, i) => {
+      for (const f of FIELDS) c[f] = from[i][f] + (to[i][f] - from[i][f]) * e;
+    });
+    paintBoard();
+    if (k >= 1) clearInterval(run);
+  }, 33);
 }
 
 /* ── reveal on scroll ─────────────────────────────────────────────────────
