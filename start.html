@@ -224,10 +224,8 @@
   .state .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
   /* Numbered outside the card, because these are one sequence and a digit
      tucked inside a header reads as part of that card's content instead. */
-  .numbered { display: grid; gap: 9px; align-content: start; }
-  .ncap { width: 21px; height: 21px; border-radius: 50%; background: var(--fg);
-          color: var(--bg); display: grid; place-items: center;
-          font-size: 11px; font-weight: 600; }
+  .numbered { display: grid; gap: 8px; align-content: start; }
+  .ncap { font-size: 15px; font-weight: 700; color: var(--fg); line-height: 1; }
   .dot.amber { background: var(--amber); }
   .dot.green { background: var(--green); animation: blip 1.8s ease-in-out infinite; }
   @keyframes blip { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
@@ -587,14 +585,21 @@ const boardEl = document.querySelector('#board').closest('.surface');
 function boardWatch() {
   if (boardMoved || !onScreen(boardEl, 0.04)) return;
   boardMoved = true;
-  const jog = (v, pct) => v * (1 + (Math.random() - 0.5) * pct);
+  /* Every move clears the display's own resolution, or it isn't a move.
+     A 0.07% nudge on a $2.40M cap re-renders as $2.40M — the number changed
+     and the screen did not, which is the one outcome worth avoiding here.
+     `least` is the smallest fraction that reaches the last printed digit. */
+  const jog = (v, least, spread) =>
+    v * (1 + (Math.random() < 0.5 ? -1 : 1) * (least + Math.random() * spread));
+  const step = (least, spread) =>
+    (Math.random() < 0.5 ? -1 : 1) * (least + Math.random() * spread);
   for (const c of COINS) {
-    c.mc  = jog(c.mc, 0.012);
-    c.liq = jog(c.liq, 0.014);
-    c.vol = jog(c.vol, 0.03);
-    c.vm  = Math.max(1, Math.round(jog(c.vm, 0.05)));
-    c.bs  = Math.max(0.6, Math.min(1.6, c.bs + (Math.random() - 0.5) * 0.05));
-    c.ch += (Math.random() - 0.5) * 1.6;
+    c.mc  = jog(c.mc,  0.006, 0.010);   // $2.40M -> $2.42M
+    c.liq = jog(c.liq, 0.008, 0.012);
+    c.vol = jog(c.vol, 0.012, 0.020);
+    c.vm  = Math.max(1, c.vm + Math.round(step(1, 1)));
+    c.bs  = Math.max(0.6, Math.min(1.6, c.bs + step(0.01, 0.03)));
+    c.ch += step(0.8, 1.4);
   }
   paintBoard();
 }
