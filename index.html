@@ -981,6 +981,12 @@
                           font-weight: 700; }
     .confpop button:hover { background: var(--hover); }
     .confpop button.yes:hover { opacity: .88; background: var(--red); }
+    /* Cancel asks the same way, anchored over its own button. The money leaves
+       from there, so that is where the question belongs — and confirm() is the
+       browser's furniture, which lands at the top of the window looking like
+       nothing else on the page. */
+    .cancelwrap { position: relative; display: inline-flex; }
+    .confpop.oncancel { top: -7px; right: -7px; width: 202px; }
 
     /* Settings that are NOT part of a strategy, fenced off so it's obvious they
        don't change when you switch between them. */
@@ -1965,6 +1971,10 @@ function renderGreenlight(c) {
 function renderDetailStatus() {
   const el = document.getElementById('dstatus');
   if (!el) return;
+  /* Leave the row alone while it is asking. This repaints on every status poll,
+     and rebuilding it under an open confirm deletes the question mid-decision —
+     the click then lands on nothing. */
+  if (el.querySelector('.confpop')) return;
   const r = botStatus[openMint];
   if (!r) { el.innerHTML = ''; return; }
   const [dot] = STATE_UI[r.state] || ['closed'];
@@ -1987,7 +1997,7 @@ function renderDetailStatus() {
                  `<div>${stateLine(r)}${earlier}</div>` +
                  `<div class="when">${ago(r.ts)}</div>` +
                  (canUnarm ? `<button class="unarmbtn" id="d_unarm">Unarm</button>` : '') +
-                 (canCancel ? `<button class="unarmbtn" id="d_cancel">Cancel</button>` : '');
+                 (canCancel ? `<span class="cancelwrap"><button class="unarmbtn" id="d_cancel">Cancel</button></span>` : '');
   // the button tracks the same status this panel just rendered
   const coin = findCoin(openMint);
   if (coin) renderGreenlight(coin);
@@ -2960,6 +2970,24 @@ async function refreshActivity() {
   } catch (e) {
     return;                       // never let this break the board
   }
+  /* A cancel you just made outranks a row the bot has not caught up with yet.
+     Applied to the rows themselves, before anything reads them, so the status
+     row, the greenlight, the strategy lock and the activity list all say the
+     same thing instead of one lagging the others. Current session only — the
+     history behind it happened and stands. */
+  if (Object.keys(cancelledLocal).length) {
+    const seen = new Set();
+    rows = rows.map(r => {
+      const current = !seen.has(r.mint);
+      seen.add(r.mint);
+      const cx = cancelledLocal[r.mint];
+      if (!cx || !current) return r;
+      /* The bot has reported the close itself — hand back to the real record,
+         which carries the proceeds this one can only assert. */
+      if (!botHasCoin(r)) { delete cancelledLocal[r.mint]; return r; }
+      return { ...r, ...cx };
+    });
+  }
   // rows arrive newest first and a coin can now appear more than once —
   // greenlighting it again starts a second session rather than erasing the
   // first. The button and the detail panel want the CURRENT one, so take the
@@ -2974,6 +3002,9 @@ async function refreshActivity() {
        the result you most want in front of you when deciding to go again. */
     if (!botPrior[r.mint] && r.pnl != null) botPrior[r.mint] = r;
   });
+  // A cancel whose row the server has not sent at all still reads as cancelled.
+  for (const m in cancelledLocal)
+    if (!botStatus[m]) botStatus[m] = { mint: m, ...cancelledLocal[m] };
   if (openMint) renderDetailStatus();
 
   /* A fill moves real money, so the header balance has to move with it.
@@ -3515,32 +3546,63 @@ async function loadPositions() {
 }
 
 /* Selling a live position from the coin page.
-   Confirmed once, because it spends real money and cannot be undone, and the
-   button reports its own progress rather than a message in a panel you may not
-   have open. The bot learns about it from the same call — see the cancel
+   Confirmed once, because it spends real money and cannot be undone — but
+   asked over the button that spends it, in the app's own furniture. A
+   confirm() opens at the top of the WINDOW looking like the browser rather
+   than the page, which is the wrong place to be reading a question about your
+   money. The bot learns about the sale from the same call — see the cancel
    marker the API writes — so the trade lands in the journal as a cancellation
    with the proceeds read off the chain, not as a sale nobody can explain. */
 async function cancelPosition(mint, btn) {
+  const wrap = btn.closest('.cancelwrap') || btn.parentElement;
+  if (wrap.querySelector('.confpop')) return;          // already asking
   const c = findCoin(mint);
   const what = (c && (c.symbol || c.name)) || 'this position';
-  if (!confirm(`Sell ${what} now and cancel the order?\n\n` +
-               `This sells everything the bot is holding, at the market.`)) return;
-  btn.disabled = true;
-  btn.textContent = 'Selling…';
-  try {
-    const r = await api('/api/position/close', {
-      method: 'POST', body: JSON.stringify({ mint }),
-    });
-    btn.textContent = r.pending ? 'Sent' : 'Cancelled';
-    // The bot reconciles within its own loop and reports the result; until
-    // then the panel would still say "in position", which is no longer true.
-    delete botStatus[mint];
-    refresh();
-  } catch (e) {
-    btn.disabled = false;
-    btn.textContent = 'Cancel';
-    alert(e.message || 'Could not sell it. Nothing was changed.');
-  }
+
+  const pop = document.createElement('div');
+  pop.className = 'confpop oncancel';
+  pop.innerHTML = `<p>Sell <b>${esc(what)}</b> now, at the market, and cancel the
+      order?</p>
+    <div class="row"><button class="no">Keep</button><button class="yes">Sell</button></div>`;
+  wrap.appendChild(pop);
+  pop.querySelector('.no').onclick = () => pop.remove();
+  pop.querySelector('.yes').onclick = async () => {
+    pop.remove();
+    btn.disabled = true;
+    btn.textContent = 'Selling…';
+    try {
+      await api('/api/position/close', { method: 'POST', body: JSON.stringify({ mint }) });
+      markCancelled(mint);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'Cancel';
+      // Reported where it was asked, for the same reason it was asked there.
+      const err = document.createElement('div');
+      err.className = 'confpop oncancel';
+      err.innerHTML = `<p>${esc(e.detail || e.message || 'Could not sell it. Nothing was changed.')}</p>
+        <div class="row"><button class="no">OK</button></div>`;
+      wrap.appendChild(err);
+      err.querySelector('.no').onclick = () => err.remove();
+    }
+  };
+}
+
+/* The sale has already gone through, so every surface says so NOW.
+   The bot reconciles on its own loop and can be a minute behind it; until that
+   lands, the status row, the greenlight button, the strategy lock and the
+   activity list would all still read "in position", which is no longer true.
+   Kept as an override rather than written into botStatus alone, because the
+   next poll rebuilds that object from the server and would put the stale state
+   straight back a second later. */
+const cancelledLocal = {};      // mint -> the cancelled row, until the bot agrees
+
+function markCancelled(mint) {
+  const rec = { state: 'cancelled', ts: Date.now() / 1000, pnl: null };
+  cancelledLocal[mint] = rec;
+  botStatus[mint] = { ...(botStatus[mint] || { mint }), ...rec };
+  renderDetailStatus();     // the row — and the greenlight button with it
+  paintStrat();             // the picker unlocks: nothing is mid-trade any more
+  refreshActivity();        // the side list, and whatever else reads status
 }
 
 /* Kept, despite Cancel replacing it for a position the bot is running.
