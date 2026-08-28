@@ -152,6 +152,31 @@
                cursor: pointer; padding: 4px 8px; font-family: inherit; }
     .modal-x:hover { color: var(--fg); }
 
+    /* Plans. The board is free — this is what arming the bot costs. */
+    .planwrap { display: grid; gap: 10px; margin: 16px 0 6px; }
+    .plan { border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; }
+    .plan.best { border-color: var(--dim); }
+    .plan-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .plan-name { font-size: 12px; font-weight: 600; }
+    .plan-save { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+                 color: var(--green); }
+    .plan-price { font-size: 20px; font-weight: 600; margin: 5px 0 1px; }
+    .plan-per { font-size: 10.5px; color: var(--dimmer); }
+    .plan-btns { display: flex; gap: 7px; margin-top: 11px; }
+    .plan-btns button { flex: 1; border: 1px solid var(--line); background: none;
+                        color: var(--dim); font-family: inherit; font-size: 11px;
+                        padding: 8px 6px; border-radius: 7px; cursor: pointer; }
+    .plan-btns button.pri { background: var(--fg); color: var(--ink-on-accent);
+                            border-color: var(--fg); font-weight: 600; }
+    .plan-btns button:hover { background: var(--hover); }
+    .plan-btns button.pri:hover { opacity: .88; background: var(--fg); }
+    .plan-btns button:disabled { opacity: .35; cursor: not-allowed; }
+    .paystatus { font-size: 11.5px; color: var(--dim); margin-bottom: 4px; }
+    .paystatus.good { color: var(--green); }
+    .paynote { font-size: 10.5px; color: var(--dimmer); line-height: 1.6; margin-top: 13px; }
+    /* The checkout draws itself in here. Height is the widget's business. */
+    #paycheckout:not(:empty) { margin-top: 14px; }
+
     .wbal { text-align: center; margin-bottom: 20px; }
     .wbal-k { font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
               color: var(--dimmer); margin-bottom: 4px; }
@@ -1275,6 +1300,22 @@
     <span id="setmsg"></span>
   </div>
 
+  <div id="paymodal" class="modal" style="display:none">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Plans">
+      <button class="modal-x" id="payclose" aria-label="Close">&times;</button>
+      <h2>Arm the bot</h2>
+      <p class="lede">The board, the charts and the signals stay free. A plan is
+        what lets you greenlight — a wallet watched every second, and an exit
+        executed whether or not you are at the screen.</p>
+      <div class="paystatus" id="paystatus"></div>
+      <div class="planwrap" id="planwrap"></div>
+      <div id="paycheckout"></div>
+      <p class="paynote">Crypto or card — both buy the same plan. Payment is
+        handled by MoonPay Commerce; your card never touches us, and neither
+        rail can reach the wallet the bot trades.</p>
+    </div>
+  </div>
+
   <div id="stratmodal" class="modal" style="display:none">
     <div class="modal-card setcard" role="dialog" aria-modal="true"
          aria-labelledby="stratname">
@@ -1440,6 +1481,8 @@ async function api(path, opts = {}, renewed = false) {
     try { detail = (await r.json()).detail || ''; } catch (e) {}
     const err = new Error(detail || ('http-' + r.status));
     err.detail = detail;
+    // Carried so a caller can tell 402 (pay us) from 400 (you asked wrong).
+    err.status = r.status;
     throw err;
   }
   return r.json();
@@ -2615,9 +2658,166 @@ async function greenlight(c) {
     delete btn.dataset.busy;
     btn.disabled = false; btn.textContent = '🟢 GREENLIGHT';
     note.className = 'glnote warn';
-    note.textContent = "Couldn't reach the server — try that again.";
+    /* A plan that has run out is not a failure to reach anything, and saying
+       "try that again" sends someone to press a button that cannot work. Show
+       the plans instead — this is the one moment they are worth something. */
+    if (e.status === 402) {
+      note.textContent = e.detail || 'Your plan has ended.';
+      openPay(e.detail);
+    } else {
+      note.textContent = "Couldn't reach the server — try that again.";
+    }
     paintAmtNote(c);
   }
+}
+
+
+/* ── plans ─────────────────────────────────────────────────────────────────
+   The board is free and stays free: it is the shop window, and gating it would
+   cost more in signups than it could ever collect. What a plan buys is the bot
+   — a wallet watched every second and an exit executed while you are away.
+
+   Payment runs through MoonPay Commerce (Helio) rather than a card processor
+   of our own, for one reason worth stating: it settles to OUR account, not out
+   of the wallet the bot trades. Nothing here can reach a customer's funds,
+   which is the same promise the trading policy makes. */
+let SUB = null;                 // {active, days_left, plan, plans[], identity}
+let helioLoading = null;        // the embed script, fetched once
+
+async function loadSub() {
+  if (!KEY) { SUB = null; return null; }
+  try { SUB = await api('/api/subscription'); } catch (e) { SUB = null; }
+  return SUB;
+}
+
+/* The widget is a third-party script, so it is fetched when someone actually
+   opens the plans — not on every board view by everyone who never will. */
+function helioReady() {
+  if (window.helioCheckout) return Promise.resolve(true);
+  if (!helioLoading) {
+    helioLoading = new Promise(resolve => {
+      const el = document.createElement('script');
+      el.type = 'module';
+      el.src = 'https://embed.hel.io/assets/index-v1.js';
+      el.onerror = () => resolve(false);
+      document.head.appendChild(el);
+      // The module sets its global after evaluating, which is not the same
+      // moment as onload, so wait for the thing we actually need.
+      const t0 = Date.now();
+      (function poll() {
+        if (window.helioCheckout) return resolve(true);
+        if (Date.now() - t0 > 12000) return resolve(false);
+        setTimeout(poll, 120);
+      })();
+    });
+  }
+  return helioLoading;
+}
+
+function planCard(p) {
+  const perMonth = p.usd / (p.days / 30);
+  const save = p.id === 'monthly' ? 0 : Math.round((1 - perMonth / 29) * 100);
+  const rails = [];
+  if (p.paylink) rails.push(`<button class="pri" data-pay="${p.id}" data-rail="crypto">Pay with Crypto</button>`);
+  if (p.paylink_card) rails.push(`<button data-pay="${p.id}" data-rail="card">Pay with Card</button>`);
+  return `<div class="plan${p.id === 'yearly' ? ' best' : ''}">
+    <div class="plan-top">
+      <span class="plan-name">${esc(p.id[0].toUpperCase() + p.id.slice(1))}</span>
+      ${save > 0 ? `<span class="plan-save">${save}% off</span>` : ''}
+    </div>
+    <div class="plan-price">$${p.usd}</div>
+    <div class="plan-per">${p.days} days${p.id !== 'monthly' ? ` · $${perMonth.toFixed(0)}/mo` : ''}</div>
+    <div class="plan-btns">${rails.length ? rails.join('')
+      : '<button disabled>Not available yet</button>'}</div>
+  </div>`;
+}
+
+async function openPay(reason) {
+  const m = document.getElementById('paymodal');
+  if (!m) return;
+  document.getElementById('paycheckout').innerHTML = '';
+  m.style.display = 'flex';
+  const st = document.getElementById('paystatus');
+  const wrap = document.getElementById('planwrap');
+  st.className = 'paystatus';
+  st.textContent = reason || 'Checking your plan…';
+  wrap.innerHTML = '';
+
+  await loadSub();
+  if (!SUB) { st.textContent = 'Sign in first, then pick a plan.'; return; }
+  if (SUB.active) {
+    st.className = 'paystatus good';
+    const d = Math.floor(SUB.days_left);
+    st.textContent = `Active — ${d} day${d === 1 ? '' : 's'} left`
+      + (SUB.plan === 'grandfathered' ? ', on the house while we switch this on.' : '.');
+  } else if (!reason) {
+    st.textContent = 'No plan running.';
+  }
+  wrap.innerHTML = (SUB.plans || []).map(planCard).join('');
+  wrap.querySelectorAll('[data-pay]').forEach(b => {
+    b.onclick = () => payWith(b.dataset.pay, b.dataset.rail, b);
+  });
+}
+
+function closePay() {
+  const m = document.getElementById('paymodal');
+  if (m) m.style.display = 'none';
+  document.getElementById('paycheckout').innerHTML = '';
+}
+
+async function payWith(planId, rail, btn) {
+  const plan = (SUB && SUB.plans || []).find(p => p.id === planId);
+  if (!plan || !SUB) return;
+  const paylinkId = rail === 'card' ? plan.paylink_card : plan.paylink;
+  if (!paylinkId) return;
+
+  const st = document.getElementById('paystatus');
+  const box = document.getElementById('paycheckout');
+  btn.disabled = true;
+  st.className = 'paystatus';
+  st.textContent = 'Opening checkout…';
+
+  if (!await helioReady()) {
+    btn.disabled = false;
+    st.textContent = 'The checkout could not load. Try again in a moment.';
+    return;
+  }
+  st.textContent = '';
+  box.innerHTML = '';
+  window.helioCheckout(box, {
+    paylinkId,
+    network: 'main',
+    /* Who paid, and for what. Without this the payment arrives anonymous and
+       has to be matched by hand — the webhook reads it straight back out. */
+    additionalJSON: { identity: SUB.identity, plan: planId, rail },
+    onSuccess: async () => {
+      st.className = 'paystatus good';
+      st.textContent = 'Paid — adding your days…';
+      /* The webhook may land a moment after the widget says done, so ask a few
+         times rather than once. Nothing is lost if it is slower than this: the
+         next page load reads the same record. */
+      for (let i = 0; i < 8; i++) {
+        await new Promise(r => setTimeout(r, 1500));
+        await loadSub();
+        if (SUB && SUB.active) break;
+      }
+      if (SUB && SUB.active) {
+        const d = Math.floor(SUB.days_left);
+        st.textContent = `Active — ${d} day${d === 1 ? '' : 's'}. You can greenlight now.`;
+        box.innerHTML = '';
+        const coin = findCoin(openMint);
+        if (coin) renderGreenlight(coin);
+        setTimeout(closePay, 2200);
+      } else {
+        st.textContent = 'Paid. It can take a minute to land — reload if it does not.';
+      }
+    },
+    onError: () => {
+      btn.disabled = false;
+      st.textContent = 'That payment did not go through. Nothing was charged.';
+    },
+    onCancel: () => { btn.disabled = false; st.textContent = ''; box.innerHTML = ''; },
+  });
 }
 
 
@@ -3630,6 +3830,14 @@ async function sellPosition(btn) {
   }
 }
 
+document.getElementById('paymodal').onclick = e => {
+  if (e.target.id === 'paymodal') closePay();      // click the backdrop to dismiss
+};
+document.getElementById('payclose').onclick = () => closePay();
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('paymodal').style.display === 'flex')
+    closePay();
+});
 document.getElementById('walletchip').onclick = e => { e.preventDefault(); openWallet(); };
 document.querySelectorAll('.wtab').forEach(t => t.onclick = () => {
   document.querySelectorAll('.wtab').forEach(x => x.classList.toggle('on', x === t));
