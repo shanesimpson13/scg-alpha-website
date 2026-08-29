@@ -2723,7 +2723,7 @@ function whopReady() {
       el.onload = () => resolve(true);
       el.onerror = () => resolve(false);
       document.head.appendChild(el);
-      setTimeout(() => resolve(!!window.whop), 12000);
+      setTimeout(() => resolve(true), 12000);
     });
   }
   return whopLoading;
@@ -2847,6 +2847,1021 @@ function watchForPayment() {
     if (coin) renderGreenlight(coin);
     setTimeout(closePay, 2400);
   }, 3000);
+}
+
+
+
+/* ── desktop notifications ─────────────────────────────────────────────────
+   The bot can buy, take profit and stop out while this tab sits in a
+   background window. Until now the only way to learn any of that was to be
+   looking at the page — which is a poor deal when it is your money moving.
+
+   Deliberately browser notifications rather than web push: these arrive while
+   the tab is open anywhere, including another workspace, and need no service
+   worker, no VAPID keys and no server delivery. They will NOT reach you with
+   the browser closed. That is the honest limit, and the toggle text says so.
+
+   Off until asked for. A permission prompt nobody invited is how people end up
+   blocking notifications permanently. */
+const NOTIFY_KEY = 'edgelvl_notify';
+
+/* Installing the terminal is what makes a notification say EdgeLvl instead of
+   Google Chrome, so the worker registers on every visit and the browser's
+   install offer is held for the button in Settings. Chrome fires
+   beforeinstallprompt once, and only when it considers the site installable —
+   there is no way to summon it later, so it has to be captured here. */
+/* ── picking up new builds ─────────────────────────────────────────────────
+   Installed as an app there is no address bar and no reload, so this window
+   would otherwise run its original HTML forever. Compare the page's ETag on
+   focus and reload when the deployment changes.
+
+   Reloading is safe whenever: the bot runs server-side, so this page is a view
+   of a position rather than the thing managing it. */
+let BUILD_TAG = null;
+
+async function currentBuild() {
+  try {
+    const r = await fetch('/', { method: 'HEAD', cache: 'no-store' });
+    return r.headers.get('etag') || r.headers.get('last-modified');
+  } catch (e) { return null; }
+}
+
+currentBuild().then(t => { BUILD_TAG = t; });
+
+async function checkForUpdate() {
+  if (!BUILD_TAG || document.hidden) return;
+  // Never mid-coin: a reload restarts the chart and throws away what someone is
+  // reading. The board is the safe moment, and they return to it constantly.
+  if (view === 'detail') return;
+  const now = await currentBuild();
+  if (now && now !== BUILD_TAG) location.reload();
+}
+
+document.addEventListener('visibilitychange', checkForUpdate);
+window.addEventListener('focus', checkForUpdate);
+setInterval(checkForUpdate, 5 * 60 * 1000);
+
+let installPrompt = null;
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(e =>
+      console.warn('service worker registration failed', e));
+  });
+}
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();          // keep the browser's own banner out of the way
+  installPrompt = e;
+  /* It can arrive after Settings has already drawn the manual instructions,
+     so swap them back for the button that does it in one click. */
+  const row = document.getElementById('row_install');
+  const btn = document.getElementById('do_install');
+  const hint = document.getElementById('install_hint');
+  if (row) row.style.display = '';
+  if (btn) btn.style.display = '';
+  if (hint) hint.innerHTML = 'Notifications arrive from <b>EdgeLvl</b> rather than '
+                           + 'from your browser, and the terminal gets its own window.';
+});
+let notifyTestSeq = 0;   // unique tag per test, so none replaces another
+
+/* One way out for every notification.
+
+   Through the service worker where there is one: the system credits the
+   registration rather than the page, so an installed EdgeLvl shows as EdgeLvl
+   instead of as the browser, and sw.js handles the click by focusing a window
+   that is already open. `mint` rides along in data so the worker can tell the
+   page which coin to open. Falls back to the page constructor when no worker
+   has registered, which is any browser that cannot install it anyway. */
+async function showNotif(title, opts, mint) {
+  const options = { icon: '/icon-192.png', badge: '/icon-192.png', ...opts };
+  if (mint) options.data = { mint };
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && reg.showNotification) return reg.showNotification(title, options);
+    } catch (e) { /* fall through to the page constructor */ }
+  }
+  const n = new Notification(title, options);
+  n.onclick = () => { window.focus(); if (mint) openDetail(mint); n.close(); };
+  return n;
+}
+
+/* The worker asks the page to open a coin after a click, because only the page
+   knows how to render one. */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    const mint = e.data && e.data.openMint;
+    if (mint && typeof openDetail === 'function') openDetail(mint);
+  });
+}
+
+function notifyOn() {
+  return localStorage.getItem(NOTIFY_KEY) === '1'
+    && 'Notification' in window
+    && Notification.permission === 'granted';
+}
+
+/* What each state is worth interrupting someone for. States that aren't here —
+   watching, unarmed — are noise: you caused them, so you already know. */
+const NOTIFY_TEXT = {
+  bought:           r => [`${r.name} — bought`, `Entered at ${(r.targets || {}).entry || '—'}`],
+  tp1:              r => [`${r.name} — took profit`, pnlLine(r)],
+  tp2:              r => [`${r.name} — took profit`, pnlLine(r)],
+  tp:               r => [`${r.name} — took profit`, pnlLine(r)],
+  stopped:          r => [`${r.name} — stopped out`, pnlLine(r)],
+  'sold elsewhere': r => [`${r.name} — sold`, pnlLine(r)],
+  'buy failed':     r => [`${r.name} — buy failed`, 'Nothing was bought.'],
+  'stood down':     r => [`${r.name} — no setup`, 'Stood down without entering.'],
+};
+
+function pnlLine(r) {
+  if (r.pnl == null) return '';
+  const p = (r.pnl * 100).toFixed(0);
+  return `${r.pnl >= 0 ? '+' : ''}${p}%`;
+}
+
+/* New arrivals on the board.
+
+   Seeded silently on the first refresh: everything is "new" when you open the
+   page, and firing fifty notifications for a board you are already looking at
+   is the fastest way to have someone turn notifications off for good.
+
+   Several coins can appear in one refresh, so past a couple they collapse into
+   a single line. One notification saying "4 new coins" is useful; four
+   notifications is an interruption. */
+const seenMints = new Set();
+let boardSeeded = false;
+
+/* Widening a filter qualifies coins that have sat in the feed for hours. They
+   are genuinely new TO THE BOARD, but a dozen at once is exactly the burst that
+   gets notifications turned off for good, so take the next refresh as a fresh
+   baseline instead of announcing it. */
+function reseedBoardNotices() { boardSeeded = false; seenMints.clear(); }
+
+function notifyNewCoins(list) {
+  const mints = (list || []).map(c => c.mint).filter(Boolean);
+  if (!boardSeeded) {
+    mints.forEach(m => seenMints.add(m));
+    boardSeeded = true;
+    return;
+  }
+  const fresh = (list || []).filter(c => c.mint && !seenMints.has(c.mint));
+  fresh.forEach(c => seenMints.add(c.mint));
+  if (!fresh.length || !notifyOn()) return;
+
+  try {
+    if (fresh.length > 2) {
+      showNotif(`${fresh.length} new coins on the board`, {
+        body: fresh.map(c => c.symbol || '').filter(Boolean).slice(0, 6).join(', '),
+        tag: 'edgelvl-new-coins',      // replaces itself rather than stacking
+      });
+      return;
+    }
+    fresh.forEach(c => {
+      showNotif(`${c.symbol || 'New coin'} — new on the board`, {
+        body: `${money(c.mcap)} MC · ${money(c.vol_5m)} 5m vol`,
+        tag: c.mint,
+      }, c.mint);
+    });
+  } catch (e) { /* refused outside a gesture — never worth breaking the poll */ }
+}
+
+function notifyStateChange(r) {
+  if (!notifyOn()) return;
+  const make = NOTIFY_TEXT[r.state];
+  if (!make || !r.name) return;
+  const [title, body] = make(r);
+  try {
+    showNotif(title, {
+      body,
+      // One notification per coin: a coin that moves through several states
+      // replaces its own rather than stacking four of them up.
+      tag: r.mint,
+    }, r.mint);
+  } catch (e) { /* some browsers refuse outside a user gesture — not worth breaking the poll */ }
+}
+
+async function setNotify(want) {
+  if (!('Notification' in window)) return false;
+  if (!want) {
+    localStorage.setItem(NOTIFY_KEY, '0');
+    return false;
+  }
+  let perm = Notification.permission;
+  if (perm === 'default') perm = await Notification.requestPermission();
+  localStorage.setItem(NOTIFY_KEY, perm === 'granted' ? '1' : '0');
+  return perm === 'granted';
+}
+
+/* ── what your bot is doing ─────────────────────────────────────────────── */
+// Mirrored from the bot. It owns positions and P&L; this only displays what it
+// reported, so the two can never disagree about what's actually held.
+/* What to call a coin on a status row.
+
+   The bot sends a name when it has one, but a drop reported after a restart
+   has no session left to ask, so the name came through empty and the row
+   printed a raw mint prefix — six characters that identify nothing. The board
+   and the open coin already know the name; this looks there before giving up
+   and showing the address. */
+function coinName(r) {
+  if (r.name) return r.name;
+  const c = findCoin(r.mint) || extraCoins[r.mint];
+  return (c && (c.symbol || c.name)) || r.mint.slice(0, 6);
+}
+
+const STATE_UI = {
+  watching:     ["watching", "Waiting for a dip and a reclaim", true],
+  bought:       ["bought",   "In position",                     false],
+  tp:           ["closed",   "Took profit",                     false],   // legacy rows
+  tp1:          ["bought",   "TP1",                             false],
+  tp2:          ["closed",   "TP2",                             false],
+  stopped:      ["closed",   "Stopped out",                     false],
+  "stood down": ["closed",   "No setup appeared",               false],
+  "buy failed": ["closed",   "Buy failed on-chain",             false],
+  unarmed:      ["closed",   "You dropped it",                  false],
+  // Sold by hand, or by anything that wasn't the bot. Deliberately not folded
+  // into "stopped": the stop did not fire, and labelling it as though it did
+  // would hide the one thing worth noticing.
+  "sold elsewhere": ["closed", "Sold outside the bot",          false],
+  // You pressed Cancel. Same money as the line above, but you did it on
+  // purpose and from here, so it should not read as something that happened
+  // while your back was turned.
+  cancelled:    ["closed",   "Order cancelled",                 false],
+};
+
+/** What actually happened, in the terms you set the strategy in.
+ *  A take-profit is the multiple it hit — not the realised P&L, which after
+ *  selling 70% at 1.5x is only about +5% and reads like a bad trade. */
+function stateLine(r) {
+  const [, label] = STATE_UI[r.state] || ['closed', r.state];
+  const pnl = p => `<span class="${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '+' : ''}${(p * 100).toFixed(0)}%</span>`;
+
+  const t = r.targets || {};
+  if (r.state === 'bought') {
+    const tps = (t.tps || []).map(x => esc(x)).join(' → ');
+    // The live mark, not just the entry. The bot reports every 2s while it
+    // holds; before that this line showed the fill price until the exit and
+    // an open position looked frozen.
+    const now = (r.mc && t.entry && r.mc !== t.entry)
+      ? ` · now <b>${esc(r.mc)}</b>${r.pnl != null ? ` ${pnl(r.pnl)}` : ''}` : '';
+    /* One number: the fill that landed on chain. It briefly showed the market
+       cap beside it, which was worse — both rungs and the stop are derived
+       from the fill, so leading with a figure nothing else is measured against
+       broke the relationship the settings promise. */
+    /* `paid` is the fill under the old two-number shape; `entry` is the fill
+       once the bot restarts and stops sending both. Either way this resolves
+       to the number that landed on chain, so a position open across the
+       restart never flips to a different figure mid-trade. */
+    const filled = t.paid || t.entry;
+    return `In position — entered <b>${esc(filled || r.mc || '—')}</b>${now}` +
+           (tps ? ` · takes profit at ${tps}` : '') +
+           (t.stop ? ` · stop ${esc(t.stop)}` : '');
+  }
+
+  if (r.state === 'tp1' || r.state === 'tp2' || r.state === 'tp') {
+    // "hit 1.5x" only reads right when we know which rung and what multiple.
+    // Older rows carry neither, so don't force the sentence.
+    const head = r.mult ? `${label} hit <b>${r.mult}x</b>` : label;
+    const open = r.open_pct ? ` · ${Math.round(r.open_pct)}% still riding` : '';
+    const banked = r.pnl != null ? ` · ${pnl(r.pnl)} banked` : '';
+    // where the rest gets out — otherwise a part-sold position is a mystery
+    const next = t.next ? ` · next <b>${esc(t.next)}</b>` : '';
+    const from = t.entry ? ` · from ${esc(t.entry)}` : '';
+    return `${head}${open}${banked}${next}${from}`;
+  }
+  /* Everything else — stopped out, sold outside the bot, and any state added
+     later — is "what happened, and what it made". Appending the P&L here
+     rather than in a branch per state is the point: the old fallback returned
+     the bare label, so a state without its own case silently dropped the one
+     number you look for. A closed position should never render without its
+     result just because nobody wrote a special case for it. */
+  /* Rungs first, when the ladder fired before the exit. "Stopped out · +50%"
+     is a sentence that argues with itself — it stopped out AND made money,
+     because a rung had already banked most of it. Reporting only the last
+     thing that happened buries the half that worked. */
+  const rungs = (t.rungs || []).map(x => `TP${x.rung} ${x.mult}x`).join(' → ');
+  return `${rungs ? rungs + ' → ' : ''}${label}` +
+         `${r.pnl != null ? ' · ' + pnl(r.pnl) : ''}`;
+}
+
+/** Turn "$149.3K" back into a number so we can compare it to the live cap. */
+const parseMoney = str => {
+  const m = /^\$?([\d.]+)([KMB])?$/.exec(String(str || '').trim());
+  if (!m) return null;
+  return parseFloat(m[1]) * ({ K: 1e3, M: 1e6, B: 1e9 }[m[2]] || 1);
+};
+
+const ago = ts => {
+  const s = Math.max(0, Date.now() / 1000 - ts);
+  if (s < 60) return `${Math.round(s)}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  return `${(s / 3600).toFixed(1)}h ago`;
+};
+
+let botStatus = {};
+let botPrior = {};   // the session before the current one, per mint
+let SET = { dip: 0.15, bounce: 1.04 };   // your thresholds, for the projection
+
+/* The bot publishes its band every 2 SECONDS. Status used to ride the board's
+   10s refresh, so a ~20s warmup ticked maybe twice, an arming coin could take
+   15s to appear once the bot's own 5s greenlight poll is added, and the entry
+   window on screen was up to 10s behind the one actually being used.
+
+   So it gets its own clock: 2s while you are watching a coin the bot is
+   working, 10s otherwise. And a burst after a greenlight, because that is the
+   one moment you are waiting on a specific thing to appear. */
+const LIVE_STATES = new Set(['watching', 'bought', 'tp1', 'tp2', 'tp']);
+let fastUntil = 0;
+
+async function activityLoop() {
+  try { await refreshActivity(); } catch (e) { /* never stop the loop */ }
+  const r = botStatus[openMint];
+  const watching = view === 'detail' && r && LIVE_STATES.has(r.state);
+  const fast = watching || Date.now() < fastUntil;
+  /* 1s while you're watching. The cost is one request per second per open tab
+     against the public API — the first thing to watch as traffic grows, and the
+     first thing to replace with a push channel when it stops holding. Worth it
+     because the entry window on screen is the number a decision is made
+     against, and a stale one is worse than a slow one. */
+  setTimeout(activityLoop, fast ? 1000 : 10000);
+}
+
+async function refreshActivity() {
+  // Nothing to ask for without an account, and asking anyway 401s on every
+  // tick. The loop keeps running so it picks up the moment you sign in.
+  if (!KEY) {
+    const el = document.getElementById('activity');
+    if (el) el.innerHTML = '';
+    return;
+  }
+  let rows = [];
+  try {
+    rows = (await api('/api/status')).positions || [];
+  } catch (e) {
+    return;                       // never let this break the board
+  }
+  /* A cancel you just made outranks a row the bot has not caught up with yet.
+     Applied to the rows themselves, before anything reads them, so the status
+     row, the greenlight, the strategy lock and the activity list all say the
+     same thing instead of one lagging the others. Current session only — the
+     history behind it happened and stands. */
+  if (Object.keys(cancelledLocal).length) {
+    const seen = new Set();
+    rows = rows.map(r => {
+      const current = !seen.has(r.mint);
+      seen.add(r.mint);
+      const cx = cancelledLocal[r.mint];
+      if (!cx || !current) return r;
+      /* The bot has reported the close itself — hand back to the real record,
+         which carries the proceeds this one can only assert. */
+      if (!botHasCoin(r)) { delete cancelledLocal[r.mint]; return r; }
+      return { ...r, ...cx };
+    });
+  }
+  // rows arrive newest first and a coin can now appear more than once —
+  // greenlighting it again starts a second session rather than erasing the
+  // first. The button and the detail panel want the CURRENT one, so take the
+  // first sighting of each mint and ignore the history behind it.
+  const was = botStatus;
+  botStatus = {};
+  botPrior = {};
+  rows.forEach(r => {
+    if (!botStatus[r.mint]) { botStatus[r.mint] = r; return; }
+    /* Everything BEHIND the current session. Greenlighting a coin again starts
+       a fresh one, which used to wipe the fact that the last one took profit —
+       the result you most want in front of you when deciding to go again. */
+    if (!botPrior[r.mint] && r.pnl != null) botPrior[r.mint] = r;
+  });
+  // A cancel whose row the server has not sent at all still reads as cancelled.
+  for (const m in cancelledLocal)
+    if (!botStatus[m]) botStatus[m] = { mint: m, ...cancelledLocal[m] };
+  if (openMint) renderDetailStatus();
+
+  /* A fill moves real money, so the header balance has to move with it.
+     It was only ever fetched on page load and on session restore, which meant
+     a take-profit could land and the chip would still show the pre-trade
+     figure until you reloaded — the one number on screen you'd check first. */
+  const MONEYED = new Set(['bought', 'tp1', 'tp2', 'tp', 'stopped']);
+  const moved = Object.keys(botStatus).some(m => {
+    const now = botStatus[m].state, before = was[m] && was[m].state;
+    return now !== before && (MONEYED.has(now) || MONEYED.has(before));
+  });
+  if (moved) refreshChip();
+
+  /* Tell you when something happens to your money, even if this tab isn't the
+     one you're looking at. Driven off the same transition check as the balance
+     refresh — a state that CHANGED, not a state that merely exists, or every
+     poll would fire a notification for a position that has sat there all day. */
+  Object.keys(botStatus).forEach(m => {
+    const now = botStatus[m], before = was[m];
+    if (!before || before.state === now.state) return;
+    notifyStateChange(now);
+  });
+
+  const el = document.getElementById('activity');
+  if (!rows.length) { el.innerHTML = ''; return; }
+
+  const live = rows.filter(botHasCoin).length;
+  el.innerHTML = `
+    <div class="acthead">
+      <span>Your bot${live ? ` · ${live} active` : ''}</span>
+      <span>${rows.some(r => r.dry_run) ? 'dry run' : ''}</span>
+    </div>` + rows.slice(0, 10).map(r => {
+    const [dot, , canUnarm] = STATE_UI[r.state] || ["closed", r.state, false];
+    const what = stateLine(r);
+    return `<div class="actrow" data-open="${esc(r.mint)}">
+      <div class="actdot ${dot}"></div>
+      <div class="actname">${esc(coinName(r))}</div>
+      <div class="actwhat">${what}</div>
+      <div class="actwhen">${ago(r.ts)}</div>
+      ${canUnarm ? `<button class="unarmbtn" data-unarm="${esc(r.mint)}">Unarm</button>` : ''}
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('[data-open]').forEach(row => row.onclick = () => openDetail(row.dataset.open));
+  el.querySelectorAll('[data-unarm]').forEach(b => b.onclick = async ev => {
+    ev.stopPropagation();
+    b.disabled = true;
+    b.textContent = 'Dropping…';
+    try {
+      await api('/api/unarm', { method: 'POST', body: JSON.stringify({ mint: b.dataset.unarm }) });
+      b.textContent = 'Dropped';
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = 'Unarm';
+    }
+  });
+}
+
+
+/* ── locked preview ─────────────────────────────────────────────────────────
+   Signed out, both of these pages showed a lone card in an empty page, which
+   tells a stranger nothing about what they'd be signing in FOR. Instead the
+   real layout renders with sample numbers, blurred, and the prompt sits on
+   top. The blurred layer is never anyone's actual data. */
+function lockView(lockId, bodyId, html, onSignIn) {
+  const lock = document.getElementById(lockId);
+  document.getElementById(bodyId).classList.add('lockedbg');
+  lock.classList.add('locked');
+  let over = lock.querySelector('.lockedover');
+  if (!over) {
+    over = document.createElement('div');
+    over.className = 'lockedover';
+    lock.appendChild(over);
+  }
+  over.innerHTML = html;
+  const btn = over.querySelector('button');
+  if (btn) btn.onclick = onSignIn;
+}
+
+function unlockView(lockId, bodyId) {
+  const lock = document.getElementById(lockId);
+  document.getElementById(bodyId).classList.remove('lockedbg');
+  lock.classList.remove('locked');
+  const over = lock.querySelector('.lockedover');
+  if (over) over.remove();
+}
+
+/* Plausible but obviously not yours — it exists to show the SHAPE of the
+   journal through a blur, nothing more. */
+const SAMPLE_JOURNAL = {
+  summary: { greenlights: 34, entered: 21, win_rate: 0.57, net_sol: 0.412,
+             avg_win: 0.48, avg_loss: -0.29 },
+  trades: [
+    { ts: '2026-08-04T19:42:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol:  0.0104 },
+    { ts: '2026-08-04T17:15:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol: -0.0058 },
+    { ts: '2026-08-04T14:08:00', name: 'SAMPLE', entered: false, spent_sol: 0,    pnl_sol: 0 },
+    { ts: '2026-08-03T22:51:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol:  0.0173 },
+    { ts: '2026-08-03T20:30:00', name: 'SAMPLE', entered: true,  spent_sol: 0.02, pnl_sol: -0.0061 },
+    { ts: '2026-08-03T16:02:00', name: 'SAMPLE', entered: false, spent_sol: 0,    pnl_sol: 0 },
+  ],
+};
+
+/* The shipped defaults, so the locked form shows the real controls at real
+   values rather than empty boxes. */
+const SAMPLE_SETTINGS = {
+  dip: 0.15, bounce: 1.04, volr_min: 1.0,
+  tp1: 1.5, frac1: 0.7, tp2: 2.0, kill: 0.5, trail_stop: 1,
+  entry_timeout: 3600, max_hold: 21600, use_tp2: 1,
+  slippage: 0.15, priority_fee: 0.002,
+  deadcat: 0.50, warmup_sec: 10, be_after_tp1: 0,
+};
+
+/* ── trade journal ──────────────────────────────────────────────────────── */
+/* Which window the journal is showing. '' means everything. */
+let journalDays = '';
+
+document.querySelectorAll('#jrange button').forEach(b => b.onclick = () => {
+  journalDays = b.dataset.days;
+  document.querySelectorAll('#jrange button')
+    .forEach(x => x.classList.toggle('on', x === b));
+  openJournal();
+});
+
+async function openJournal() {
+  showView('journal');
+  window.scrollTo(0, 0);
+  const rng = document.getElementById('jrange');
+
+  /* Signed out isn't a failure. The API 401s, so this used to fall into the
+     catch below and say "Couldn't load your journal" over an empty table —
+     which reads as broken to someone who has simply never signed in. */
+  if (!KEY) {
+    paintJournal(SAMPLE_JOURNAL);
+    lockView('jlock', 'jbody',
+      '<div class="signedout">' +
+      '<p>Sign in to see your journal.</p>' +
+      '<p class="sub">Every coin you greenlight, and what it did next.</p>' +
+      '<button class="glbtn solbtn">Sign in</button></div>',
+      () => openWallet());
+    if (rng) rng.style.display = 'none';   // nothing to filter behind a blur
+    return;
+  }
+  unlockView('jlock', 'jbody');
+  if (rng) rng.style.display = '';
+
+  let d;
+  // The window goes to the SERVER so the summary is windowed too. Filtering
+  // rows here would leave an all-time win rate over a one-day table.
+  try { d = await api('/api/trades?limit=500' + (journalDays ? `&days=${journalDays}` : '')); }
+  catch (e) { document.getElementById('jsummary').innerHTML =
+    `<div class="empty">Couldn't load your journal.</div>`; return; }
+  paintJournal(d);
+}
+
+function paintJournal(d) {
+  const s = d.summary || {};
+  const pct = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(0)}%`;
+  const cls = v => v == null ? '' : (v >= 0 ? 'up' : 'down');
+
+  document.getElementById('jsummary').innerHTML = `<div class="jgrid">
+    <div class="jcell"><div class="k">Greenlights</div><div class="v">${s.greenlights ?? 0}</div></div>
+    <div class="jcell"><div class="k">Entered</div><div class="v">${s.entered ?? 0}</div></div>
+    <div class="jcell"><div class="k">Win rate</div><div class="v">${s.win_rate == null ? '—' : (s.win_rate * 100).toFixed(0) + '%'}</div></div>
+    <div class="jcell"><div class="k">Net txs</div><div class="v ${cls(s.net_sol)}">${(s.net_sol ?? 0).toFixed(3)} SOL</div></div>
+    <div class="jcell"><div class="k">Avg win</div><div class="v up">${pct(s.avg_win)}</div></div>
+    <div class="jcell"><div class="k">Avg loss</div><div class="v down">${pct(s.avg_loss)}</div></div>
+  </div>`;
+
+  document.getElementById('jinsights').innerHTML = insights(s).map(t => `<div class="insight">${t}</div>`).join('');
+
+  const rows = d.trades || [];
+  // Day headers with that day's tally — a flat list of 200 rows tells you
+  // nothing about whether last Tuesday was any good.
+  let day = null;
+  document.getElementById('jrows').innerHTML = rows.length ? rows.map(r => {
+    let header = '';
+    const d0 = (r.ts || '').slice(0, 10);
+    if (d0 !== day) {
+      day = d0;
+      const sameDay = rows.filter(x => (x.ts || '').slice(0, 10) === d0);
+      const took = sameDay.filter(x => x.entered);
+      const net = took.reduce((a, x) => a + (x.pnl_sol || 0), 0);
+      const w = took.filter(x => (x.pnl_sol || 0) > 0).length;
+      header = `<tr class="dayrow"><td colspan="5">${d0}` +
+        `<span>${sameDay.length} greenlit · ${took.length} taken` +
+        (took.length ? ` · ${w}W/${took.length - w}L · <b class="${net >= 0 ? 'up' : 'down'}">` +
+          `${net >= 0 ? '+' : ''}${net.toFixed(3)} SOL</b>` : '') +
+        `</span></td></tr>`;
+    }
+    return header + (() => {
+    const p = r.entered ? r.pnl_sol / Math.max(r.spent_sol || 1, 1e-9) : null;
+    const res = !r.entered ? '<span style="color:var(--dimmer)">no entry</span>'
+      : (p >= 0 ? '<span class="up">win</span>' : '<span class="down">loss</span>');
+    return `<tr>
+      <td>${r.mint
+        ? `<a class="jcoin" href="https://gmgn.ai/sol/token/${esc(r.mint)}" target="_blank" rel="noopener" title="Open the chart on GMGN">${esc(r.name || '')}</a>`
+        : `<span class="s">${esc(r.name || '')}</span>`}${
+        /* Only a taken trade has anything to replay — a greenlight that never
+           filled has no fills to mark on the chart. */
+        r.entered && r.mint ? `<button class="jplay" data-replay="${esc(r.mint)}"
+          data-nm="${esc(r.name || '')}" title="Replay this trade">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M8 5v14l11-7z"/></svg></button>` : ''}</td>
+      <td style="text-align:right">${res}</td>
+      <td style="text-align:right" class="${cls(p)}">${p == null ? '—' : pct(p)}</td>
+      <td style="text-align:right;color:var(--dimmer)">${(r.ts || '').slice(11, 16)}</td>
+    </tr>`;
+    })();
+  }).join('') : `<tr><td colspan="4"><div class="empty">No trades yet.</div></td></tr>`;
+
+  /* Build the newest replays in the background so the play button is instant
+     when it is actually pressed. Newest first, because that is the trade
+     someone opening the journal is looking for. */
+  warmReplays(rows.filter(r => r.entered && r.mint).map(r => r.mint));
+}
+
+/** Read the numbers back as plain observations. No advice that the data
+ *  doesn't support — just what the record says. */
+function insights(s) {
+  const out = [];
+  const n = s.entered || 0;
+  if (!s.greenlights) return ['No trades yet.'];
+
+  if (n >= 3 && s.avg_win != null && s.avg_loss != null) {
+    const need = Math.abs(s.avg_loss) / (Math.abs(s.avg_loss) + s.avg_win);
+    out.push(`Break-even needs <b>${(need * 100).toFixed(0)}%</b> wins at your ` +
+      `+${(s.avg_win * 100).toFixed(0)}% / ${(s.avg_loss * 100).toFixed(0)}% sizes. ` +
+      `You're at <b>${((s.win_rate || 0) * 100).toFixed(0)}%</b>.`);
+  }
+  if (s.avg_peak_after_tap != null) {
+    out.push(`Picks ran <b>${s.avg_peak_after_tap}x</b> on average after greenlight. ` +
+      `Near 1.0x means the coins aren't moving, not that the entry is wrong.`);
+  }
+  if (s.skipped && s.avg_peak_when_skipped != null) {
+    out.push(`<b>${s.skipped}</b> never entered; those ran <b>${s.avg_peak_when_skipped}x</b>. ` +
+      (s.avg_peak_when_skipped < 1.3 ? 'Mostly flat — little missed.'
+                                     : 'Above your take-profit — entries are being missed.'));
+  }
+  if (n >= 3 && Math.abs(s.avg_loss || 0) > 0.4) {
+    out.push(`Losses average <b>${(s.avg_loss * 100).toFixed(0)}%</b> — the trailing stop, in full, nearly every time.`);
+  }
+  return out;
+}
+
+document.getElementById('openjournal').onclick = e => { e.preventDefault(); openJournal(); };
+
+/* ── settings ───────────────────────────────────────────────────────────── */
+// [key, label, hint, multiplier, unit, offset]
+// Stored raw (0.15); shown the way people think (15%).
+// Size lives on the coin page now. It's a decision about one coin, made while
+// looking at that coin — not a property of a strategy.
+const SECTIONS = [
+  ["Entry", [
+    ["dip", "Dip required", "How far it must fall from the high before looking to buy.", 100, "%"],
+    ["bounce", "Reclaim", "Rise off the low that triggers the buy.", 100, "%", 1],
+    ["volr_min", "B/S floor", "Under 1 means more selling than buying. Checked at entry — the buy waits, the coin isn't dropped.", 1],
+    // Stored as a ceiling (0.90) but read as a distance from the high (10%),
+    // which is how you think about it. -100 with offset 1 gives (1 - v) * 100.
+    ["pico", "Stay below the high by", "Must be smaller than your dip or nothing can fire. Lower it for near-market entries on a parabolic coin.", -100, "%", 1],
+    // Not a veto. A deeper dip still buys — it waits for the bounce to carry
+    // price back up to this line and buys there. Must be deeper than the dip.
+    ["deadcat", "Deepest entry", "How far below the high a buy may land. A deeper dip still buys, just up here rather than at its low.", 100, "%"],
+    ["warmup_sec", "Watch before buying", "Seconds of tape before a buy is allowed. Under 5s the high is barely one tick.", 1, "s"],
+  ]],
+  ["Exit", [
+    ["tp1", "Take profit 1", "The first rung.", 1, "x"],
+    ["frac1", "Sold at TP1", "The rest rides to TP2.", 100, "%"],
+    ["tp2", "Take profit 2", "Fully out here.", 1, "x"],
+    ["trail_stop", "Stop type", "Trailing follows the high — it locks in gains but can exit below your entry. Fixed measures from entry.", 1],
+    ["kill", "Stop", "How far it may fall before selling out.", 100, "%"],
+    ["be_after_tp1", "Break even after TP1", "Once TP1 sells, the stop on the rest moves up to your entry, so the trade can't turn into a loss. Needs TP2 on.", 1],
+  ]],
+  ["Timing", [
+    ["entry_timeout", "Give up after", "Stands down if no setup appears.", 1 / 60, "min"],
+    ["max_hold", "Max hold", "Sells whatever is left after this.", 1 / 60, "min"],
+  ]],
+];
+
+/* Not part of a strategy. These describe HOW an order is placed rather than
+   when to buy or sell, so they belong to the account and stay the same
+   whichever strategy runs — the server enforces that, a strategy cannot carry
+   its own slippage. */
+const ACCOUNT_SECTIONS = [
+  ["Execution", [
+    ["slippage", "Slippage", "How far price may move between quote and fill. Too tight and buys fail on the moves worth catching.", 100, "%"],
+    ["priority_fee", "Priority fee", "Most you'll pay to land fast. Matters when the network is busy.", 1, "SOL"],
+    ["smoothing", "Price smoothing (TP/SL)", "Polls averaged before TP and the stop are checked. 1 reacts instantly; higher ignores a bad quote but can miss a fast spike.", 1, "polls"],
+  ]],
+];
+const GLOBAL_KEYS = ['slippage', 'priority_fee', 'smoothing'];
+
+let bounds = {}, useTp2 = true;
+const F = {};
+// BOTH lists. Built from SECTIONS alone, collect() silently skipped slippage
+// and priority fee — they rendered, accepted input, and never saved.
+[...SECTIONS, ...ACCOUNT_SECTIONS].forEach(([, rows]) =>
+  rows.forEach(f => { F[f[0]] = f; }));
+
+const toView = f => v => +(((v - (f[5] || 0)) * f[3]).toFixed(6));
+const toRaw = f => v => +((v / f[3]) + (f[5] || 0)).toFixed(6);
+
+/* ── wallet ───────────────────────────────────────────────────────────────
+   Everything about money lives here, in the terminal, in the terminal's own
+   language. Signing in is a panel, not a different site with a different look. */
+const sol4 = n => (n === null || n === undefined) ? '—' : Number(n).toFixed(4);
+
+function wsay(id, text, kind = '') {
+  const n = document.getElementById(id);
+  n.textContent = text; n.className = 'wmsg ' + kind;
+}
+
+/* Solana's mark, inline. An <img> would be a second request for 400 bytes, and
+   inline means it can pick up the gradient rather than shipping two files for
+   light and dark. */
+/* A function, not a constant: two copies of the same markup meant two
+   elements with the same gradient id, which is invalid and silently breaks
+   the second one if the first ever leaves the DOM. */
+const SOL_NET = (id) => `<svg width="17" height="14" viewBox="0 0 397.7 311.7" aria-hidden="true">
+  <linearGradient id="${id}" x1="360.9" y1="-37.5" x2="141.2" y2="383.3"
+    gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9945FF"/>
+    <stop offset="1" stop-color="#14F195"/></linearGradient>
+  <path fill="url(#${id})" d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z"/>
+  <path fill="url(#${id})" d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z"/>
+  <path fill="url(#${id})" d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
+</svg>`;
+
+const SOL_MARK = `<svg width="11" height="9" viewBox="0 0 397.7 311.7" aria-hidden="true">
+  <linearGradient id="sg" x1="360.9" y1="-37.5" x2="141.2" y2="383.3"
+    gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9945FF"/>
+    <stop offset="1" stop-color="#14F195"/></linearGradient>
+  <path fill="url(#sg)" d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z"/>
+  <path fill="url(#sg)" d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z"/>
+  <path fill="url(#sg)" d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
+</svg>`;
+
+/* The chip shows a number or it shows "sign in". It never shows the word
+   "wallet" — that's a label where a balance should be, and you'd have to open
+   the panel to learn the one thing the chip exists to tell you.
+   The last balance is remembered so a reload paints it immediately instead of
+   flashing a placeholder while the request is in flight. */
+function paintChip(bal) {
+  const chip = document.getElementById('walletchip');
+  if (!KEY) { chip.innerHTML = `${SOL_MARK}<span class="bal">sign in</span>`; return; }
+  if (bal !== null && bal !== undefined) {
+    localStorage.setItem('edgelvl_bal', String(bal));
+  } else {
+    const cached = localStorage.getItem('edgelvl_bal');
+    // Never invent a zero. A wallet claiming 0.0000 when the balance is simply
+    // unknown is worse than admitting we don't know — it reads as "your money
+    // is gone", and someone will believe it.
+    bal = cached === null ? null : Number(cached);
+  }
+  chip.innerHTML = `${SOL_MARK}<span class="bal">${bal === null ? '—' : sol4(bal)}</span>`;
+}
+
+/* Keep the header honest without opening anything. */
+async function refreshChip() {
+  if (!KEY) return;
+  try {
+    const a = await api('/api/account');
+    /* Always setBal, never paint one half of the balance directly. Balances are
+       native now, but a wallet funded before that change can still hold WSOL,
+       and painting either half alone once showed a funded wallet as empty. One
+       definition keeps the header, the modal and the size slider in agreement. */
+    setBal(a.balances);
+  } catch (e) {
+    // A credential the wallet doesn't accept — an expired session, or a licence
+    // key, which can read the board but has no wallet. Say "sign in" rather
+    // than sit there showing a number we can't stand behind.
+    if (e.message === 'bad-key' || /token|sign in/i.test(e.message || '')) {
+      localStorage.removeItem('edgelvl_key');
+      localStorage.removeItem('edgelvl_bal');
+      KEY = '';
+      paintChip(null);
+    }
+    /* anything else: keep the last known figure */
+  }
+}
+
+function openWallet() {
+  document.getElementById('wmodal').style.display = 'flex';
+  document.getElementById('wsignin').style.display = KEY ? 'none' : 'block';
+  document.getElementById('wfunded').style.display = KEY ? 'block' : 'none';
+  /* One card, two states. Signed out it's the brand screen and goes dark;
+     signed in it's the wallet and stays with the rest of the app. */
+  document.querySelector('#wmodal .modal-card').classList.toggle('signin', !KEY);
+  if (!KEY) {
+    // reopening after a bail-out should be the first step again, not a stale
+    // "enter your code" for an email they may no longer be looking at
+    document.getElementById('wemail').style.display = 'block';
+    document.getElementById('wcode').style.display = 'none';
+    document.querySelector('.silede').style.display = '';
+    window.wsay && window.wsay('wauthmsg', '');
+  }
+  if (KEY) loadWallet();
+}
+
+function closeWallet() {
+  document.getElementById('wmodal').style.display = 'none';
+  clearInterval(walletPoll);          // nothing to watch while it's shut
+}
+
+/* Scanning is the point of the QR — if it renders wrong someone sends money
+   nowhere, so the encoder is a vendored, independently cross-checked one
+   rather than something hand-rolled. */
+function paintQR(addr) {
+  const box = document.getElementById('wqr');
+  if (!box || !window.qrcode) return;
+  try {
+    const q = qrcode(0, 'M');
+    q.addData(addr);
+    q.make();
+    box.innerHTML = q.createImgTag(4, 0);
+    const img = box.querySelector('img');
+    if (img) { img.alt = 'Deposit address QR code'; img.style.width = img.style.height = '168px'; }
+  } catch (e) {
+    box.innerHTML = '';        // address text below is still there to copy
+  }
+}
+
+let walletPoll = null;
+let seenDeposit = false;    // so "Deposit received" is said once, not every 6s
+/* Declared, because start() did `clearInterval(mcTimer)` before ever assigning
+   it — reading an undeclared binding throws, and since start() is async the
+   ReferenceError surfaced as an unhandled rejection with nothing in the
+   console. Everything after that line, including the whole per-second live
+   poll, had never run. */
+let mcTimer = null;
+/* Everything the wallet holds, as one figure. */
+let walletTotal = 0;
+/* Zero means nothing until we have actually asked. Without this flag an
+   unloaded balance and an empty wallet are the same number, and the code
+   below has to guess which it is looking at. */
+let walletLoaded = false;
+function setBal(bal) {
+  /* The TRUE balance — every lamport the wallet holds. It used to show
+     `unwrapped`, which already had the fee headroom subtracted, so a wallet
+     holding 0.872 displayed 0.862 and the missing 0.01 had no explanation on
+     screen. A swap does need to leave something behind to pay its own rent and
+     network fee, but that is a cap on what you can SPEND, not a reason to
+     misreport what you HAVE. `bal.wsol` is only ever non-zero on a wallet
+     funded before deposits stopped being wrapped. */
+  walletTotal = (bal.sol || 0) + (bal.wsol || 0);
+  walletLoaded = true;
+  const el = document.getElementById('wbal');
+  if (el) el.textContent = sol4(walletTotal) + ' SOL';
+  paintChip(walletTotal);
+  paintAmount();
+  // The share depends on the balance, so it has to follow a fill.
+  const c = findCoin(openMint);
+  if (c && view === 'detail') { paintAmtPct(c); paintAmtNote(c); }
+}
+
+/* The slider is a share of the balance, shown in SOL so nobody has to do the
+   percentage in their head before signing. */
+function paintAmount() {
+  const pct = Number(document.getElementById('wpct')?.value ?? 100);
+  const lbl = document.getElementById('wpctlbl');
+  const amt = document.getElementById('wamt');
+  if (lbl) lbl.textContent = pct + '%';
+  if (amt) amt.textContent = sol4(walletTotal * pct / 100);
+}
+
+async function loadWallet() {
+  try {
+    const a = await api('/api/account');          // creates it on first call
+    MY_ADDRESS = a.address || '';
+    document.getElementById('waddr').textContent = a.address;
+    paintQR(a.address);
+    document.querySelectorAll('.netrow').forEach((r, i) =>
+      r.innerHTML = SOL_NET('sgn' + i) + '<span>Solana network</span>');
+    /* One number. Whether a lamport is currently wrapped, reserved for fees or
+       sitting as plain SOL is our problem, not something to explain on screen. */
+    setBal(a.balances);
+    loadPositions();
+
+    // A deposit lands whenever it lands. Watch for it rather than making
+    // someone press refresh and wonder whether it worked.
+    clearInterval(walletPoll);
+    walletPoll = setInterval(async () => {
+      if (document.getElementById('wmodal').style.display !== 'flex') return;
+      try {
+        const b = await api('/api/account');
+        // Deposited SOL is tradeable the moment it lands — nothing to convert.
+        // This used to wrap it first, which is what left wallets with no native
+        // SOL to pay fees with.
+        if (!seenDeposit && b.balances.unwrapped > 0.0005) {
+          seenDeposit = true;
+          wsay('wdepmsg', 'Deposit received.', 'good');
+        }
+        setBal(b.balances);
+      } catch (e) { /* transient — next tick retries */ }
+    }, 6000);
+  } catch (e) {
+    wsay('wmsg', e.message, 'bad');
+  }
+}
+
+/* The Privy module is separate — it has to be, it's the only part that needs to
+   be an ES module. These are the seams between the two.
+   Only things the module can't already reach: top-level `function` declarations
+   (wsay, paintChip, loadWallet, api) are on `window` already. Re-exposing `api`
+   as `window.api = (p, o) => api(p, o)` makes it call itself forever, because
+   for a declaration those are the same binding. */
+window.refreshChip = refreshChip;
+window.setKey = t => { KEY = t; localStorage.setItem('edgelvl_key', t); };
+
+/* Signing in has to update the page you're already standing on. The journal
+   and the strategy form decide whether to show their locked preview when the
+   view OPENS, so without this you would sign in, close the modal, and still be
+   looking at a blurred page until you navigated away and back. Sign-out has
+   never needed it — that path reloads. */
+window.syncAuthView = () => {
+  if (view === 'settings') openSettings();
+  else if (view === 'journal') openJournal();
+};
+window.resumePending = () => {
+  if (!pendingCoin) return;
+  const mint = pendingCoin.mint;
+  pendingCoin = null;
+  closeWallet();
+  openDetail(mint);        // back to the coin they were trying to greenlight
+};
+
+/* Anything held that isn't SOL. Read from the chain, not from our records —
+   a position the bot has lost track of is exactly the one you need to see. */
+async function loadPositions() {
+  const box = document.getElementById('wpos');
+  try {
+    const { positions } = await api('/api/positions');
+    if (!positions.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="wlabel">HOLDING</div>'
+      + positions.map(p => `<div class="posrow">
+           <div><div class="amt">${Number(p.amount).toLocaleString()}</div>
+                <div class="mint">${p.mint.slice(0, 16)}…</div></div>
+           <button class="ghost" data-sell="${p.mint}">Sell</button>
+         </div>`).join('')
+      + `<div class="poswarn">The bot only manages a position it opened. Anything
+         listed here it isn't watching — no take-profit, no stop. Use Cancel on
+         the coin's own page for one the bot IS running, so the trade is
+         recorded; this is the way out for one it has lost.</div>`;
+    box.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => sellPosition(b));
+  } catch (e) { box.innerHTML = ''; }
+}
+
+/* Selling a live position from the coin page.
+   Confirmed once, because it spends real money and cannot be undone — but
+   asked over the button that spends it, in the app's own furniture. A
+   confirm() opens at the top of the WINDOW looking like the browser rather
+   than the page, which is the wrong place to be reading a question about your
+   money. The bot learns about the sale from the same call — see the cancel
+   marker the API writes — so the trade lands in the journal as a cancellation
+   with the proceeds read off the chain, not as a sale nobody can explain. */
+async function cancelPosition(mint, btn) {
+  const wrap = btn.closest('.cancelwrap') || btn.parentElement;
+  if (wrap.querySelector('.confpop')) return;          // already asking
+  const c = findCoin(mint);
+  const what = (c && (c.symbol || c.name)) || 'this position';
+
+  const pop = document.createElement('div');
+  pop.className = 'confpop oncancel';
+  pop.innerHTML = `<p>Sell <b>${esc(what)}</b> now, at the market, and cancel the
+      order?</p>
+    <div class="row"><button class="no">Keep</button><button class="yes">Sell</button></div>`;
+  wrap.appendChild(pop);
+  pop.querySelector('.no').onclick = () => pop.remove();
+  pop.querySelector('.yes').onclick = async () => {
+    pop.remove();
+    btn.disabled = true;
+    btn.textContent = 'Selling…';
+    try {
+      await api('/api/position/close', { method: 'POST', body: JSON.stringify({ mint }) });
+      markCancelled(mint);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'Cancel';
+      // Reported where it was asked, for the same reason it was asked there.
+      const err = document.createElement('div');
+      err.className = 'confpop oncancel';
+      err.innerHTML = `<p>${esc(e.detail || e.message || 'Could not sell it. Nothing was changed.')}</p>
+        <div class="row"><button class="no">OK</button></div>`;
+      wrap.appendChild(err);
+      err.querySelector('.no').onclick = () => err.remove();
+    }
+  };
+}
+
+/* The sale has already gone through, so every surface says so NOW.
+   The bot reconciles on its own loop and can be a minute behind it; until that
+   lands, the status row, the greenlight button, the strategy lock and the
+   activity list would all still read "in position", which is no longer true.
+   Kept as an override rather than written into botStatus alone, because the
+   next poll rebuilds that object from the server and would put the stale state
+   straight back a second later. */
+const cancelledLocal = {};      // mint -> the cancelled row, until the bot agrees
+
+function markCancelled(mint) {
+  const rec = { state: 'cancelled', ts: Date.now() / 1000, pnl: null };
+  cancelledLocal[mint] = rec;
+  botStatus[mint] = { ...(botStatus[mint] || { mint }), ...rec };
+  renderDetailStatus();     // the row — and the greenlight button with it
+  paintStrat();             // the picker unlocks: nothing is mid-trade any more
+  refreshActivity();        // the side list, and whatever else reads status
+}
+
+/* Kept, despite Cancel replacing it for a position the bot is running.
+   The two are not the same job. Cancel needs the bot to be reporting the coin;
+   a position it could NOT resume — no price feed, so no stop — has no such
+   report, does not appear on a coin page as held, and would have no way out of
+   the app at all. That is precisely the holding you most need to be able to
+   sell, so this stays as the way to sell what the bot has lost. */
+async function sellPosition(btn) {
+  const mint = btn.dataset.sell;
+  btn.disabled = true; btn.textContent = 'Selling…';
+  wsay('wmsg', 'Selling — this can take a few seconds to confirm.');
+  try {
+    const r = await api('/api/position/close', {
+      method: 'POST', body: JSON.stringify({ mint }),
+    });
+    document.getElementById('wmsg').innerHTML = r.pending
+      ? `Sent, still confirming. <a href="${r.explorer}" target="_blank" rel="noopener">Track it</a>`
+      : `Sold for ~${Number(r.sol_received).toFixed(4)} SOL. <a href="${r.explorer}" target="_blank" rel="noopener">View it</a>`;
+    document.getElementById('wmsg').className = 'wmsg good';
+    loadWallet(); loadPositions();
+  } catch (e) {
+    wsay('wmsg', e.message, 'bad');
+    btn.disabled = false; btn.textContent = 'Sell';
+  }
 }
 
 document.getElementById('paymodal').onclick = e => {
