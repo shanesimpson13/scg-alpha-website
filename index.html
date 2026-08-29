@@ -2457,6 +2457,21 @@ function paintAmtNote(c) {
   if (!btn || btn.dataset.busy || btn.dataset.bot) return;
   const amt = coinAmt.get(c.mint);
 
+  /* Signed in with an empty wallet — the one state that cannot possibly work,
+     and the one nothing caught. Both this guard and greenlight's own were
+     written as `walletTotal > 0`, which is FALSE for a wallet holding nothing,
+     so an empty account fell through to a green, enabled GREENLIGHT and armed
+     a bot with no money to trade. Ten accounts signed in, deposited nothing,
+     and were never once told that was the missing step.
+
+     Checked before the amount, because "pick an amount" is the wrong thing to
+     say to someone who has none to pick from. */
+  if (KEY && walletLoaded && walletTotal <= 0) {
+    btn.disabled = false;
+    btn.textContent = '💰 ADD SOL TO START';
+    return;
+  }
+
   if (!(amt > 0)) {
     btn.disabled = true;
     btn.textContent = 'PICK AN AMOUNT';
@@ -2622,6 +2637,10 @@ async function greenlight(c) {
   /* An amount is required. It used to be optional, falling back to whatever
      the strategy held — so pressing GREENLIGHT without choosing spent a number
      you never saw. */
+  /* An empty wallet opens the deposit drawer rather than queueing a
+     greenlight the bot will fail at the buy. Same reason as the label. */
+  if (walletLoaded && walletTotal <= 0) { openWallet(); return; }
+
   const amt = coinAmt.get(c.mint);
   if (!(amt > 0)) { paintAmtNote(c); return; }
   // Checked here as well as in the note, because the balance can move between
@@ -3635,6 +3654,10 @@ let seenDeposit = false;    // so "Deposit received" is said once, not every 6s
 let mcTimer = null;
 /* Everything the wallet holds, as one figure. */
 let walletTotal = 0;
+/* Zero means nothing until we have actually asked. Without this flag an
+   unloaded balance and an empty wallet are the same number, and the code
+   below has to guess which it is looking at. */
+let walletLoaded = false;
 function setBal(bal) {
   /* The TRUE balance — every lamport the wallet holds. It used to show
      `unwrapped`, which already had the fee headroom subtracted, so a wallet
@@ -3644,6 +3667,7 @@ function setBal(bal) {
      misreport what you HAVE. `bal.wsol` is only ever non-zero on a wallet
      funded before deposits stopped being wrapped. */
   walletTotal = (bal.sol || 0) + (bal.wsol || 0);
+  walletLoaded = true;
   const el = document.getElementById('wbal');
   if (el) el.textContent = sol4(walletTotal) + ' SOL';
   paintChip(walletTotal);
