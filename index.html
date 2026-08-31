@@ -1150,6 +1150,7 @@
         <label title="Minimum market cap. Can't go below $50,000."><span class="fk">min MC<span class="atmin">min</span></span><span class="val"><input id="f_mc" type="number" min="50000" step="1000"><span class="fu">$</span></span><span class="floornote" id="n_mc"></span></label>
         <label title="Hide anything older than this. No lower limit."><span class="fk">max age</span><span class="val"><input id="f_age" type="number" step="1"><span class="fu">d</span></span></label>
         <label title="Minimum 5-minute volume as a share of market cap. Can't go below 10%."><span class="fk">min vol/MC<span class="atmin">min</span></span><span class="val"><input id="f_volmc" type="number" min="10" step="1"><span class="fu">%</span></span><span class="floornote" id="n_volmc"></span></label>
+        <label title="Hide coins where bundled wallets hold more than this share of supply. A bundled launch means one party can exit into your buy. 100% is off."><span class="fk">max bundler</span><span class="val"><input id="f_bundler" type="number" min="0" max="100" step="1"><span class="fu">%</span></span></label>
         <button id="f_hidden" class="hiddenbtn" hidden></button>
         <button id="f_reset" title="Back to defaults">reset</button>
       </div>
@@ -1399,7 +1400,10 @@ let sortKey = 'vol_5m';
 // apply anyway, so an untouched terminal behaves exactly as documented.
 // volmc: below about a tenth of market cap in five minutes, a coin isn't
 // really trading — there's nothing for a dip to be bought back by.
-const FILTER_DEFAULTS = { vol: 25000, mc: 50000, age: 60, volmc: 10 };
+/* bundler is a CEILING, not a floor, and it ships at 100 = off. A new filter
+   that silently removed coins from a board someone has been reading for weeks
+   would look like the feed breaking, not like a feature arriving. */
+const FILTER_DEFAULTS = { vol: 25000, mc: 50000, age: 60, volmc: 10, bundler: 100 };
 /* Floors, not suggestions. Below these a coin is too quiet, too small, or too
    thinly traded for the dip-and-reclaim setup to mean anything — the bot would
    be buying a reclaim with nothing underneath it. Age has no floor: a coin
@@ -1558,6 +1562,12 @@ function sorted() {
   return coins
     .filter(c => !hidden.has(c.mint))
     .filter(c => !filters.volmc || volMc(c) * 100 >= filters.volmc)
+    /* Bundled supply is the share held by wallets funded together at launch —
+       one party able to sell into your buy. A coin with no reading is kept: an
+       unknown is not the same as a clean one, and dropping it would quietly
+       hide coins for missing data rather than for being risky. */
+    .filter(c => filters.bundler >= 100 || c.bundler_pct == null
+                 || c.bundler_pct <= filters.bundler)
     .slice()
     .sort((a, b) => key(b) - key(a));
 }
@@ -1738,6 +1748,7 @@ function paintFilters() {
   f_mc.value = filters.mc;
   f_age.value = filters.age;
   f_volmc.value = filters.volmc;
+  f_bundler.value = filters.bundler;
   /* Mark the fields already sitting on their floor. The transient note only
      fires once someone types a lower number — by which point they've watched
      the value snap back and concluded the input is broken. This is the badge
@@ -1780,12 +1791,15 @@ function onFilterEdit() {
       mc: Number(f_mc.value) || 0,
       age: Number(f_age.value) || 0,
       volmc: Number(f_volmc.value) || 0,
+      bundler: f_bundler.value === '' ? 100 : Number(f_bundler.value),
     };
     filters = {
       vol: Math.max(FILTER_FLOORS.vol, raw.vol),
       mc: Math.max(FILTER_FLOORS.mc, raw.mc),
       age: Math.max(0, raw.age),
       volmc: Math.max(FILTER_FLOORS.volmc, raw.volmc),
+      // A ceiling with no floor: 0 is a legitimate ask (only unbundled coins).
+      bundler: Math.min(100, Math.max(0, raw.bundler)),
     };
     // An empty box is someone mid-edit, not someone asking for zero — don't
     // scold them for a field they're still typing into.
@@ -1801,7 +1815,7 @@ function onFilterEdit() {
     refresh();
   }, 450);
 }
-['f_vol', 'f_mc', 'f_age', 'f_volmc'].forEach(id => { document.getElementById(id).oninput = onFilterEdit; });
+['f_vol', 'f_mc', 'f_age', 'f_volmc', 'f_bundler'].forEach(id => { document.getElementById(id).oninput = onFilterEdit; });
 /* Downscaled to 160px before storing: a phone photo is several megabytes and
    localStorage holds about five in total, so the raw file would fill it and
    throw. 160 is ample for a 46px circle at 2x. */
