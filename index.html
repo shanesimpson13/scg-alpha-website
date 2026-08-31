@@ -152,6 +152,20 @@
                cursor: pointer; padding: 4px 8px; font-family: inherit; }
     .modal-x:hover { color: var(--fg); }
 
+    /* Which chain the board is showing. Solana is the product; the others are
+       here to be watched. */
+    .chaintabs { display: inline-flex; gap: 3px; margin-left: 12px; }
+    .chaintab { background: none; border: 1px solid transparent; color: var(--dimmer);
+                font-family: inherit; font-size: 9.5px; letter-spacing: .1em;
+                text-transform: uppercase; padding: 4px 9px; border-radius: 6px;
+                cursor: pointer; }
+    .chaintab:hover { color: var(--dim); background: var(--hover); }
+    .chaintab.on { color: var(--fg); border-color: var(--line); background: var(--panel); }
+    /* A board you cannot trade from should not look like one you can. */
+    #board.watchonly tbody tr { cursor: default; }
+    .watchnote { font-size: 10.5px; color: var(--dimmer); padding: 9px 13px;
+                 border-top: 1px solid var(--hair); }
+
     /* Plans. The board is free — this is what arming the bot costs. */
     .planwrap { display: grid; gap: 10px; margin: 16px 0 6px; }
     .plan { border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; }
@@ -1126,6 +1140,10 @@
     <div id="activity"></div>
     <div class="bar">
       <span style="letter-spacing:.1em">TRENDING · 5M</span>
+      <div class="chaintabs" id="chaintabs">
+        <button class="chaintab on" data-chain="sol">Solana</button>
+        <button class="chaintab" data-chain="robinhood">Robinhood</button>
+      </div>
       <div class="spacer"></div>
       <div class="fltgroup">
         <label title="Minimum 5-minute volume. Can't go below $25,000 — under that a coin is too thin to trade."><span class="fk">min 5m vol<span class="atmin">min</span></span><span class="val"><input id="f_vol" type="number" min="25000" step="1000"><span class="fu">$</span></span><span class="floornote" id="n_vol"></span></label>
@@ -1388,6 +1406,9 @@ const FILTER_DEFAULTS = { vol: 25000, mc: 50000, age: 60, volmc: 10 };
    being old is a judgement call, not a structural problem. */
 const FILTER_FLOORS = { vol: 25000, mc: 50000, volmc: 10 };
 let filters = { ...FILTER_DEFAULTS };
+/* Which chain the board shows. Solana is the only one the bot can trade, so
+   this changes what you can SEE, never what you can arm. */
+let boardChain = 'sol';
 try { filters = { ...filters, ...JSON.parse(localStorage.getItem('edgelvl_filters') || '{}') }; } catch (e) {}
 // Anything saved before these floors existed gets pulled back up to them.
 for (const [k, min] of Object.entries({ vol: 25000, mc: 50000, volmc: 10 })) {
@@ -1615,7 +1636,13 @@ function renderBoard() {
     tb.innerHTML = `<tr><td colspan="11"><div class="empty">${why}</div></td></tr>`;
   } else {
     tb.innerHTML = list.map(rowHTML).join('');
-    tb.querySelectorAll('tr').forEach(r => r.onclick = () => openDetail(r.dataset.mint));
+    /* Robinhood Chain is on the board to be watched, not traded: the bot, the
+       wallet and the executor are all Solana. Opening a coin page there would
+       show a GREENLIGHT that cannot possibly fire, so the rows do not open one
+       until there is an executor behind them. */
+    if (boardChain === 'sol') {
+      tb.querySelectorAll('tr').forEach(r => r.onclick = () => openDetail(r.dataset.mint));
+    }
     tb.querySelectorAll('[data-hide]').forEach(b => b.onclick = ev => {
       // the row itself opens the coin; hiding must not also open what it hid
       ev.stopPropagation();
@@ -1668,13 +1695,16 @@ function showView(name) {
 async function refresh() {
   try {
     const d = await api(`/api/trending?limit=50&min_vol=${filters.vol}` +
-                        `&min_mc=${filters.mc}&max_age_days=${filters.age}`);
+                        `&min_mc=${filters.mc}&max_age_days=${filters.age}` +
+                        `&chain=${boardChain}`);
     coins = d.coins || [];
     // sorted(), not coins: the board also drops anything under the vol/MC
     // ratio (which the server never sees, it is not a query parameter) and
     // anything hidden with the x. Notifying off the raw response meant alerts
     // for coins that never reached the board, and for ones deliberately hidden.
-    notifyNewCoins(sorted());
+    // Only for coins that can actually be acted on — a notification for a
+    // Robinhood coin would open a page with a button that cannot work.
+    if (boardChain === 'sol') notifyNewCoins(sorted());
     document.getElementById('livewrap').classList.toggle('stale', !!d.stale);
     document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
     document.getElementById('updated').textContent = `${Math.round(d.age_secs)}s ago`;
@@ -3863,6 +3893,30 @@ async function sellPosition(btn) {
     btn.disabled = false; btn.textContent = 'Sell';
   }
 }
+
+/* The chain switch. Clears the board first: leaving Solana rows on screen
+   while Robinhood data loads would show a mixed board for a second, and on a
+   board where one chain is tradeable and the other is not, that second matters. */
+document.querySelectorAll('#chaintabs .chaintab').forEach(t => {
+  t.onclick = () => {
+    if (t.dataset.chain === boardChain) return;
+    boardChain = t.dataset.chain;
+    document.querySelectorAll('#chaintabs .chaintab')
+            .forEach(x => x.classList.toggle('on', x === t));
+    document.getElementById('board').classList.toggle('watchonly', boardChain !== 'sol');
+    coins = [];
+    const note = document.getElementById('watchnote');
+    if (note) note.remove();
+    if (boardChain !== 'sol') {
+      const n = document.createElement('div');
+      n.id = 'watchnote'; n.className = 'watchnote';
+      n.textContent = 'Robinhood Chain is here to watch. The bot trades Solana '
+                    + '— these rows cannot be greenlit yet.';
+      document.getElementById('board').appendChild(n);
+    }
+    refresh();
+  };
+});
 
 document.getElementById('paymodal').onclick = e => {
   if (e.target.id === 'paymodal') closePay();      // click the backdrop to dismiss
