@@ -159,13 +159,15 @@
                  font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
                  padding: 0 8px 9px; white-space: nowrap; }
     .cpwtab td { padding: 4px 8px; border-top: 1px solid var(--hair); }
-    .cpwtab td:first-child { width: 46%; }
-    .cpwmid { text-align: center; width: 1%; }
+    /* Widths live on the colgroup so the header and the box under it are the
+       same column. They were set on the inputs before, which meant the boxes
+       sized themselves and stopped lining up with their titles. */
+    .cpwmid { text-align: center; }
     .cpwin { width: 100%; background: var(--field); border: 1px solid var(--line);
              border-radius: 7px; padding: 8px 9px; color: var(--fg);
-             font-family: inherit; font-size: 11.5px; }
+             font-family: inherit; font-size: 11.5px; box-sizing: border-box; }
     .cpwin:focus { outline: none; border-color: var(--dim); }
-    .cpwn { width: 76px; text-align: right; }
+    .cpwn { text-align: right; }
     .cpwx { background: none; border: 0; color: var(--dimmer); font-size: 16px;
             line-height: 1; cursor: pointer; padding: 4px 6px; font-family: inherit; }
     .cpwx:hover { color: var(--red); }
@@ -4685,7 +4687,10 @@ let CPW = null;
    is, and because the board already taught this page how a table looks. */
 function cpwSectionHTML() {
   const rules = (CPW && CPW.rules) || [];
-  const presetOpts = (sel) => ['<option value="">Default</option>']
+  /* The same strategies as the settings page — PRESETS plus your own — because
+     a config named here has to be one the bot can actually resolve. */
+  const presetOpts = (sel) => [`<option value=""${sel ? '' : ' selected'}>`
+      + `${esc(OWN_NAME || 'Default')}</option>`]
     .concat(Object.keys(PRESETS || {}).map(n =>
       `<option value="${esc(n)}"${n === sel ? ' selected' : ''}>${esc(n)}</option>`))
     .join('');
@@ -4696,8 +4701,6 @@ function cpwSectionHTML() {
       <td><select class="cpwin" data-k="preset">${presetOpts(r.preset || '')}</select></td>
       <td><input class="cpwin cpwn" data-k="size_sol" type="number" step="any"
                  value="${r.size_sol}" autocomplete="off"></td>
-      <td><input class="cpwin cpwn" data-k="max_per_day" type="number" step="1"
-                 value="${r.max_per_day}" autocomplete="off"></td>
       <td class="cpwmid"><label class="tgl"><input type="checkbox" data-k="enabled"
              ${r.enabled ? 'checked' : ''}><span class="box"></span></label></td>
       <td class="cpwmid"><button class="cpwx" data-del="${i}" title="Remove">&times;</button></td>
@@ -4705,8 +4708,12 @@ function cpwSectionHTML() {
   return `<div class="setsec" id="cpwsec"><h3>Follow</h3>
     <div class="scroller">
       <table class="cpwtab">
+        <colgroup>
+          <col style="width:48%"><col style="width:26%"><col style="width:14%">
+          <col style="width:6%"><col style="width:6%">
+        </colgroup>
         <thead><tr>
-          <th>Wallet</th><th>Config</th><th>Size</th><th>Most / day</th>
+          <th>Wallet</th><th>Config</th><th>Size</th>
           <th class="cpwmid">On</th><th></th>
         </tr></thead>
         <tbody id="cpwrows">${rules.map(row).join('')}</tbody>
@@ -4729,6 +4736,8 @@ function cpwSectionHTML() {
 }
 
 async function loadCpw() {
+  // Without this the config column is empty for everyone who has strategies.
+  await primeStrategies();
   try { CPW = await api('/api/copy'); }
   catch (e) {
     // Not the owner. The page should not exist for an account that cannot use it.
