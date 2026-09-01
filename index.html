@@ -1203,7 +1203,7 @@
         <label title="Minimum 5-minute volume. Can't go below $25,000 — under that a coin is too thin to trade."><span class="fk">min 5m vol<span class="atmin">min</span></span><span class="val"><input id="f_vol" type="number" min="25000" step="1000"><span class="fu">$</span></span><span class="floornote" id="n_vol"></span></label>
         <label title="Minimum market cap. Can't go below $40,000 — roughly where a coin completes the curve and gets a pool."><span class="fk">min MC<span class="atmin">min</span></span><span class="val"><input id="f_mc" type="number" min="40000" step="1000"><span class="fu">$</span></span><span class="floornote" id="n_mc"></span></label>
         <label title="Hide anything older than this. No lower limit."><span class="fk">max age</span><span class="val"><input id="f_age" type="number" step="1"><span class="fu">d</span></span></label>
-        <label title="Minimum 5-minute volume as a share of market cap. Can't go below 10%."><span class="fk">min vol/MC<span class="atmin">min</span></span><span class="val"><input id="f_volmc" type="number" min="10" step="1"><span class="fu">%</span></span><span class="floornote" id="n_volmc"></span></label>
+        <label title="Minimum 5-minute volume as a share of market cap. Can't go below 5%."><span class="fk">min vol/MC<span class="atmin">min</span></span><span class="val"><input id="f_volmc" type="number" min="5" step="1"><span class="fu">%</span></span><span class="floornote" id="n_volmc"></span></label>
         <label title="Hide coins where bundled wallets hold more than this share of supply. A bundled launch means one party can exit into your buy. 100% is off."><span class="fk">max bundler</span><span class="val"><input id="f_bundler" type="number" min="0" max="100" step="1"><span class="fu">%</span></span></label>
         <button id="f_hidden" class="hiddenbtn" hidden></button>
         <button id="f_reset" title="Back to defaults">reset</button>
@@ -1476,24 +1476,26 @@ let sortKey = 'vol_5m';
 
 // Your filters, kept in this browser. Defaults match what the server would
 // apply anyway, so an untouched terminal behaves exactly as documented.
-// volmc: below about a tenth of market cap in five minutes, a coin isn't
-// really trading — there's nothing for a dip to be bought back by.
+// volmc: a coin turning over less than a twentieth of its market cap in five
+// minutes isn't really trading — there's nothing for a dip to be bought back
+// by. The floor was a tenth, which also hid freshly migrated coins: they clear
+// the curve at a bigger cap than the volume that got them there.
 /* bundler is a CEILING, not a floor, and it ships at 100 = off. A new filter
    that silently removed coins from a board someone has been reading for weeks
    would look like the feed breaking, not like a feature arriving. */
-const FILTER_DEFAULTS = { vol: 25000, mc: 40000, age: 60, volmc: 10, bundler: 100 };
+const FILTER_DEFAULTS = { vol: 25000, mc: 40000, age: 60, volmc: 5, bundler: 100 };
 /* Floors, not suggestions. Below these a coin is too quiet, too small, or too
    thinly traded for the dip-and-reclaim setup to mean anything — the bot would
    be buying a reclaim with nothing underneath it. Age has no floor: a coin
    being old is a judgement call, not a structural problem. */
-const FILTER_FLOORS = { vol: 25000, mc: 40000, volmc: 10 };
+const FILTER_FLOORS = { vol: 25000, mc: 40000, volmc: 5 };
 let filters = { ...FILTER_DEFAULTS };
 /* Which chain the board shows. Solana is the only one the bot can trade, so
    this changes what you can SEE, never what you can arm. */
 let boardChain = 'sol';
 try { filters = { ...filters, ...JSON.parse(localStorage.getItem('edgelvl_filters') || '{}') }; } catch (e) {}
 // Anything saved before these floors existed gets pulled back up to them.
-for (const [k, min] of Object.entries({ vol: 25000, mc: 40000, volmc: 10 })) {
+for (const [k, min] of Object.entries({ vol: 25000, mc: 40000, volmc: 5 })) {
   if (!(filters[k] >= min)) filters[k] = min;
 }
 // mint -> when it was queued. A confirmation, not a lock: the bot arms within
