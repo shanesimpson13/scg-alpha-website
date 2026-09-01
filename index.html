@@ -152,6 +152,23 @@
                cursor: pointer; padding: 4px 8px; font-family: inherit; }
     .modal-x:hover { color: var(--fg); }
 
+    /* Copy trading. Same furniture as every other setting — it is not a
+       different kind of page and should not look like one. */
+    .cpwlist { width: 100%; min-height: 60px; resize: vertical; margin-top: 8px;
+               background: var(--field); border: 1px solid var(--line);
+               border-radius: 7px; padding: 9px 10px; color: var(--fg);
+               font-family: inherit; font-size: 11.5px; line-height: 1.7; }
+    .cpwlist:focus { outline: none; border-color: var(--dim); }
+    .cpwstat { margin-top: 13px; border: 1px solid var(--line); border-radius: 9px;
+               padding: 11px 13px; }
+    .cpwstat .k { color: var(--dimmer); font-size: 9.5px; letter-spacing: .12em;
+                  text-transform: uppercase; margin-bottom: 8px; }
+    .cpwrow { display: flex; gap: 9px; align-items: baseline; padding: 3px 0;
+              font-size: 11.5px; }
+    .cpwrow .m { color: var(--dimmer); margin-left: auto; font-size: 10.5px; }
+    .cpwrow.warn { color: var(--amber); }
+    .cpwrow.off  { color: var(--dimmer); }
+
     /* Card funding sits ABOVE the deposit address on purpose. Sending SOL from
        somewhere else assumes you already hold SOL somewhere else; a card does
        not, and that assumption is the step most people never came back from. */
@@ -4460,6 +4477,7 @@ function renderSettings() {
     // strategy and the old layout gave no way to know that.
     + '<div class="everysec"><div class="everyhead">Applies to <b>every</b> strategy</div>'
     + ACCOUNT_SECTIONS.map(secHTML(OWN)).join('')
+    + cpwSectionHTML()
     + notifySectionHTML()
     + themeSectionHTML()
     + '</div>';
@@ -4468,6 +4486,7 @@ function renderSettings() {
   wireReorder();
   wireNotifyToggle();
   wireTheme();
+  loadCpw();
 
   /* Account-wide fields save themselves. There is no Apply on this page — that
      button belongs to a strategy — so anything here has to commit on change or
@@ -4620,6 +4639,143 @@ function setTheme(mode) {
   if (mode === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   else document.documentElement.removeAttribute('data-theme');
   try { localStorage.setItem('edgelvl_theme', mode); } catch (e) {}
+}
+
+/* ── copy trading ──────────────────────────────────────────────────────────
+   A followed wallet's LAUNCH is not the trigger; its coin MIGRATING is. Three
+   in four of these launches never complete the curve and die with no pool at
+   all, so following the buy would fire on four duds for every tradeable one.
+   Waiting for the pool also puts the entry in the only band that measured
+   positive on real fills — roughly 30s to 5min in — which is where the bot's
+   own dip-and-reclaim naturally lands.
+
+   Owner-only, and removed rather than disabled for anyone else: one watcher
+   runs per box, not per customer, so a follow list on a customer's page would
+   be a control that does nothing. */
+let CPW = null;
+
+function cpwSectionHTML() {
+  return `<div class="setsec" id="cpwsec" style="display:none"><h3>Copy trading</h3>
+    <div class="setrow">
+      <div>
+        <div class="lab"><label class="tgl">
+          <input type="checkbox" id="cpw_enabled"><span class="box"></span>
+          <span>Follow these wallets</span></label></div>
+        <div class="hint">Watches for their launches and greenlights the ones
+          that migrate — about one in four. The rest die on the curve with
+          nothing to trade.</div>
+      </div>
+    </div>
+    <div class="setrow" style="display:block">
+      <div><div class="lab"><span>Wallets</span></div>
+        <div class="hint">One address per line, up to ten.</div>
+        <textarea class="cpwlist" id="cpw_wallets" spellcheck="false"
+                  autocomplete="off" data-1p-ignore data-lpignore="true"></textarea>
+      </div>
+    </div>
+    <div class="setrow">
+      <div><div class="lab"><span>Size per trade</span></div>
+        <div class="hint" id="hint_cpw_size">Under 0.05 the bot's own gas is a
+          bigger share of the position than the edge it is chasing.</div></div>
+      <div class="setfield">
+        <input id="cpw_size" type="number" step="any" autocomplete="off"
+               data-1p-ignore data-lpignore="true"><span class="unit">SOL</span>
+      </div>
+    </div>
+    <div class="setrow">
+      <div><div class="lab"><span>Most per day</span></div>
+        <div class="hint" id="hint_cpw_day">The ceiling on automatic spending.</div></div>
+      <div class="setfield">
+        <input id="cpw_day" type="number" step="1" autocomplete="off"
+               data-1p-ignore data-lpignore="true">
+      </div>
+    </div>
+    <div class="setrow">
+      <div><div class="lab"><span>Open at once</span></div>
+        <div class="hint">How many copied coins may run together.</div></div>
+      <div class="setfield">
+        <input id="cpw_conc" type="number" step="1" autocomplete="off"
+               data-1p-ignore data-lpignore="true">
+      </div>
+    </div>
+    <div class="cpwstat" id="cpw_status"></div>
+  </div>`;
+}
+
+async function loadCpw() {
+  const sec = document.getElementById('cpwsec');
+  if (!sec) return;
+  try { CPW = await api('/api/copy'); }
+  catch (e) { sec.remove(); return; }      // not the owner: no such feature here
+  sec.style.display = '';
+  const t = CPW.settings || {};
+  document.getElementById('cpw_enabled').checked = !!t.enabled;
+  document.getElementById('cpw_wallets').value = (t.wallets || []).join('\n');
+  document.getElementById('cpw_size').value = t.size_sol;
+  document.getElementById('cpw_day').value = t.max_per_day;
+  document.getElementById('cpw_conc').value = t.max_concurrent;
+  paintCpwStatus();
+  wireCpw();
+}
+
+/* What it is DOING, not what it is set to. A follow list with no watcher behind
+   it looks identical to a working one until a coin is quietly missed. */
+function paintCpwStatus() {
+  const el = document.getElementById('cpw_status');
+  if (!el || !CPW) return;
+  const st = CPW.status || {}, t = CPW.settings || {};
+  const head = '<div class="k">Status</div>';
+  if (!t.enabled) {
+    el.innerHTML = head + '<div class="cpwrow off">Off. Nothing is being followed.</div>';
+    return;
+  }
+  if (!t.wallets || !t.wallets.length) {
+    el.innerHTML = head + '<div class="cpwrow warn">On, but no wallets to follow.</div>';
+    return;
+  }
+  if (st.stale) {
+    el.innerHTML = head + '<div class="cpwrow warn">The watcher has not reported in. '
+      + 'It is probably not running on the box.</div>';
+    return;
+  }
+  const w = st.watching || [];
+  el.innerHTML = head
+    + `<div class="cpwrow"><span>Armed today</span>`
+    + `<span class="m">${st.armed_today || 0} of ${t.max_per_day}</span></div>`
+    + (w.length
+        ? w.map(x => `<div class="cpwrow"><span>${esc(x.name || String(x.mint || '').slice(0, 10))}</span>`
+              + `<span class="m">waiting to migrate · ${ago(x.since)}</span></div>`).join('')
+        : '<div class="cpwrow off">Nothing waiting to migrate right now.</div>');
+}
+
+function wireCpw() {
+  const save = async (patch) => {
+    try {
+      const r = await api('/api/copy', { method: 'POST', body: JSON.stringify(patch) });
+      CPW = { ...CPW, settings: r.settings };
+      paintCpwStatus();
+      setMsg('Saved.');
+    } catch (e) { setMsg(e.detail || "Couldn't save that.", 'var(--red)'); }
+  };
+  const en = document.getElementById('cpw_enabled');
+  en.onchange = () => save({ enabled: en.checked });
+  document.getElementById('cpw_wallets').onchange = e =>
+    save({ wallets: e.target.value.split(/[\s,]+/).filter(Boolean) });
+
+  [['cpw_size', 'size_sol'], ['cpw_day', 'max_per_day'],
+   ['cpw_conc', 'max_concurrent']].forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    el.onchange = async () => {
+      await save({ [key]: Number(el.value) });
+      /* Show what the server STORED, not what was typed. It clamps, and a box
+         disagreeing with what is running is how you spend a size you never
+         chose. */
+      if (CPW && CPW.settings) el.value = CPW.settings[key];
+      const h = document.getElementById('hint_cpw_size');
+      if (id === 'cpw_size' && h)
+        h.classList.toggle('warn', Number(el.value) < 0.05);
+    };
+  });
 }
 
 function notifySectionHTML() {
