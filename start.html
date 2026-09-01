@@ -94,7 +94,7 @@
   /* ── hero ───────────────────────────────────────────────────────────── */
   .hero { padding: 80px 0 72px; }
   .hero .acts { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
-  .hero .fine { font-size: 11.5px; color: var(--dimmer); margin-top: 16px; }
+  .fine { font-size: 11.5px; color: var(--dimmer); margin-top: 16px; }
 
   /* ── problem ────────────────────────────────────────────────────────── */
   .story { border: 1px solid var(--line); border-radius: 12px;
@@ -261,6 +261,48 @@
   footer .wrap { display: flex; gap: 16px; align-items: center; }
   footer a { color: var(--dim); text-decoration: none; font-size: 12px; }
   footer a:hover { color: var(--fg); }
+
+  /* ── polish pass ──────────────────────────────────────────────────────
+     Borrowed from the reference site, and deliberately only the parts that
+     survive translation into monospace: scale, air, pill actions, one soft
+     shadow, one radius scale. The typeface stays mono because that IS the
+     brand — a sans headline here would look like every other landing page,
+     and the product it sells is a terminal. */
+
+  /* 1. Scale. The headline was clamped to 35px against a reference that runs
+        to 72px, which is why the page read quiet rather than confident. Mono
+        at this size needs tighter tracking or it falls apart. */
+  h1 { font-size: clamp(34px, 5.6vw, 58px); letter-spacing: -.045em;
+       line-height: 1.08; margin-bottom: 20px; }
+  h2 { font-size: clamp(23px, 3.1vw, 33px); letter-spacing: -.035em;
+       line-height: 1.16; margin-bottom: 14px; }
+  .lede { font-size: 15.5px; line-height: 1.7; max-width: 56ch; }
+
+  /* 2. Air. 80/72 was tight; the reference breathes at 96-150. */
+  .hero { padding: 108px 0 96px; }
+  .hero .acts { margin-top: 38px; gap: 14px; }
+
+  /* 3. Actions, matched to the app's own .glbtn rather than to the reference
+        site: 9px radius, weight 700, the same letter-spacing. A pill here
+        would be the one shape on the page that appears nowhere in the product
+        it is selling. */
+  .btn { border-radius: 9px; padding: 15px 28px; font-size: 14px;
+         font-weight: 700; letter-spacing: .04em; box-shadow: none; }
+  .btn:hover { opacity: .88; filter: none; transform: none; }
+  .btn.ghost:hover { border-color: var(--dim); opacity: 1; }
+
+
+  /* 5. Depth. The product surfaces were outlines; one soft shadow makes them
+        read as objects sitting on the page. */
+  .story, .board, .panel, .shot, .frame, .demo {
+    border-radius: 12px;                       /* the app's largest radius */
+    box-shadow: 0 12px 34px rgba(0,0,0,.09);   /* the app's own drop shadow */
+  }
+
+  /* 6. The app's radius scale, not a new one: 6/7/8/9/10/12 and nothing else. */
+  .btn.ghost { border-radius: 9px; }
+  .pricebox, .card, .note, .notbox { border-radius: 12px; }
+
 </style>
 </head>
 <body>
@@ -279,14 +321,13 @@
 <section class="hero">
   <div class="wrap">
     <div class="rise">
-      <h1>Semi-autonomous trading.</h1>
-      <p class="lede">Finding the coin was never the hard part. Execution is.
-        You pick it. EdgeLvl does the entry, the wait and the exit.</p>
+      <h1>The sharpest way to<br>trade on-chain.</h1>
+      <p class="lede">EdgeLvl takes the emotion out of trading. A new
+        systematic and semi-autonomous system.</p>
       <div class="acts">
         <a class="btn" href="#price">Get access</a>
         <a class="btn ghost" href="#how">See it work</a>
       </div>
-      <p class="fine">No fee on your trades. Every other terminal takes 1%.</p>
     </div>
   </div>
 </section>
@@ -504,7 +545,7 @@
       <ul class="incl">
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
                  stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          <b>No fee on your trades.</b></li>
+          <b>No fee on your trades.</b> Every other terminal takes 1%.</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
                  stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           The live board, filtered top moving coins on Solana</li>
