@@ -5692,11 +5692,17 @@ async function openCopy() {
   showView('copy');
   window.scrollTo(0, 0);
   cpwSay('');
-  document.getElementById('cpwbody').innerHTML = cpwSectionHTML();
+  const body = document.getElementById('cpwbody');
+  /* Rendered ONCE, after the data lands. It used to draw the form first and
+     fetch afterwards, so every field showed its placeholder for a moment —
+     and a change made in that window saved the placeholder OVER the real
+     setting. max_concurrent read 2 while the account said 5. */
+  body.innerHTML = '<div class="cpwempty">Loading…</div>';
   /* The rules live on the account, not this browser — the whole point of
      following a wallet is that it fires while you are asleep — so there is
      nothing to show and nothing to save without one. */
   if (!KEY) {
+    body.innerHTML = cpwSectionHTML();
     lockView('cpwlock', 'cpwbody',
       '<div class="signedout">' +
       '<p>Sign in to follow a wallet.</p>' +
@@ -5705,7 +5711,7 @@ async function openCopy() {
     return;
   }
   unlockView('cpwlock', 'cpwbody');
-  loadCpw();
+  await loadCpw();
 }
 
 function cpwSay(t, colour) {
