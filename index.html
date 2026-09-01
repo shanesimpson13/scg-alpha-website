@@ -154,11 +154,26 @@
 
     /* Copy trading. Same furniture as every other setting — it is not a
        different kind of page and should not look like one. */
-    .cpwlist { width: 100%; min-height: 60px; resize: vertical; margin-top: 8px;
-               background: var(--field); border: 1px solid var(--line);
-               border-radius: 7px; padding: 9px 10px; color: var(--fg);
-               font-family: inherit; font-size: 11.5px; line-height: 1.7; }
-    .cpwlist:focus { outline: none; border-color: var(--dim); }
+    .cpwtab { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    .cpwtab th { text-align: left; font-weight: 400; color: var(--dimmer);
+                 font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+                 padding: 0 8px 9px; white-space: nowrap; }
+    .cpwtab td { padding: 4px 8px; border-top: 1px solid var(--hair); }
+    .cpwtab td:first-child { width: 46%; }
+    .cpwmid { text-align: center; width: 1%; }
+    .cpwin { width: 100%; background: var(--field); border: 1px solid var(--line);
+             border-radius: 7px; padding: 8px 9px; color: var(--fg);
+             font-family: inherit; font-size: 11.5px; }
+    .cpwin:focus { outline: none; border-color: var(--dim); }
+    .cpwn { width: 76px; text-align: right; }
+    .cpwx { background: none; border: 0; color: var(--dimmer); font-size: 16px;
+            line-height: 1; cursor: pointer; padding: 4px 6px; font-family: inherit; }
+    .cpwx:hover { color: var(--red); }
+    .cpwadd { margin-top: 12px; background: none; border: 1px solid var(--line);
+              color: var(--dim); font-family: inherit; font-size: 11.5px;
+              padding: 9px 14px; border-radius: 8px; cursor: pointer; }
+    .cpwadd:hover { background: var(--hover); color: var(--fg); }
+    .cpwempty { color: var(--dimmer); font-size: 11.5px; padding: 12px 8px; }
     .cpwstat { margin-top: 13px; border: 1px solid var(--line); border-radius: 9px;
                padding: 11px 13px; }
     .cpwstat .k { color: var(--dimmer); font-size: 9.5px; letter-spacing: .12em;
@@ -1167,6 +1182,7 @@
       <span id="updated"></span>
       <a href="#" id="openjournal" class="icobtn" title="Trade journal" aria-label="Trade journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6.5"/><path d="M4 4.5A2.5 2.5 0 0 0 6.5 7H20"/><path d="M4 4.5v15A2.5 2.5 0 0 0 6.5 22H20"/><path d="M9 11h7M9 15h5"/></svg></a>
       <a href="/playbook" target="_blank" rel="noopener noreferrer" class="icobtn" title="Playbook" aria-label="Playbook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.1 2.7 2 6 2s6-.9 6-2v-5"/><path d="M22 10v5"/></svg></a>
+      <a href="#" id="opencopy" class="icobtn" title="Copy trading" aria-label="Copy trading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></a>
       <a href="#" id="opensettings" class="icobtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.331.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
       <a href="#" class="chip" id="walletchip">sign in</a>
     </div>
@@ -1357,6 +1373,17 @@
 
   <!-- The page lists what you own; editing one is a panel over it. Keeps the
        overview intact while you change a single strategy's numbers. -->
+  <div id="copy" style="display:none">
+    <div class="sethead">
+      <h2>Copy trading</h2>
+      <p>Follow a wallet's launches. When one of its coins migrates — completes
+         the curve and gets a pool — it is greenlit with the size and strategy
+         below, exactly as if you had pressed it yourself.</p>
+    </div>
+    <div id="cpwlock"><div id="cpwbody"></div></div>
+    <span id="cpwmsg"></span>
+  </div>
+
   <div id="settings" style="display:none">
     <div class="sethead">
       <h2>Your strategies</h2>
@@ -1728,7 +1755,7 @@ function paintHidden() {
 /* Exactly one of these is visible at a time. Five separate places used to
    toggle display, each hiding a different subset, which is why panels stacked
    and why the refresh could yank you off the one you were reading. */
-const VIEWS = ['board', 'detail', 'journal', 'settings'];
+const VIEWS = ['board', 'detail', 'journal', 'copy', 'settings'];
 let view = 'board';
 
 function showView(name) {
@@ -4477,7 +4504,6 @@ function renderSettings() {
     // strategy and the old layout gave no way to know that.
     + '<div class="everysec"><div class="everyhead">Applies to <b>every</b> strategy</div>'
     + ACCOUNT_SECTIONS.map(secHTML(OWN)).join('')
-    + cpwSectionHTML()
     + notifySectionHTML()
     + themeSectionHTML()
     + '</div>';
@@ -4486,7 +4512,6 @@ function renderSettings() {
   wireReorder();
   wireNotifyToggle();
   wireTheme();
-  loadCpw();
 
   /* Account-wide fields save themselves. There is no Apply on this page — that
      button belongs to a strategy — so anything here has to commit on change or
@@ -4654,48 +4679,49 @@ function setTheme(mode) {
    be a control that does nothing. */
 let CPW = null;
 
+/* One ROW per followed wallet, each a standing greenlight with its own size and
+   strategy — so two wallets can run at different sizes and one can be switched
+   off without losing its settings. Laid out as a table because that is what it
+   is, and because the board already taught this page how a table looks. */
 function cpwSectionHTML() {
-  return `<div class="setsec" id="cpwsec" style="display:none"><h3>Copy trading</h3>
-    <div class="setrow">
-      <div>
-        <div class="lab"><label class="tgl">
-          <input type="checkbox" id="cpw_enabled"><span class="box"></span>
-          <span>Follow these wallets</span></label></div>
-        <div class="hint">Watches for their launches and greenlights the ones
-          that migrate — about one in four. The rest die on the curve with
-          nothing to trade.</div>
-      </div>
+  const rules = (CPW && CPW.rules) || [];
+  const presetOpts = (sel) => ['<option value="">Default</option>']
+    .concat(Object.keys(PRESETS || {}).map(n =>
+      `<option value="${esc(n)}"${n === sel ? ' selected' : ''}>${esc(n)}</option>`))
+    .join('');
+  const row = (r, i) => `<tr data-i="${i}">
+      <td><input class="cpwin cpww" data-k="wallet" value="${esc(r.wallet || '')}"
+                 placeholder="Wallet address" spellcheck="false"
+                 autocomplete="off" data-1p-ignore data-lpignore="true"></td>
+      <td><select class="cpwin" data-k="preset">${presetOpts(r.preset || '')}</select></td>
+      <td><input class="cpwin cpwn" data-k="size_sol" type="number" step="any"
+                 value="${r.size_sol}" autocomplete="off"></td>
+      <td><input class="cpwin cpwn" data-k="max_per_day" type="number" step="1"
+                 value="${r.max_per_day}" autocomplete="off"></td>
+      <td class="cpwmid"><label class="tgl"><input type="checkbox" data-k="enabled"
+             ${r.enabled ? 'checked' : ''}><span class="box"></span></label></td>
+      <td class="cpwmid"><button class="cpwx" data-del="${i}" title="Remove">&times;</button></td>
+    </tr>`;
+  return `<div class="setsec" id="cpwsec"><h3>Follow</h3>
+    <div class="scroller">
+      <table class="cpwtab">
+        <thead><tr>
+          <th>Wallet</th><th>Config</th><th>Size</th><th>Most / day</th>
+          <th class="cpwmid">On</th><th></th>
+        </tr></thead>
+        <tbody id="cpwrows">${rules.map(row).join('')}</tbody>
+      </table>
     </div>
-    <div class="setrow" style="display:block">
-      <div><div class="lab"><span>Wallets</span></div>
-        <div class="hint">One address per line, up to ten.</div>
-        <textarea class="cpwlist" id="cpw_wallets" spellcheck="false"
-                  autocomplete="off" data-1p-ignore data-lpignore="true"></textarea>
-      </div>
-    </div>
-    <div class="setrow">
-      <div><div class="lab"><span>Size per trade</span></div>
-        <div class="hint" id="hint_cpw_size">Under 0.05 the bot's own gas is a
-          bigger share of the position than the edge it is chasing.</div></div>
-      <div class="setfield">
-        <input id="cpw_size" type="number" step="any" autocomplete="off"
-               data-1p-ignore data-lpignore="true"><span class="unit">SOL</span>
-      </div>
-    </div>
-    <div class="setrow">
-      <div><div class="lab"><span>Most per day</span></div>
-        <div class="hint" id="hint_cpw_day">The ceiling on automatic spending.</div></div>
-      <div class="setfield">
-        <input id="cpw_day" type="number" step="1" autocomplete="off"
-               data-1p-ignore data-lpignore="true">
-      </div>
-    </div>
-    <div class="setrow">
+    ${rules.length ? '' : '<div class="cpwempty">No wallets followed yet.</div>'}
+    <button class="cpwadd" id="cpwadd">+ Follow a wallet</button>
+
+    <div class="setrow" style="margin-top:18px">
       <div><div class="lab"><span>Open at once</span></div>
-        <div class="hint">How many copied coins may run together.</div></div>
+        <div class="hint">Across every followed wallet. A ceiling on how much of
+          the account can be in copied trades at the same time.</div></div>
       <div class="setfield">
-        <input id="cpw_conc" type="number" step="1" autocomplete="off"
-               data-1p-ignore data-lpignore="true">
+        <input id="cpw_conc" type="number" step="1"
+               value="${(CPW && CPW.max_concurrent) ?? 2}" autocomplete="off">
       </div>
     </div>
     <div class="cpwstat" id="cpw_status"></div>
@@ -4703,80 +4729,93 @@ function cpwSectionHTML() {
 }
 
 async function loadCpw() {
-  const sec = document.getElementById('cpwsec');
-  if (!sec) return;
   try { CPW = await api('/api/copy'); }
-  catch (e) { sec.remove(); return; }      // not the owner: no such feature here
-  sec.style.display = '';
-  const t = CPW.settings || {};
-  document.getElementById('cpw_enabled').checked = !!t.enabled;
-  document.getElementById('cpw_wallets').value = (t.wallets || []).join('\n');
-  document.getElementById('cpw_size').value = t.size_sol;
-  document.getElementById('cpw_day').value = t.max_per_day;
-  document.getElementById('cpw_conc').value = t.max_concurrent;
+  catch (e) {
+    // Not the owner. The page should not exist for an account that cannot use it.
+    const sec = document.getElementById('copy');
+    if (sec) sec.innerHTML = '';
+    const ic = document.getElementById('opencopy');
+    if (ic) ic.remove();
+    showView('board');
+    return;
+  }
+  document.getElementById('cpwbody').innerHTML = cpwSectionHTML();
   paintCpwStatus();
   wireCpw();
 }
 
-/* What it is DOING, not what it is set to. A follow list with no watcher behind
-   it looks identical to a working one until a coin is quietly missed. */
+/* What it is DOING, not what it is set to. */
 function paintCpwStatus() {
   const el = document.getElementById('cpw_status');
   if (!el || !CPW) return;
-  const st = CPW.status || {}, t = CPW.settings || {};
+  const st = CPW.status || {}, rules = CPW.rules || [];
+  const on = rules.filter(r => r.enabled);
   const head = '<div class="k">Status</div>';
-  if (!t.enabled) {
-    el.innerHTML = head + '<div class="cpwrow off">Off. Nothing is being followed.</div>';
-    return;
-  }
-  if (!t.wallets || !t.wallets.length) {
-    el.innerHTML = head + '<div class="cpwrow warn">On, but no wallets to follow.</div>';
+  if (!on.length) {
+    el.innerHTML = head + '<div class="cpwrow off">Nothing switched on.</div>';
     return;
   }
   if (st.stale) {
-    el.innerHTML = head + '<div class="cpwrow warn">The watcher has not reported in. '
-      + 'It is probably not running on the box.</div>';
+    el.innerHTML = head + '<div class="cpwrow warn">The watcher has not reported '
+      + 'in. It is probably not running on the box.</div>';
     return;
   }
+  const today = st.armed_today || {};
   const w = st.watching || [];
   el.innerHTML = head
-    + `<div class="cpwrow"><span>Armed today</span>`
-    + `<span class="m">${st.armed_today || 0} of ${t.max_per_day}</span></div>`
+    + on.map(r => `<div class="cpwrow"><span>${esc((r.wallet || '').slice(0, 6))}…</span>`
+        + `<span class="m">${today[r.id] || 0} of ${r.max_per_day} today</span></div>`).join('')
     + (w.length
         ? w.map(x => `<div class="cpwrow"><span>${esc(x.name || String(x.mint || '').slice(0, 10))}</span>`
-              + `<span class="m">waiting to migrate · ${ago(x.since)}</span></div>`).join('')
+            + `<span class="m">waiting to migrate · ${ago(x.since)}</span></div>`).join('')
         : '<div class="cpwrow off">Nothing waiting to migrate right now.</div>');
 }
 
 function wireCpw() {
-  const save = async (patch) => {
+  const save = async () => {
     try {
-      const r = await api('/api/copy', { method: 'POST', body: JSON.stringify(patch) });
-      CPW = { ...CPW, settings: r.settings };
-      paintCpwStatus();
-      setMsg('Saved.');
-    } catch (e) { setMsg(e.detail || "Couldn't save that.", 'var(--red)'); }
+      const r = await api('/api/copy', { method: 'POST', body: JSON.stringify({
+        rules: CPW.rules,
+        max_concurrent: Number(document.getElementById('cpw_conc').value),
+      }) });
+      /* Redraw from what the server STORED, not from what was typed. It clamps,
+         and a box disagreeing with what is running is how you spend a size you
+         never chose. */
+      CPW.rules = r.rules; CPW.max_concurrent = r.max_concurrent;
+      document.getElementById('cpwbody').innerHTML = cpwSectionHTML();
+      paintCpwStatus(); wireCpw();
+      cpwSay('Saved.');
+    } catch (e) { cpwSay(e.detail || "Couldn't save that.", 'var(--red)'); }
   };
-  const en = document.getElementById('cpw_enabled');
-  en.onchange = () => save({ enabled: en.checked });
-  document.getElementById('cpw_wallets').onchange = e =>
-    save({ wallets: e.target.value.split(/[\s,]+/).filter(Boolean) });
 
-  [['cpw_size', 'size_sol'], ['cpw_day', 'max_per_day'],
-   ['cpw_conc', 'max_concurrent']].forEach(([id, key]) => {
-    const el = document.getElementById(id);
-    el.onchange = async () => {
-      await save({ [key]: Number(el.value) });
-      /* Show what the server STORED, not what was typed. It clamps, and a box
-         disagreeing with what is running is how you spend a size you never
-         chose. */
-      if (CPW && CPW.settings) el.value = CPW.settings[key];
-      const h = document.getElementById('hint_cpw_size');
-      if (id === 'cpw_size' && h)
-        h.classList.toggle('warn', Number(el.value) < 0.05);
+  document.querySelectorAll('#cpwrows [data-k]').forEach(el => {
+    el.onchange = () => {
+      const i = Number(el.closest('tr').dataset.i);
+      const k = el.dataset.k;
+      CPW.rules[i][k] = el.type === 'checkbox' ? el.checked
+                      : (el.type === 'number' ? Number(el.value) : el.value.trim());
+      save();
     };
   });
+  document.querySelectorAll('#cpwrows [data-del]').forEach(b => {
+    b.onclick = () => { CPW.rules.splice(Number(b.dataset.del), 1); save(); };
+  });
+  const add = document.getElementById('cpwadd');
+  if (add) add.onclick = () => {
+    CPW.rules = CPW.rules || [];
+    if (CPW.rules.length >= 10) return cpwSay('Ten is the limit.', 'var(--amber)');
+    /* Added switched OFF. A row that starts spending the moment it appears is
+       the wrong default for the one feature that trades without you choosing
+       the coin. */
+    CPW.rules.push({ wallet: '', preset: '', size_sol: 0.05,
+                     max_per_day: 8, enabled: false });
+    document.getElementById('cpwbody').innerHTML = cpwSectionHTML();
+    paintCpwStatus(); wireCpw();
+  };
+  const conc = document.getElementById('cpw_conc');
+  if (conc) conc.onchange = save;
 }
+
 
 function notifySectionHTML() {
   if (!('Notification' in window)) {
@@ -5636,6 +5675,34 @@ function applyTp2() {
 }
 
 document.getElementById('opensettings').onclick = e => { e.preventDefault(); openSettings(); };
+document.getElementById('opencopy').onclick = e => { e.preventDefault(); openCopy(); };
+
+async function openCopy() {
+  showView('copy');
+  window.scrollTo(0, 0);
+  cpwSay('');
+  document.getElementById('cpwbody').innerHTML = cpwSectionHTML();
+  /* The rules live on the account, not this browser — the whole point of
+     following a wallet is that it fires while you are asleep — so there is
+     nothing to show and nothing to save without one. */
+  if (!KEY) {
+    lockView('cpwlock', 'cpwbody',
+      '<div class="signedout">' +
+      '<p>Sign in to follow a wallet.</p>' +
+      '<p class="sub">Your follow list runs on the account, so it keeps working ' +
+      'with this tab closed.</p></div>');
+    return;
+  }
+  unlockView('cpwlock', 'cpwbody');
+  loadCpw();
+}
+
+function cpwSay(t, colour) {
+  const el = document.getElementById('cpwmsg');
+  if (!el) return;
+  el.textContent = t || '';
+  el.style.color = colour || 'var(--dim)';
+}
 document.getElementById('stratclose').onclick = closeStrategyEditor;
 document.getElementById('stratmodal').onclick = e => {
   // Only the backdrop closes it. A click inside the card is someone using the
