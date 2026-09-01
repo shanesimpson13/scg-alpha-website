@@ -1276,13 +1276,14 @@
           <div class="buycard" id="buycard" style="display:none">
             <div class="buycard-h">Buy SOL with a card</div>
             <div class="amts" id="wamts">
-              <button data-usd="25">$25</button>
-              <button data-usd="50" class="on">$50</button>
-              <button data-usd="100">$100</button>
+              <button data-sol="0.25">0.25 SOL</button>
+              <button data-sol="0.5" class="on">0.5 SOL</button>
+              <button data-sol="1">1 SOL</button>
             </div>
             <button class="glbtn solbtn" id="wbuy">Buy with card</button>
-            <div class="buynote" id="wbuynote">Handled by Coinbase. The SOL lands
-              in this wallet — the one only you can withdraw from.</div>
+            <div class="buynote" id="wbuynote">Card or Apple Pay, handled by
+              MoonPay. The SOL lands in this wallet — the one only you can
+              withdraw from. You can change the amount at checkout.</div>
           </div>
           <div class="orsend" id="orsend" style="display:none">or send SOL</div>
           <div class="netrow" id="netrow-dep"></div>
@@ -4001,10 +4002,10 @@ const copyAddr = async () => {
    The measured problem this exists to fix: of twelve accounts, ten deposited
    nothing at all. "Send SOL to this address" assumes you already hold SOL
    somewhere else, and most people who signed up did not. */
-let buyUsd = 50;
+let buySol = 0.5;
 document.querySelectorAll('#wamts button').forEach(b => {
   b.onclick = () => {
-    buyUsd = Number(b.dataset.usd);
+    buySol = Number(b.dataset.sol);
     document.querySelectorAll('#wamts button').forEach(x => x.classList.toggle('on', x === b));
   };
 });
@@ -4018,7 +4019,7 @@ document.getElementById('wbuy').onclick = async () => {
   const was = btn.textContent;
   btn.textContent = 'Opening…';
   try {
-    const r = await window.EdgeAuth.buyWithCard(addr, buyUsd);
+    const r = await window.EdgeAuth.buyWithCard(addr, buySol);
     if (!r) throw new Error('unavailable');
     /* Opened before any await resolves inside the click would be better, but
        the session has to exist first. If the browser blocks it, say so rather
@@ -4028,7 +4029,7 @@ document.getElementById('wbuy').onclick = async () => {
       note.innerHTML = 'Your browser blocked the window. '
         + `<a href="${r.url}" target="_blank" rel="noopener">Open the checkout</a>.`;
     } else {
-      note.textContent = 'Finish in the Coinbase window. The balance updates here '
+      note.textContent = 'Finish in the MoonPay window. The balance updates here '
                        + 'on its own once it lands.';
       watchForDeposit();
     }
@@ -5615,7 +5616,7 @@ start();
    adapter every call dies with "Unable to access storage" at call time rather
    than at construction — so the page looks perfectly healthy while sign-in is
    dead. The version is pinned because 0.7.0 is broken on this CDN. */
-import Privy, { LocalStorage, getCoinbaseOnRampUrl } from 'https://esm.sh/@privy-io/js-sdk-core@0.68.6';
+import Privy, { LocalStorage } from 'https://esm.sh/@privy-io/js-sdk-core@0.68.6';
 
 const privy = new Privy({
   appId: 'cmsasu2fa00930dlc04skfjwl',      // public identifier, not a secret
@@ -5635,26 +5636,31 @@ window.EdgeAuth = {
   }),
 
   /* Buying SOL with a card, straight into this wallet.
-     initOnRampSession hands back the Coinbase app_id along with the session,
-     so there is nothing for us to configure here — whatever is enabled in the
-     Privy dashboard is what the customer gets. Returns null when the rail is
-     not available, and the caller hides the button rather than offering a
-     purchase that cannot complete. */
-  canBuyWithCard: () => !!(privy.funding && privy.funding.coinbase),
-  buyWithCard: async (address, usd) => {
-    if (!(privy.funding && privy.funding.coinbase)) return null;
-    const session = await privy.funding.coinbase.initOnRampSession({
-      addresses: [{ address, blockchains: ['solana'] }],
+
+     MoonPay rather than Coinbase: which providers exist in the SDK and which
+     are ENABLED for the app are different questions, and only the dashboard
+     knows the second. This checks the provider we actually turned on, and the
+     purchase itself is still allowed to fail — the deposit address sits right
+     underneath as the fallback.
+
+     sign() returns a signed URL and nothing else is needed: no app id, no
+     session juggling. quoteCurrencyAmount is an amount of SOL, not dollars,
+     which is why the buttons offer SOL — inventing a USD conversion would mean
+     carrying a price we do not have and cannot keep fresh. */
+  canBuyWithCard: () => !!(privy.funding && privy.funding.moonpay),
+  buyWithCard: async (address, sol) => {
+    if (!(privy.funding && privy.funding.moonpay)) return null;
+    const r = await privy.funding.moonpay.sign({
+      address,
+      config: {
+        currencyCode: 'SOL',
+        quoteCurrencyAmount: sol,
+        // paymentMethod deliberately unset: MoonPay then offers every method
+        // the buyer's country supports, Apple and Google Pay included, rather
+        // than us pinning it to a card they may not want to use.
+      },
     });
-    const { url } = getCoinbaseOnRampUrl({
-      appId: session.app_id,
-      input: session,
-      amount: String(usd),
-      blockchain: 'solana',
-      asset: 'SOL',
-      experience: 'buy',
-    });
-    return { url: url.toString(), partnerUserId: session.partner_user_id };
+    return { url: r.signedUrl, txId: r.externalTransactionId };
   },
 };
 
