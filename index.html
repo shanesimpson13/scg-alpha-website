@@ -152,6 +152,25 @@
                cursor: pointer; padding: 4px 8px; font-family: inherit; }
     .modal-x:hover { color: var(--fg); }
 
+    /* Card funding sits ABOVE the deposit address on purpose. Sending SOL from
+       somewhere else assumes you already hold SOL somewhere else; a card does
+       not, and that assumption is the step most people never came back from. */
+    .buycard { border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+               margin-bottom: 16px; }
+    .buycard-h { font-size: 11.5px; color: var(--dim); margin-bottom: 10px; }
+    .amts { display: flex; gap: 6px; margin-bottom: 10px; }
+    .amts button { flex: 1; border: 1px solid var(--line); background: none;
+                   color: var(--dim); font-family: inherit; font-size: 12px;
+                   padding: 8px 0; border-radius: 8px; cursor: pointer; }
+    .amts button.on { border-color: var(--fg); color: var(--fg); background: var(--panel); }
+    .amts button:hover { background: var(--hover); }
+    #wbuy { width: 100%; justify-content: center; }
+    .buynote { font-size: 10.5px; color: var(--dimmer); margin-top: 9px; line-height: 1.5; }
+    .orsend { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px;
+              font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+              color: var(--dimmer); }
+    .orsend::before, .orsend::after { content: ""; flex: 1; height: 1px; background: var(--hair); }
+
     /* Which chain the board is showing. Solana is the product; the others are
        here to be watched. */
     .chaintabs { display: inline-flex; gap: 3px; margin-left: 12px; }
@@ -1254,6 +1273,18 @@
         </div>
 
         <div class="wpane" id="wdep">
+          <div class="buycard" id="buycard" style="display:none">
+            <div class="buycard-h">Buy SOL with a card</div>
+            <div class="amts" id="wamts">
+              <button data-usd="25">$25</button>
+              <button data-usd="50" class="on">$50</button>
+              <button data-usd="100">$100</button>
+            </div>
+            <button class="glbtn solbtn" id="wbuy">Buy with card</button>
+            <div class="buynote" id="wbuynote">Handled by Coinbase. The SOL lands
+              in this wallet — the one only you can withdraw from.</div>
+          </div>
+          <div class="orsend" id="orsend" style="display:none">or send SOL</div>
           <div class="netrow" id="netrow-dep"></div>
           <div class="qrbox"><div id="wqr"></div></div>
           <p class="wtip">Send SOL on the Solana network to this address.</p>
@@ -3657,7 +3688,19 @@ async function refreshChip() {
   }
 }
 
+/* Only shown when the rail actually exists. A button that opens nothing is
+   worse than no button, especially on the step people already drop out of. */
+function paintBuyCard() {
+  const box = document.getElementById('buycard');
+  const or = document.getElementById('orsend');
+  const ok = !!(window.EdgeAuth && window.EdgeAuth.canBuyWithCard
+                && window.EdgeAuth.canBuyWithCard());
+  if (box) box.style.display = ok ? '' : 'none';
+  if (or) or.style.display = ok ? '' : 'none';
+}
+
 function openWallet() {
+  paintBuyCard();
   document.getElementById('wmodal').style.display = 'flex';
   document.getElementById('wsignin').style.display = KEY ? 'none' : 'block';
   document.getElementById('wfunded').style.display = KEY ? 'block' : 'none';
@@ -3954,6 +3997,69 @@ const copyAddr = async () => {
   el.classList.add('copied');
   setTimeout(() => el.classList.remove('copied'), 1400);
 };
+/* ── card funding ──────────────────────────────────────────────────────
+   The measured problem this exists to fix: of twelve accounts, ten deposited
+   nothing at all. "Send SOL to this address" assumes you already hold SOL
+   somewhere else, and most people who signed up did not. */
+let buyUsd = 50;
+document.querySelectorAll('#wamts button').forEach(b => {
+  b.onclick = () => {
+    buyUsd = Number(b.dataset.usd);
+    document.querySelectorAll('#wamts button').forEach(x => x.classList.toggle('on', x === b));
+  };
+});
+
+document.getElementById('wbuy').onclick = async () => {
+  const btn = document.getElementById('wbuy');
+  const note = document.getElementById('wbuynote');
+  const addr = document.getElementById('waddr').textContent.trim();
+  if (!addr || addr === '…') return;
+  btn.disabled = true;
+  const was = btn.textContent;
+  btn.textContent = 'Opening…';
+  try {
+    const r = await window.EdgeAuth.buyWithCard(addr, buyUsd);
+    if (!r) throw new Error('unavailable');
+    /* Opened before any await resolves inside the click would be better, but
+       the session has to exist first. If the browser blocks it, say so rather
+       than leaving a button that looks like it did nothing. */
+    const w = window.open(r.url, '_blank', 'noopener,noreferrer');
+    if (!w) {
+      note.innerHTML = 'Your browser blocked the window. '
+        + `<a href="${r.url}" target="_blank" rel="noopener">Open the checkout</a>.`;
+    } else {
+      note.textContent = 'Finish in the Coinbase window. The balance updates here '
+                       + 'on its own once it lands.';
+      watchForDeposit();
+    }
+  } catch (e) {
+    note.textContent = "Card purchases aren't available right now. "
+                     + 'You can still send SOL to the address below.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = was;
+  }
+};
+
+/* The onramp settles out of band, so watch OUR balance rather than trust a
+   callback we do not control. Gives up quietly — nothing is lost, the next
+   time the drawer opens it reads the same chain. */
+let depositWatch = null;
+function watchForDeposit() {
+  clearInterval(depositWatch);
+  const start = walletTotal;
+  const until = Date.now() + 15 * 60 * 1000;
+  depositWatch = setInterval(async () => {
+    if (Date.now() > until) { clearInterval(depositWatch); depositWatch = null; return; }
+    await loadWallet();
+    if (walletTotal > start) {
+      clearInterval(depositWatch); depositWatch = null;
+      document.getElementById('wbuynote').textContent =
+        `Funded — ${sol4(walletTotal)} SOL. You can greenlight a coin now.`;
+    }
+  }, 6000);
+}
+
 document.getElementById('waddr').onclick = copyAddr;
 document.getElementById('waddr').onkeydown = e => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copyAddr(); }
@@ -5509,7 +5615,7 @@ start();
    adapter every call dies with "Unable to access storage" at call time rather
    than at construction — so the page looks perfectly healthy while sign-in is
    dead. The version is pinned because 0.7.0 is broken on this CDN. */
-import Privy, { LocalStorage } from 'https://esm.sh/@privy-io/js-sdk-core@0.68.6';
+import Privy, { LocalStorage, getCoinbaseOnRampUrl } from 'https://esm.sh/@privy-io/js-sdk-core@0.68.6';
 
 const privy = new Privy({
   appId: 'cmsasu2fa00930dlc04skfjwl',      // public identifier, not a secret
@@ -5527,6 +5633,29 @@ window.EdgeAuth = {
   signTransaction: (transaction) => privy.embeddedWallet.signTransaction({
     transaction, encoding: 'base64', chainType: 'solana',
   }),
+
+  /* Buying SOL with a card, straight into this wallet.
+     initOnRampSession hands back the Coinbase app_id along with the session,
+     so there is nothing for us to configure here — whatever is enabled in the
+     Privy dashboard is what the customer gets. Returns null when the rail is
+     not available, and the caller hides the button rather than offering a
+     purchase that cannot complete. */
+  canBuyWithCard: () => !!(privy.funding && privy.funding.coinbase),
+  buyWithCard: async (address, usd) => {
+    if (!(privy.funding && privy.funding.coinbase)) return null;
+    const session = await privy.funding.coinbase.initOnRampSession({
+      addresses: [{ address, blockchains: ['solana'] }],
+    });
+    const { url } = getCoinbaseOnRampUrl({
+      appId: session.app_id,
+      input: session,
+      amount: String(usd),
+      blockchain: 'solana',
+      asset: 'SOL',
+      experience: 'buy',
+    });
+    return { url: url.toString(), partnerUserId: session.partner_user_id };
+  },
 };
 
 const $ = id => document.getElementById(id);
