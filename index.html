@@ -185,6 +185,15 @@
     .cpwrow .m { color: var(--dimmer); margin-left: auto; font-size: 10.5px; }
     .cpwrow.warn { color: var(--amber); }
     .cpwrow.off  { color: var(--dimmer); }
+    /* The row shows six characters, which is enough to tell two wallets apart
+       and not enough to paste anywhere. Clicking copies the whole address.
+       Inline rather than the .waddr treatment: that one is a block with a
+       "Click to copy" caption under it, which would break this flex row. */
+    .cpwaddr { font: inherit; color: inherit; background: none; padding: 0;
+               border: 0; border-bottom: 1px dotted var(--line); cursor: pointer; }
+    .cpwaddr:hover  { color: var(--fg); border-bottom-color: var(--dim); }
+    .cpwaddr.copied { color: var(--green); border-bottom-color: transparent; }
+    .cpwaddr.copied::after { content: ' copied'; font-size: 10px; letter-spacing: .04em; }
 
     /* Card funding sits ABOVE the deposit address on purpose. Sending SOL from
        somewhere else assumes you already hold SOL somewhere else; a card does
@@ -4774,7 +4783,9 @@ function paintCpwStatus() {
   const today = st.armed_today || {};
   const w = st.watching || [];
   el.innerHTML = head
-    + on.map(r => `<div class="cpwrow"><span>${esc((r.wallet || '').slice(0, 6))}…</span>`
+    + on.map(r => `<div class="cpwrow">`
+        + `<button type="button" class="cpwaddr" data-addr="${esc(r.wallet || '')}"`
+        + ` title="${esc(r.wallet || '')}">${esc((r.wallet || '').slice(0, 6))}…</button>`
         + `<span class="m">${today[r.id] || 0} of ${r.max_per_day} today</span></div>`).join('')
     + (w.length
         ? w.map(x => `<div class="cpwrow"><span>${esc(x.name || String(x.mint || '').slice(0, 10))}</span>`
@@ -4785,6 +4796,20 @@ function paintCpwStatus() {
            migrate while this list is empty. "Nothing waiting to migrate" claimed
            to know that; this says only what we actually looked at. */
         : '<div class="cpwrow off">No recent buys from these wallets waiting to migrate.</div>');
+
+  /* Wired here, not in wireCpw(): this innerHTML is rewritten on every status
+     poll, so anything bound to the old buttons dies with them. Copies the FULL
+     address from the dataset — the visible text is truncated and pasting six
+     characters somewhere would be worse than not offering copy at all. */
+  el.querySelectorAll('.cpwaddr').forEach(b => {
+    b.onclick = async () => {
+      const addr = b.dataset.addr || '';
+      if (!addr) return;
+      try { await navigator.clipboard.writeText(addr); } catch (e) { return; }
+      b.classList.add('copied');
+      setTimeout(() => b.classList.remove('copied'), 1400);
+    };
+  });
 }
 
 function wireCpw() {
