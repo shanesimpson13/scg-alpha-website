@@ -4792,13 +4792,17 @@ function paintCpwStatus() {
         + `<span class="m">${today[r.id] || 0} today</span></div>`).join('')
     + (w.length
         ? w.map(x => `<div class="cpwrow"><span>${esc(x.name || String(x.mint || '').slice(0, 10))}</span>`
-            + `<span class="m">waiting to migrate · ${ago(x.since)}</span></div>`).join('')
+            /* Not "waiting to migrate" — the gate is board membership now, and
+               a coin can be migrated yet still absent from the board. Saying
+               migrate described the old Jupiter-quote check that let two
+               bonding-curve coins through. */
+            + `<span class="m">waiting for the board · ${ago(x.since)}</span></div>`).join('')
         /* Scoped deliberately. The watcher only sees buys by THESE wallets,
            only inside COPY_MAX_SIGNAL_AGE, and it drops a candidate once
            COPY_MIGRATION_TIMEOUT passes — so a coin can genuinely be waiting to
            migrate while this list is empty. "Nothing waiting to migrate" claimed
            to know that; this says only what we actually looked at. */
-        : '<div class="cpwrow off">No recent buys from these wallets waiting to migrate.</div>');
+        : '<div class="cpwrow off">No recent buys from these wallets waiting for the board.</div>');
 
   /* Wired here, not in wireCpw(): this innerHTML is rewritten on every status
      poll, so anything bound to the old buttons dies with them. Copies the FULL
