@@ -4786,7 +4786,10 @@ function paintCpwStatus() {
     + on.map(r => `<div class="cpwrow">`
         + `<button type="button" class="cpwaddr" data-addr="${esc(r.wallet || '')}"`
         + ` title="${esc(r.wallet || '')}">${esc((r.wallet || '').slice(0, 6))}…</button>`
-        + `<span class="m">${today[r.id] || 0} of ${r.max_per_day} today</span></div>`).join('')
+        /* No "of N" any more — the per-day cap is gone, so quoting a ceiling
+           that nothing enforces would be a lie in the one place you check to
+           see what the bot is doing. */
+        + `<span class="m">${today[r.id] || 0} today</span></div>`).join('')
     + (w.length
         ? w.map(x => `<div class="cpwrow"><span>${esc(x.name || String(x.mint || '').slice(0, 10))}</span>`
             + `<span class="m">waiting to migrate · ${ago(x.since)}</span></div>`).join('')
