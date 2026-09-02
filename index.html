@@ -4779,7 +4779,12 @@ function paintCpwStatus() {
     + (w.length
         ? w.map(x => `<div class="cpwrow"><span>${esc(x.name || String(x.mint || '').slice(0, 10))}</span>`
             + `<span class="m">waiting to migrate · ${ago(x.since)}</span></div>`).join('')
-        : '<div class="cpwrow off">Nothing waiting to migrate right now.</div>');
+        /* Scoped deliberately. The watcher only sees buys by THESE wallets,
+           only inside COPY_MAX_SIGNAL_AGE, and it drops a candidate once
+           COPY_MIGRATION_TIMEOUT passes — so a coin can genuinely be waiting to
+           migrate while this list is empty. "Nothing waiting to migrate" claimed
+           to know that; this says only what we actually looked at. */
+        : '<div class="cpwrow off">No recent buys from these wallets waiting to migrate.</div>');
 }
 
 function wireCpw() {
