@@ -2014,6 +2014,12 @@ document.querySelectorAll('thead th.sortable').forEach(th => th.onclick = () => 
 });
 
 /* ── detail ── */
+/* GMGN's own slug for the chain we're on. The chart iframe and every deep link
+   into GMGN carried a hardcoded "sol", so a Robinhood coin asked for a SOLANA
+   chart of an EVM address and rendered nothing at all. One function, so the
+   next chain is one line rather than four scattered literals. */
+function gmgnChain(c) { return (c || chain) === 'robinhood' ? 'robinhood' : 'sol'; }
+
 async function openDetail(mint) {
   // One check per visit to a coin, answered from a 60s server-side cache.
   checkChartHost();
@@ -2061,7 +2067,7 @@ function renderDetail() {
         <div class="mintline">
           <code class="ca" title="Click to copy the full address"
                 onclick="copyCA(this,'${esc(c.mint)}')">${shortCA(c.mint)}</code>
-          <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank" rel="noopener">GMGN ↗</a>
+          <a href="https://gmgn.ai/${gmgnChain()}/token/${esc(c.mint)}" target="_blank" rel="noopener">GMGN ↗</a>
           ${links(c)}
         </div>
       </div>
@@ -2079,10 +2085,10 @@ function renderDetail() {
                <div>Chart unavailable</div>
                <p>GMGN's chart service is down. Your bot is unaffected: prices
                   come from Jupiter and it keeps trading normally.</p>
-               <a href="https://gmgn.ai/sol/token/${esc(c.mint)}" target="_blank"
+               <a href="https://gmgn.ai/${gmgnChain()}/token/${esc(c.mint)}" target="_blank"
                   rel="noopener">Open on GMGN &#8599;</a>
              </div>`
-          : `<iframe src="https://www.gmgn.cc/kline/sol/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>`}
+          : `<iframe src="https://www.gmgn.cc/kline/${gmgnChain()}/${esc(c.mint)}" title="chart" referrerpolicy="no-referrer"></iframe>`}
       </div>
       <div class="tier">
       <div class="stats">
@@ -3634,7 +3640,7 @@ function paintJournal(d) {
       : (p >= 0 ? '<span class="up">win</span>' : '<span class="down">loss</span>');
     return `<tr>
       <td>${r.mint
-        ? `<a class="jcoin" href="https://gmgn.ai/sol/token/${esc(r.mint)}" target="_blank" rel="noopener" title="Open the chart on GMGN">${esc(r.name || '')}</a>`
+        ? `<a class="jcoin" href="https://gmgn.ai/${gmgnChain()}/token/${esc(r.mint)}" target="_blank" rel="noopener" title="Open the chart on GMGN">${esc(r.name || '')}</a>`
         : `<span class="s">${esc(r.name || '')}</span>`}${
         /* Only a taken trade has anything to replay — a greenlight that never
            filled has no fills to mark on the chart. */
