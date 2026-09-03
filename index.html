@@ -216,6 +216,24 @@
 
     /* Which chain the board is showing. Solana is the product; the others are
        here to be watched. */
+    /* Chain switcher, in the header rather than over the board — because it no
+       longer scopes the board alone. Switching chains switches the whole
+       product: board, positions, journal and wallet. A control that changes
+       everything belongs beside the wordmark, not inside one panel. */
+    .chainsel { display: inline-flex; gap: 2px; padding: 2px; margin-right: 10px;
+                background: var(--field); border: 1px solid var(--line);
+                border-radius: 9px; }
+    .chainbtn { display: inline-flex; align-items: center; gap: 6px;
+                background: none; border: 0; border-radius: 7px; cursor: pointer;
+                color: var(--dimmer); font-family: inherit; font-size: 10px;
+                letter-spacing: .08em; text-transform: uppercase;
+                padding: 5px 10px; line-height: 1; }
+    .chainbtn svg { width: 13px; height: 13px; flex: none; }
+    .chainbtn:hover { color: var(--dim); }
+    .chainbtn.on { color: var(--fg); background: var(--panel);
+                   box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+    @media (max-width: 620px) { .chainbtn .cname { display: none; } }
+
     .chaintabs { display: inline-flex; gap: 3px; margin-left: 12px; }
     .chaintab { background: none; border: 1px solid transparent; color: var(--dimmer);
                 font-family: inherit; font-size: 9.5px; letter-spacing: .1em;
@@ -1189,6 +1207,18 @@
   <header>
     <div class="brand" id="brand" title="Back to the board"><svg class="wordmark" viewBox="97.350 166.297 180.303 39.203" fill="currentColor" role="img" aria-label="EDGE"><g transform="translate(93.427734,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g><g transform="translate(140.461163,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 35.28125 -39.203125 L 35.28125 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 0 Z M 35.28125 -7.84375 L 35.28125 -31.359375 L 43.125 -31.359375 L 43.125 -7.84375 Z M 35.28125 -7.84375 "/></g><g transform="translate(187.494592,205.499987)"><path d="M 11.765625 0 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 -15.6875 L 19.59375 -15.6875 L 19.59375 -23.515625 L 43.125 -23.515625 L 43.125 0 Z M 3.921875 -7.84375 L 3.921875 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 Z M 11.765625 -31.359375 L 11.765625 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 Z M 11.765625 -31.359375 "/></g><g transform="translate(234.528021,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g></svg></div>
     <div class="status">
+      <!-- Two products, one shell. Each chain has its own board, positions,
+           journal and wallet; this picks which one you are looking at. -->
+      <div class="chainsel" id="chainsel" role="tablist" aria-label="Chain">
+        <button class="chainbtn on" data-chain="sol" role="tab" aria-selected="true" title="Solana">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.7 16.3a.8.8 0 0 1 .6-.3h14.1c.4 0 .6.5.3.8l-3 3a.8.8 0 0 1-.6.2H2c-.4 0-.6-.4-.3-.7l3-3Z"/><path d="M4.7 4.0a.8.8 0 0 1 .6-.3h14.1c.4 0 .6.5.3.8l-3 3a.8.8 0 0 1-.6.2H2c-.4 0-.6-.4-.3-.7l3-3Z"/><path d="M19.4 10.1a.8.8 0 0 0-.6-.3H4.7c-.4 0-.6.5-.3.8l3 3a.8.8 0 0 0 .6.2h14.1c.4 0 .6-.4.3-.7l-3-3Z"/></svg>
+          <span class="cname">Solana</span>
+        </button>
+        <button class="chainbtn" data-chain="robinhood" role="tab" aria-selected="false" title="Robinhood Chain">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14.6 2.1c.5-.2 1 .2.9.7l-1.2 5.5 3.9-.9c.5-.1.9.4.7.9l-6.5 13.5c-.2.5-1 .4-1-.2l.6-6.6-3.8 1c-.5.1-.9-.4-.7-.9L14.6 2.1Z"/></svg>
+          <span class="cname">Robinhood</span>
+        </button>
+      </div>
       <div class="live" id="livewrap"><div class="dot"></div><span id="livetxt">live</span></div>
       <span id="updated"></span>
       <a href="#" id="openjournal" class="icobtn" title="Trade journal" aria-label="Trade journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6.5"/><path d="M4 4.5A2.5 2.5 0 0 0 6.5 7H20"/><path d="M4 4.5v15A2.5 2.5 0 0 0 6.5 22H20"/><path d="M9 11h7M9 15h5"/></svg></a>
@@ -1203,10 +1233,6 @@
     <div id="activity"></div>
     <div class="bar">
       <span style="letter-spacing:.1em">TRENDING · 5M</span>
-      <div class="chaintabs" id="chaintabs">
-        <button class="chaintab on" data-chain="sol">Solana</button>
-        <button class="chaintab" data-chain="robinhood">Robinhood</button>
-      </div>
       <div class="spacer"></div>
       <div class="fltgroup">
         <label title="Minimum 5-minute volume. Can't go below $25,000 — under that a coin is too thin to trade."><span class="fk">min 5m vol<span class="atmin">min</span></span><span class="val"><input id="f_vol" type="number" min="25000" step="1000"><span class="fu">$</span></span><span class="floornote" id="n_vol"></span></label>
@@ -1501,7 +1527,9 @@ const FILTER_FLOORS = { vol: 25000, mc: 40000, volmc: 5 };
 let filters = { ...FILTER_DEFAULTS };
 /* Which chain the board shows. Solana is the only one the bot can trade, so
    this changes what you can SEE, never what you can arm. */
-let boardChain = 'sol';
+/* The chain the whole app is showing — board, positions, journal, wallet.
+   Not board-scoped any more, so it is no longer called boardChain. */
+let chain = 'sol';
 try { filters = { ...filters, ...JSON.parse(localStorage.getItem('edgelvl_filters') || '{}') }; } catch (e) {}
 // Anything saved before these floors existed gets pulled back up to them.
 for (const [k, min] of Object.entries({ vol: 25000, mc: 40000, volmc: 5 })) {
@@ -1739,7 +1767,7 @@ function renderBoard() {
        wallet and the executor are all Solana. Opening a coin page there would
        show a GREENLIGHT that cannot possibly fire, so the rows do not open one
        until there is an executor behind them. */
-    if (boardChain === 'sol') {
+    if (tradeable(chain)) {
       tb.querySelectorAll('tr').forEach(r => r.onclick = () => openDetail(r.dataset.mint));
     }
     tb.querySelectorAll('[data-hide]').forEach(b => b.onclick = ev => {
@@ -1795,7 +1823,7 @@ async function refresh() {
   try {
     const d = await api(`/api/trending?limit=50&min_vol=${filters.vol}` +
                         `&min_mc=${filters.mc}&max_age_days=${filters.age}` +
-                        `&chain=${boardChain}`);
+                        `&chain=${chain}`);
     coins = d.coins || [];
     // sorted(), not coins: the board also drops anything under the vol/MC
     // ratio (which the server never sees, it is not a query parameter) and
@@ -1803,7 +1831,7 @@ async function refresh() {
     // for coins that never reached the board, and for ones deliberately hidden.
     // Only for coins that can actually be acted on — a notification for a
     // Robinhood coin would open a page with a button that cannot work.
-    if (boardChain === 'sol') notifyNewCoins(sorted());
+    if (tradeable(chain)) notifyNewCoins(sorted());
     document.getElementById('livewrap').classList.toggle('stale', !!d.stale);
     document.getElementById('livetxt').textContent = d.stale ? 'stale' : 'live';
     document.getElementById('updated').textContent = `${Math.round(d.age_secs)}s ago`;
@@ -4012,26 +4040,63 @@ async function sellPosition(btn) {
 /* The chain switch. Clears the board first: leaving Solana rows on screen
    while Robinhood data loads would show a mixed board for a second, and on a
    board where one chain is tradeable and the other is not, that second matters. */
-document.querySelectorAll('#chaintabs .chaintab').forEach(t => {
-  t.onclick = () => {
-    if (t.dataset.chain === boardChain) return;
-    boardChain = t.dataset.chain;
-    document.querySelectorAll('#chaintabs .chaintab')
-            .forEach(x => x.classList.toggle('on', x === t));
-    document.getElementById('board').classList.toggle('watchonly', boardChain !== 'sol');
-    coins = [];
-    const note = document.getElementById('watchnote');
-    if (note) note.remove();
-    if (boardChain !== 'sol') {
-      const n = document.createElement('div');
-      n.id = 'watchnote'; n.className = 'watchnote';
-      n.textContent = 'Robinhood Chain is here to watch. The bot trades Solana '
-                    + '— these rows cannot be greenlit yet.';
-      document.getElementById('board').appendChild(n);
-    }
-    refresh();
-  };
+/* Switching chains switches the PRODUCT, not a filter on one panel. Board,
+   positions, journal and wallet are all per-chain, so everything showing the
+   old chain's data is cleared before the new chain's arrives — a board that
+   blends the two for even a second is worse than an empty one, because the
+   thing you act on is which coin is in front of you.
+
+   The choice persists: coming back to find yourself on the other chain, with a
+   different wallet and different positions, is how you greenlight the wrong
+   thing. Wrapped because a private window can throw on read. */
+function applyChain(next, { reload = true } = {}) {
+  if (next === chain) return;
+  chain = next;
+  try { localStorage.setItem('edge.chain', chain); } catch (e) { /* private mode */ }
+
+  document.querySelectorAll('#chainsel .chainbtn').forEach(b => {
+    const on = b.dataset.chain === chain;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.body.dataset.chain = chain;
+
+  // Drop everything that belonged to the chain we just left.
+  coins = [];
+  extraCoins = {};
+  openMint = null;
+  const board = document.getElementById('board');
+  board.classList.toggle('watchonly', !tradeable(chain));
+  const note = document.getElementById('watchnote');
+  if (note) note.remove();
+  if (!tradeable(chain)) {
+    const n = document.createElement('div');
+    n.id = 'watchnote'; n.className = 'watchnote';
+    n.textContent = 'Robinhood Chain is watch-only for now — execution is being '
+                  + 'wired up. The board is live.';
+    board.appendChild(n);
+  }
+  const act = document.getElementById('activity');
+  if (act) act.innerHTML = '';
+  if (reload) { renderBoard(); refresh(); refreshActivity(); }
+}
+
+/* Which chains the bot can actually trade. Robinhood flips to true once its
+   executor lands; until then the board is honest about being watch-only. */
+function tradeable(c) { return c === 'sol'; }
+
+document.querySelectorAll('#chainsel .chainbtn').forEach(b => {
+  b.onclick = () => applyChain(b.dataset.chain);
 });
+
+/* Restore the saved chain on load, before the first fetch, so the opening
+   render is already the right product rather than Solana for one frame. */
+(() => {
+  let saved = null;
+  try { saved = localStorage.getItem('edge.chain'); } catch (e) { /* private mode */ }
+  document.body.dataset.chain = chain;
+  if (saved && saved !== chain) applyChain(saved, { reload: false });
+})();
 
 document.getElementById('paymodal').onclick = e => {
   if (e.target.id === 'paymodal') closePay();      // click the backdrop to dismiss
