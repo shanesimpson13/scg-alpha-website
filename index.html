@@ -1864,7 +1864,7 @@ async function refresh() {
     if (openMint && !coins.find(c => c.mint === openMint)) {
       // looking at something the board no longer carries — refresh it directly
       try {
-        const one = await api(`/api/coin/${openMint}`);
+        const one = await api(`/api/coin/${openMint}?chain=${chain}`);
         if (one.coin) extraCoins[openMint] = one.coin;
       } catch (e) { /* keep showing the last good data */ }
     }
@@ -2028,7 +2028,7 @@ async function openDetail(mint) {
   // it — resolve it from the last 30 minutes rather than refusing to open it.
   if (!findCoin(mint)) {
     try {
-      const d = await api(`/api/coin/${mint}`);
+      const d = await api(`/api/coin/${mint}?chain=${chain}`);
       if (d.coin) extraCoins[mint] = d.coin;
     } catch (e) { /* fall through; renderDetail will bail cleanly */ }
   }
@@ -5477,7 +5477,7 @@ async function openReplay(mint, name) {
        other market cap on the page by construction. */
     let supply = 0;
     try {
-      const live = await api(`/api/coin/${mint}/live`);
+      const live = await api(`/api/coin/${mint}/live?chain=${chain}`);
       if (live && live.price > 0) supply = Number(live.mcap) / Number(live.price);
     } catch (e) { /* fall through — the chart still draws in price */ }
 
@@ -6003,7 +6003,7 @@ function start() {
     if (view !== 'detail' || !openMint) return;
     const mint = openMint;
     try {
-      const d = await api(`/api/coin/${mint}/live`);
+      const d = await api(`/api/coin/${mint}/live?chain=${chain}`);
       if (view !== 'detail' || openMint !== mint) return;   // they moved on
       const merged = { ...(extraCoins[mint] || {}), ...d, mint };
       extraCoins[mint] = merged;
