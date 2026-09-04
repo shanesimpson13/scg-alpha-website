@@ -914,6 +914,10 @@
     .amtval::-webkit-outer-spin-button, .amtval::-webkit-inner-spin-button {
       -webkit-appearance: none; margin: 0; }
     .amtval { -moz-appearance: textfield; }
+    /* What one unit of the chain's asset actually buys. The amount box is in
+       ETH or SOL; the thing you are judging is the coin, so show the bridge. */
+    .amtconv { font-size: 10.5px; color: var(--dimmer); margin: 6px 2px 0;
+               letter-spacing: .02em; }
     .amtrow { display: flex; border-top: 1px solid var(--hair); }
     .amtrow button { flex: 1 1 0; min-width: 0; background: none; border: 0;
                      border-right: 1px solid var(--hair); color: var(--dim);
@@ -1576,6 +1580,17 @@ const money = v => {
   if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
   return '$' + Math.round(v);
 };
+/* Token counts, not dollars — money() prefixes a $ and these are quantities.
+   One buy is usually millions of a memecoin, so 287,300,000 has to read as
+   287.3M or the line is unparseable at a glance. */
+const compact = v => {
+  v = Number(v) || 0;
+  if (v >= 1e9) return (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  if (v >= 1)   return v.toFixed(0);
+  return v.toPrecision(3);
+};
 const pct = v => {
   if (v === null || v === undefined) return '—';
   return `<span class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '+' : ''}${v.toFixed(0)}%</span>`;
@@ -2018,6 +2033,11 @@ document.querySelectorAll('thead th.sortable').forEach(th => th.onclick = () => 
    into GMGN carried a hardcoded "sol", so a Robinhood coin asked for a SOLANA
    chart of an EVM address and rendered nothing at all. One function, so the
    next chain is one line rather than four scattered literals. */
+/* The chain's own asset — what you spend, and what gas is paid in. Solana bills
+   both in SOL; Robinhood Chain is an Arbitrum Orbit L2, so both are ETH. Every
+   label that said SOL was true only by accident of there being one chain. */
+function nativeSym(c) { return (c || chain) === 'robinhood' ? 'ETH' : 'SOL'; }
+
 function gmgnChain(c) { return (c || chain) === 'robinhood' ? 'robinhood' : 'sol'; }
 
 async function openDetail(mint) {
@@ -2121,12 +2141,13 @@ function renderDetail() {
           <div class="amthead">
             <span class="lbl">Amount</span>
             <input class="amtval" id="amtval" type="number" step="any" min="0"
-                   placeholder="0.00" aria-label="Amount in SOL"
+                   placeholder="0.00" aria-label="Amount"
                    autocomplete="off" data-1p-ignore data-lpignore="true">
-            <span class="lbl">SOL</span>
+            <span class="lbl" id="amtunit">SOL</span>
           </div>
           <div class="amtrow" id="amtrow"></div>
         </div>
+        <div class="amtconv" id="amtconv"></div>
         <div class="stratwrap">
           <button class="stratbtn" id="gearbtn" aria-haspopup="true" aria-expanded="false">
             <span class="gi">&#9881;</span>
@@ -2575,6 +2596,19 @@ function renderAmt(c) {
   // The field is the amount. Chips fill it, the pencil focuses it — no mode to
   // switch out of, and the shortcuts stay on screen while you type.
   val.value = cur > 0 ? trimSol(cur) : '';
+
+  // Unit and conversion follow the chain, not a hardcoded SOL.
+  const unit = document.getElementById('amtunit');
+  if (unit) unit.textContent = nativeSym();
+  const conv = document.getElementById('amtconv');
+  if (conv) {
+    // c.price is the chain's asset per token, so one unit buys its reciprocal.
+    const per = Number(c.price) > 0 ? 1 / Number(c.price) : 0;
+    conv.textContent = per > 0
+      ? `1 ${nativeSym()} \u2248 ${compact(per)} ${c.symbol || c.name || 'tokens'}`
+      : '';
+  }
+
   row.innerHTML =
     AMT_CHIPS.map(v => `<button data-v="${v}"${cur === v ? ' class="on"' : ''}>${v}</button>`).join('')
     + '<button data-custom="1" title="Type an amount">&#9998;</button>';
@@ -3407,6 +3441,11 @@ async function refreshActivity() {
   let rows = [];
   try {
     rows = (await api('/api/status')).positions || [];
+    /* Positions belong to a chain. Showing Solana trades while the header says
+       Robinhood is how you misread what the bot is holding — and the whole
+       point of the switcher is that each chain is its own product. Rows
+       predating the chain tag are Solana, which is what the bot traded. */
+    rows = rows.filter(r => (r.chain || 'sol') === chain);
   } catch (e) {
     return;                       // never let this break the board
   }
@@ -3593,7 +3632,7 @@ async function openJournal() {
   let d;
   // The window goes to the SERVER so the summary is windowed too. Filtering
   // rows here would leave an all-time win rate over a one-day table.
-  try { d = await api('/api/trades?limit=500' + (journalDays ? `&days=${journalDays}` : '')); }
+  try { d = await api(`/api/trades?limit=500&chain=${chain}` + (journalDays ? `&days=${journalDays}` : '')); }
   catch (e) { document.getElementById('jsummary').innerHTML =
     `<div class="empty">Couldn't load your journal.</div>`; return; }
   paintJournal(d);
@@ -4890,7 +4929,7 @@ function cpwSectionHTML() {
 async function loadCpw() {
   // Without this the config column is empty for everyone who has strategies.
   await primeStrategies();
-  try { CPW = await api('/api/copy'); }
+  try { CPW = await api(`/api/copy?chain=${chain}`); }
   catch (e) {
     // Not the owner. The page should not exist for an account that cannot use it.
     const sec = document.getElementById('copy');
@@ -4963,7 +5002,7 @@ function paintCpwStatus() {
 function wireCpw() {
   const save = async () => {
     try {
-      const r = await api('/api/copy', { method: 'POST', body: JSON.stringify({
+      const r = await api(`/api/copy?chain=${chain}`, { method: 'POST', body: JSON.stringify({
         rules: CPW.rules,
         max_concurrent: Number(document.getElementById('cpw_conc').value),
       }) });
