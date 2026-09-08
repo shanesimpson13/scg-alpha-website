@@ -9,18 +9,22 @@
   /* The terminal's own palette, unchanged. Someone who pays here and logs in
      tomorrow should not feel like they bought a different product. */
   :root {
-    --bg: #fbfbfa;
-    --panel: #f2f2f0;
-    --fg: #14140f;
-    --line: rgba(0, 0, 0, 0.11);
-    --hair: rgba(0, 0, 0, 0.06);
-    --dim: rgba(0, 0, 0, 0.58);
-    --dimmer: rgba(0, 0, 0, 0.38);
-    --field: rgba(0, 0, 0, 0.03);
-    --hover: rgba(0, 0, 0, 0.028);
-    --green: #12924b;
-    --amber: #a86a00;
-    --red: #c0362c;
+    color-scheme: dark;
+    --bg: #0a0a0c;
+    --panel: #131317;
+    --fg: #f4f4f1;
+    --line: rgba(255, 255, 255, 0.13);
+    --hair: rgba(255, 255, 255, 0.07);
+    --dim: rgba(255, 255, 255, 0.62);
+    --dimmer: rgba(255, 255, 255, 0.40);
+    --field: rgba(255, 255, 255, 0.045);
+    --hover: rgba(255, 255, 255, 0.06);
+    /* Lifted off the paper greens: the terminal's dark values. */
+    --green: #2ecc71;
+    --amber: #e0a12a;
+    --red: #ff5f52;
+    --sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+            Roboto, Helvetica, Arial, sans-serif;
     --mono: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco,
             'Cascadia Code', 'Courier New', monospace;
   }
@@ -333,10 +337,10 @@
     position: absolute; inset: 0; display: flex; align-items: center;
     justify-content: center; opacity: 0; will-change: opacity, transform;
   }
-  .scene > .surface { width: 100%; margin: 0; }
-  /* A four-line status panel stretched to the width of the board reads as an
-     empty box. The board earns the full width; the states do not. */
-  .scene > .surface.state { max-width: 620px; margin: 0 auto; }
+  /* The board is a table and earns the full width. Every other panel is a few
+     lines of status, and stretched that wide it reads as an empty box. */
+  .scene > .surface { width: 100%; max-width: 660px; margin: 0 auto; }
+  .scene[data-i="0"] > .surface { max-width: none; }
 
   /* The pointer does the two things you actually do, then leaves -- the page
      says the rest happens without you, so it should not linger. */
@@ -366,12 +370,69 @@
   .hero .lede { margin-left: auto; margin-right: auto; }
   .acts { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px;
           justify-content: center; }
-  .cue { margin-top: 52px; font-size: 11px; letter-spacing: .16em;
-         text-transform: uppercase; color: var(--dimmer);
-         display: flex; align-items: center; justify-content: center; gap: 9px; }
+  .cue { margin-top: 64px; font-size: 20px; color: var(--dimmer);
+         display: flex; align-items: center; justify-content: center; }
   .cue span { animation: bob 2.4s ease-in-out infinite; }
   @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
   @media (prefers-reduced-motion: reduce) { .cue span { animation: none; } }
+
+  /* ── surface and depth ───────────────────────────────────────────────
+     A flat page in one colour reads as a document. The glow gives the dark
+     ground somewhere to sit without becoming decoration you have to look past. */
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(80vw 60vh at 50% -10%,  rgba(46,204,113,.11), transparent 62%),
+      radial-gradient(60vw 46vh at 88% 12%,   rgba(46,204,113,.055), transparent 60%),
+      radial-gradient(70vw 60vh at 6% 34%,    rgba(120,180,255,.045), transparent 62%);
+  }
+
+  h1, h2, h3, .stx h2, .btn, .amount .n {
+    font-family: var(--sans); letter-spacing: -.03em;
+  }
+  h1 { font-weight: 800; }
+  .stx h2, h2 { font-weight: 800; }
+
+  .hero { padding: 128px 0 96px; }
+  .hero h1 {
+    font-size: clamp(40px, 7.4vw, 78px); line-height: 1.0;
+    letter-spacing: -.045em; margin: 0 0 22px;
+  }
+  .hero .lede {
+    font-family: var(--sans); font-size: 19px; line-height: 1.5;
+    color: var(--dim); letter-spacing: -.01em;
+  }
+
+  /* Hover puts its eyebrow in a pill. It reads as a label rather than a stray
+     line of small caps above the headline. */
+  .hero .eyebrow {
+    display: inline-block; border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 16px; margin-bottom: 26px; color: var(--dim);
+    background: rgba(255,255,255,.03); backdrop-filter: blur(6px);
+  }
+
+  .btn {
+    border-radius: 999px; padding: 18px 38px; font-size: 15.5px; font-weight: 700;
+    letter-spacing: -.01em;
+    box-shadow: 0 10px 34px -10px rgba(46,204,113,.7);
+    transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 40px -10px rgba(46,204,113,.85); }
+  .btn.ghost {
+    background: rgba(255,255,255,.04); border: 1px solid var(--line);
+    color: var(--fg); box-shadow: none; backdrop-filter: blur(6px);
+  }
+  .btn.ghost:hover { background: rgba(255,255,255,.08); box-shadow: none; }
+
+  .stx h2 { font-size: clamp(30px, 4.4vw, 50px); line-height: 1.03; letter-spacing: -.04em; }
+  .stx p  { font-size: 16px; }
+
+  /* Panels want a little more radius and lift on a dark ground. */
+  .surface {
+    border-radius: 16px; background: var(--panel);
+    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 26px 60px -30px rgba(0,0,0,.9);
+  }
+  .honest { border-radius: 14px; }
 </style>
 </head>
 <body>
@@ -396,25 +457,22 @@
         <a class="btn" href="/">Sign in</a>
         <a class="btn ghost" href="#how">See how it works</a>
       </div>
-      <div class="cue"><span>&darr;</span> Scroll</div>
+      <div class="cue"><span>&darr;</span></div>
     </div>
   </div>
 </section>
 
-<div class="wrap"><div class="rule"></div></div>
 
 <!-- ── the story ────────────────────────────────────────────────────────
      One trade, in the order it goes wrong, with the answer in the next
      column. The problem and the fix are the same three rows, so neither
      needs a paragraph to explain it. -->
 
-<div class="wrap"><div class="rule"></div></div>
-
 <!-- ── how ──────────────────────────────────────────────────────────── -->
 <section class="scrolly" id="how" style="--n:6">
   <div class="scrolly-in">
     <div class="steps">
-      <div class="stx" data-i="0"><h2>Only what&rsquo;s moving.</h2><p>Filtered on volume, liquidity and flow before you see it.</p></div>
+      <div class="stx" data-i="0"><h2>Only what&rsquo;s moving.</h2><p>Filtered on volume, liquidity and flow.</p></div>
       <div class="stx" data-i="1"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
       <div class="stx" data-i="2"><h2>It waits for the dip.</h2><p>Hours if it has to. Nothing triggers above your level.</p></div>
       <div class="stx" data-i="3"><h2>It buys the reclaim.</h2><p>Not the knife. Five percent back off the low.</p></div>
@@ -502,11 +560,7 @@
   </div>
 </section>
 
-<div class="wrap"><div class="rule"></div></div>
-
 <!-- ── demo ─────────────────────────────────────────────────────────── -->
-
-<div class="wrap"><div class="rule"></div></div>
 
 <!-- ── price ────────────────────────────────────────────────────────── -->
 <section id="price">
