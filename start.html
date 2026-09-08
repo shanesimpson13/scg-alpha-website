@@ -87,8 +87,16 @@
 
   /* Everything rises a little as it arrives. Enough to feel considered,
      not enough to make a person wait for the page. */
-  .rise { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1); }
-  .rise.in { opacity: 1; transform: none; }
+  /* Visible by default. Every section used to start at opacity 0 and depend on
+     script to bring it back, so any throw anywhere on the page left a blank
+     screen -- which happened five times in one day. The hidden state is only
+     armed once the reveal block below is definitely running. */
+  .rise { opacity: 1; transform: none; }
+  html.reveal .rise {
+    opacity: 0; transform: translateY(18px);
+    transition: opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1);
+  }
+  html.reveal .rise.in { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) {
     .rise { opacity: 1; transform: none; transition: none; }
     html { scroll-behavior: auto; }
@@ -701,84 +709,7 @@
 <script>
 /* The board is drawn in the card mock now. */
 
-/* ── reveal on scroll ─────────────────────────────────────────────────────
-   On the same scroll tick as everything else. This was an IntersectionObserver,
-   and it is the one piece of motion whose failure mode is unacceptable: every
-   section starts at opacity 0 and only the observer brings it back, so an
-   observer that does not fire leaves a blank page. A scroll position cannot
-   fail to be readable. */
-document.querySelectorAll('.rise').forEach((el, i) => {
-  el.style.transitionDelay = (i % 3) * 70 + 'ms';
-});
-function riseWatch() {
-  for (const el of document.querySelectorAll('.rise:not(.in)')) {
-    if (onScreen(el, 0.06)) el.classList.add('in');
-  }
-}
-
-/* The scrolled demo replaced the embedded frame that used to live here. */
-
-/* The settings panel is where the page claims "your rules", so the numbers are
-   typeable and the toggles toggle. Nothing is saved and nothing is sent, since
-   there is no account yet -- but a panel of numbers you cannot touch is a
-   screenshot pretending to be a product. */
-document.querySelectorAll('.setgroup .vin').forEach(inp => {
-  inp.addEventListener('input', () => {
-    // Digits and a single point. Typed rubbish in a field that claims to be a
-    // stop percentage is worse than a field that refuses it.
-    let v = inp.value.replace(/[^\d.]/g, '');
-    const i = v.indexOf('.');
-    if (i !== -1) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/\./g, '');
-    if (v !== inp.value) inp.value = v;
-  });
-  inp.addEventListener('blur', () => { if (!inp.value) inp.value = '0'; });
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
-});
-document.querySelectorAll('.setgroup .seg').forEach(seg => {
-  seg.querySelectorAll('span').forEach(opt => {
-    opt.onclick = () => seg.querySelectorAll('span')
-      .forEach(x => x.classList.toggle('on', x === opt));
-  });
-});
-
-/* Each story row lights as you reach it, not when the section does — so the
-   three beats land one at a time, in the order you read them. */
-/* Staggered by row. All three rows can cross the line in the same frame — at
-   a normal scroll speed they usually do — and three beats arriving together is
-   one event, not a sequence. The delay is what makes it read in order. */
-document.querySelectorAll('.srow:not(.shead)').forEach((r, i) => {
-  const em = r.querySelector('.you em'), b = r.querySelector('.fix b');
-  if (em) em.style.transitionDelay = (i * 130) + 'ms';
-  if (b) b.style.transitionDelay = (i * 130 + 110) + 'ms';
-});
-
-function rowsWatch() {
-  /* Deliberately stricter than the rest: a row lights only once it has come up
-     into the top two thirds of the screen. At the looser threshold the rows
-     were already on screen when the page loaded — so they lit instantly and
-     the arrival, which is the entire point, was something nobody ever saw. */
-  for (const r of document.querySelectorAll('.srow:not(.shead):not(.lit)')) {
-    const b = r.getBoundingClientRect();
-    if (b.top < innerHeight * 0.66 && b.bottom > 0) r.classList.add('lit');
-  }
-}
-
-function onScrollTick() { riseWatch(); boardWatch(); rowsWatch(); }
-addEventListener('scroll', onScrollTick, { passive: true });
-addEventListener('resize', onScrollTick);
-onScrollTick();
-
-/* A slow sweep beside the scroll handler, because of what failure looks like
-   here: every section starts at opacity 0, so a scroll event that never
-   arrives does not leave the page unanimated, it leaves it BLANK. Four checks
-   a second cost nothing, and it stops itself the moment there is nothing left
-   to reveal. */
-const sweep = setInterval(() => {
-  onScrollTick();
-  if (boardMoved &&
-      !document.querySelector('.rise:not(.in)') &&
-      !document.querySelector('.srow:not(.shead):not(.lit)')) clearInterval(sweep);
-}, 250);
+/* Section reveal runs in its own script block at the end of the page. */
 
 /* The greenlight now lives inside the demo screen, driven by scroll. */
 
@@ -870,6 +801,42 @@ const sweep = setInterval(() => {
   addEventListener('pageshow', paint);
   addEventListener('visibilitychange', function () { if (!document.hidden) paint(); });
   paint();
+})();
+</script>
+
+<script>
+/* ── section reveal ──
+   Its own block, so a throw anywhere else cannot stop it, and it arms the
+   hidden state itself so a throw *before* it leaves everything readable. */
+(function () {
+  var els = [].slice.call(document.querySelectorAll('.rise'));
+  if (!els.length) return;
+
+  function onScreen(el, slack) {
+    var b = el.getBoundingClientRect();
+    return b.top < window.innerHeight * (1 - slack) && b.bottom > window.innerHeight * slack;
+  }
+
+  document.documentElement.classList.add('reveal');
+  els.forEach(function (el, i) { el.style.transitionDelay = (i % 3) * 70 + 'ms'; });
+
+  function watch() {
+    for (var i = 0; i < els.length; i++) {
+      if (!els[i].classList.contains('in') && onScreen(els[i], 0.06)) els[i].classList.add('in');
+    }
+  }
+  var queued = false;
+  function onScroll() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function () { queued = false; watch(); });
+  }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', watch);
+  addEventListener('pageshow', watch);
+  /* A paused rAF (hidden tab) must not leave the page blank on return. */
+  addEventListener('visibilitychange', function () { if (!document.hidden) watch(); });
+  watch();
 })();
 </script>
 <!-- Whop: records the visit and attributes a purchase back to it. This is
