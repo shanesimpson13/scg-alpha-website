@@ -778,14 +778,20 @@
      stage it sat a screen below the words it belongs to, with nothing around
      it. */
   .cstate.cta {
-    left: 50%; right: auto; top: 34px; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 22px;
+    left: 50%; right: auto; top: 56px; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 26px;
+    width: min(620px, 100% - 40px);
   }
   .cstate.cta .sub {
     font-size: 13px; color: var(--dimmer); letter-spacing: .02em;
   }
+  /* Big enough to be the point of the page rather than a link that happens to
+     be green. A small pill in a lot of space reads as marooned; something this
+     size reads as the thing you came for. */
   .btn.glow {
-    font-size: 17px; padding: 20px 46px;
+    width: 100%; justify-content: center;
+    font-size: 24px; padding: 34px 48px; border-radius: 999px;
+    letter-spacing: -.015em;
     box-shadow: 0 0 0 6px rgba(18,146,75,.10),
                 0 0 34px -4px rgba(18,146,75,.55),
                 0 14px 40px -12px rgba(18,146,75,.85);
@@ -1137,18 +1143,21 @@
 
     /* draw fraction tracks the step line, so the high lands on the greenlight
        and the buy lands on the reclaim */
+    /* On the closing step the labels go and the line stays, faintly. The
+       button was landing on top of "TP1 · 2× · $226.8K", which reads as two
+       things colliding rather than one thing being offered. */
+    var closing = p > 4.45 ? Math.min(1, (p - 4.45) / 0.4) : 0;
+    if (px) px.style.opacity = (0.42 * (1 - closing) + 0.10 * closing).toFixed(3);
     var frac = drawn(p);
     if (px) px.style.strokeDashoffset = (pxLen * (1 - frac)).toFixed(1);
-    if (guides) guides.style.opacity = frac > AT_HI - 0.05 ? 1 : 0;
+    var vis = 1 - closing;
+    if (guides) guides.style.opacity = (frac > AT_HI - 0.05 ? 1 : 0) * vis;
     /* The closing step is the button. The chart has said everything it has to
        say by then, so it clears rather than sitting under the call to action.
        (This fade was written once and lost in a later edit of this block.) */
-    /* Not cleared, just pulled back. Gone entirely, the button stood in an
-       empty page; left at full strength it competed with it. */
-    if (chart) chart.style.opacity = p > 4.45 ? Math.max(0.28, 1 - (p - 4.45) / 0.5) : 1;
-    if (mkHi)  mkHi.style.opacity  = frac >= AT_HI  ? 1 : 0;
-    if (mkBuy) mkBuy.style.opacity = frac >= AT_BUY ? 1 : 0;
-    if (mkTp)  mkTp.style.opacity  = frac >= AT_TP  ? 1 : 0;
+    if (mkHi)  mkHi.style.opacity  = (frac >= AT_HI  ? 1 : 0) * vis;
+    if (mkBuy) mkBuy.style.opacity = (frac >= AT_BUY ? 1 : 0) * vis;
+    if (mkTp)  mkTp.style.opacity  = (frac >= AT_TP  ? 1 : 0) * vis;
 
     var row = document.querySelector('.cstate[data-c="0"] tbody tr.hit');
     if (row) row.classList.toggle('picked', p > 0.9);
