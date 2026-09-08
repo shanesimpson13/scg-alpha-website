@@ -757,6 +757,17 @@
      curve is genuinely high, and at full height its label was landing on the
      subtitle. */
   .bg { height: 66vh; transform: translate(-50%, -28%); }
+
+  /* The rules belong to a named strategy, the way they do in the app -- which
+     is the point of the step: you write these, and you can have as many as you
+     like. */
+  .stratline {
+    display: flex; align-items: baseline; gap: 8px; font-size: 13px;
+    padding-bottom: 11px; border-bottom: 1px solid var(--hair); margin-bottom: 12px;
+  }
+  .stratline b { font-size: 14px; letter-spacing: .04em; }
+  .stratline .gi { color: var(--dimmer); }
+  .stratline .mut { color: var(--dimmer); }
 </style>
 </head>
 <body>
@@ -811,8 +822,8 @@
       <div class="stx" data-i="0"><h2>Only what&rsquo;s moving.</h2><p>Filtered on volume, liquidity and flow.</p></div>
       <div class="stx" data-i="1"><h2>You pick the coin.</h2><p>The one call the system won&rsquo;t make for you.</p></div>
       <div class="stx" data-i="2"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
-      <div class="stx" data-i="3"><h2>It waits for the dip.</h2><p>Dip required, reclaim off the low. Your numbers.</p></div>
-      <div class="stx" data-i="4"><h2>Then it takes profit.</h2><p>Half at 2&times;, the rest at 4&times;, stop to break even.</p></div>
+      <div class="stx" data-i="3"><h2>It waits for the dip.</h2><p>Rules you write yourself, saved as a strategy you name.</p></div>
+      <div class="stx" data-i="4"><h2>Then it takes profit.</h2><p>Keep as many strategies as you like. One per coin.</p></div>
       <div class="stx" data-i="5"><h2>One flat fee.</h2><p>0.5% per swap. No subscription.</p></div>
     </div>
     <div class="stage" aria-hidden="true">
@@ -906,19 +917,19 @@
 
           <div class="cstate" data-c="2">
             <div class="rail"><div class="rp">
-              <div class="rpk">ENTRY</div>
+              <div class="stratline"><span class="gi">&#9881;</span><b>SCALP</b><span class="mut">&middot; entry</span></div>
               <div class="srow"><span>Dip required</span><b>20%</b></div>
               <div class="srow"><span>Reclaim off the low</span><b>5%</b></div>
               <div class="srow"><span>B/S floor</span><b>0.95</b></div>
               <div class="srow"><span>Stay below the high by</span><b>10%</b></div>
-              <div class="rpn">Nothing can trigger until price falls through your dip
-                and takes back your reclaim.</div>
+              <div class="rpn">Your numbers, not ours. Build as many strategies as you
+                want and pick one for each coin you greenlight.</div>
             </div></div>
           </div>
 
           <div class="cstate" data-c="3">
             <div class="rail"><div class="rp">
-              <div class="rpk">EXIT</div>
+              <div class="stratline"><span class="gi">&#9881;</span><b>SCALP</b><span class="mut">&middot; exit</span></div>
               <div class="srow"><span>Take profit 1</span><b>2&times;</b></div>
               <div class="srow"><span>Sold at TP1</span><b>50%</b></div>
               <div class="srow"><span>Take profit 2</span><b>4&times;</b></div>
@@ -1018,7 +1029,26 @@
     }
     return best / pxLen;
   }
-  var AT_HI = atPoint(300, 304.7), AT_BUY = atPoint(480, 377.5), AT_TP = atPoint(675, 88);
+  var AT_HI  = atPoint(300, 304.7),
+      AT_LOW = atPoint(440, 397.9),
+      AT_BUY = atPoint(480, 377.5),
+      AT_TP  = atPoint(675, 88);
+
+  /* Scroll position to distance along the line, anchored so the line is doing
+     what the copy says it is doing: at the high as the greenlight is set, in
+     the dip while it waits, and at TP1 as it takes profit. A straight linear
+     draw left the price wandering a step ahead of the sentence. */
+  var BEATS = [[0, 0], [2, AT_HI], [3, AT_LOW], [3.6, AT_BUY], [3.95, AT_TP], [5, 1]];
+  function drawn(p) {
+    for (var i = 1; i < BEATS.length; i++) {
+      if (p <= BEATS[i][0]) {
+        var a = BEATS[i - 1], b = BEATS[i];
+        var t = (p - a[0]) / (b[0] - a[0]);
+        return a[1] + (b[1] - a[1]) * (t < 0 ? 0 : t);
+      }
+    }
+    return 1;
+  }
 
   var pressed = {};
   function press(key) {
@@ -1075,17 +1105,12 @@
 
     /* draw fraction tracks the step line, so the high lands on the greenlight
        and the buy lands on the reclaim */
-    /* The line finishes before the last step, so the buy and TP1 both land on
-       the step that talks about them rather than on the fee. */
-    var frac = Math.min(1, p / 4.35);
+    var frac = drawn(p);
     if (px) px.style.strokeDashoffset = (pxLen * (1 - frac)).toFixed(1);
-    /* Markers follow the story, not the geometry. The buy is what says a trade
-       happened, so it holds off until the step that describes it -- the entry
-       rules get the screen to themselves while the price is still falling. */
-    if (guides) guides.style.opacity = p > 1.6 ? 1 : 0;
-    if (mkHi)  mkHi.style.opacity  = p > 1.7  ? 1 : 0;
-    if (mkBuy) mkBuy.style.opacity = p > 3.55 ? 1 : 0;
-    if (mkTp)  mkTp.style.opacity  = p > 3.95 ? 1 : 0;
+    if (guides) guides.style.opacity = frac > AT_HI - 0.05 ? 1 : 0;
+    if (mkHi)  mkHi.style.opacity  = frac >= AT_HI  ? 1 : 0;
+    if (mkBuy) mkBuy.style.opacity = frac >= AT_BUY ? 1 : 0;
+    if (mkTp)  mkTp.style.opacity  = frac >= AT_TP  ? 1 : 0;
 
     var row = document.querySelector('.cstate[data-c="0"] tbody tr.hit');
     if (row) row.classList.toggle('picked', p > 0.9);
