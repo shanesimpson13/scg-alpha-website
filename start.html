@@ -432,23 +432,22 @@
   .stage { position: relative; width: min(980px, 100% - 40px); }
   .frame { position: relative; }
 
-  .boardslot { position: relative; z-index: 1; }
-  .boardslot .surface { margin: 0; }
-  /* The live board breathes; this one has to share a frame with the panel
-     under it, so the rows come in. */
-  .boardslot td { padding: 9px 14px; }
-  .boardslot th { padding: 9px 14px; }
-  .boardslot .av { width: 22px; height: 22px; font-size: 12px; }
-  .boardslot .nm { font-size: 12.5px; }
-  .boardslot .sub { font-size: 9.5px; }
+  .blk td { padding: 9px 14px; }
+  .blk th { padding: 9px 14px; }
+  .blk .av { width: 22px; height: 22px; font-size: 12px; }
+  .blk .nm { font-size: 12.5px; }
+  .blk .sub { font-size: 9.5px; }
+  .blk tbody tr { transition: background .25s ease; }
+  .blk tbody tr.picked { background: color-mix(in srgb, var(--green) 12%, transparent); }
 
-  .detail { position: relative; min-height: 300px; margin-top: 16px; }
+  .detail { position: relative; min-height: 360px; margin-top: 0; }
   .blk {
     position: absolute; inset: 0; opacity: 0;
     display: flex; align-items: flex-start; justify-content: center;
     will-change: opacity, transform;
   }
   .blk > .surface { width: 100%; max-width: 660px; margin: 0; }
+  .blk[data-b="0"] > .surface { max-width: none; }
   .blk[data-b="5"] > .setwrap { width: 100%; }
 
   /* Settings, compact enough to live in the same frame as the board. */
@@ -490,8 +489,6 @@
   }
 
   /* what the click lands on */
-  .boardslot tbody tr { transition: background .25s ease; }
-  .boardslot tbody tr.picked { background: color-mix(in srgb, var(--green) 12%, transparent); }
   .glbtn2 { transition: transform .13s ease, filter .13s ease; }
   .glbtn2.pressed { transform: scale(.975); filter: brightness(.93); }
 
@@ -557,7 +554,8 @@
          slideshow. -->
     <div class="stage">
       <div class="frame" aria-hidden="true">
-        <div class="boardslot"><div class="surface">
+        <div class="detail">
+          <div class="blk" data-b="0"><div class="surface">
         <div class="bhead">
           <span class="t">Trending · 5m</span>
           <span class="chips">
@@ -574,7 +572,6 @@
           <tbody id="board"></tbody>
         </table>
       </div></div>
-        <div class="detail">
           <div class="blk" data-b="1"><div class="surface">
           <div class="trig">
             <div class="k">What would trigger a buy</div>
@@ -905,8 +902,9 @@ document.getElementById('fakegl').onclick = e => {
   var N = stx.length;
   /* Which panel is up, in step coordinates. The trigger spans two steps
      because picking the coin and greenlighting it happen on the same panel. */
-  var RANGE = { '1': [0.6, 2.5], '2': [2.6, 3.4], '3': [3.6, 4.4],
-                '4': [4.6, 5.4], '5': [5.6, 6.4], '6': [6.6, 7.6] };
+  var RANGE = { '0': [-0.5, 1.45], '1': [1.55, 2.45], '2': [2.55, 3.45],
+                '3': [3.55, 4.45], '4': [4.55, 5.45], '5': [5.55, 6.45],
+                '6': [6.55, 7.6] };
   var FADE = 0.5;
 
   function ramp(p, a, b) {
@@ -928,7 +926,7 @@ document.getElementById('fakegl').onclick = e => {
   }
 
   function target(p) {
-    if (p < 1.55) return document.querySelector('.boardslot tbody tr:nth-child(3)');
+    if (p < 1.5)  return document.querySelector(".blk[data-b='0'] tbody tr:nth-child(3)");
     if (p < 2.6)  return document.querySelector('.blk[data-b="1"] .glbtn2');
     return null;
   }
@@ -947,7 +945,7 @@ document.getElementById('fakegl').onclick = e => {
       var d = Math.abs(p - i);
       var o = d >= 0.55 ? 0 : ease(1 - d / 0.55);
       stx[i].style.opacity = o;
-      stx[i].style.transform = 'translateY(' + ((i - p) * 20).toFixed(2) + 'px)';
+      stx[i].style.transform = 'translateY(' + ((i - p) * 74).toFixed(2) + 'px)';
     }
 
     for (var b = 0; b < blks.length; b++) {
@@ -955,11 +953,12 @@ document.getElementById('fakegl').onclick = e => {
       var r = RANGE[k] || [0, 0];
       var bo = ease(ramp(p, r[0], r[1]));
       blks[b].style.opacity = bo;
-      blks[b].style.transform = 'translateY(' + ((1 - bo) * 10).toFixed(2) + 'px)';
+      var mid = (r[0] + r[1]) / 2;
+      blks[b].style.transform = 'translateY(' + ((mid - p) * 46).toFixed(2) + 'px)';
       blks[b].style.visibility = bo > 0.01 ? 'visible' : 'hidden';
     }
 
-    var row = document.querySelector('.boardslot tbody tr:nth-child(3)');
+    var row = document.querySelector(".blk[data-b='0'] tbody tr:nth-child(3)");
     if (row) row.classList.toggle('picked', p > 0.94);
     var gl = document.querySelector('.blk[data-b="1"] .glbtn2');
     if (gl) gl.classList.toggle('pressed', p > 1.96 && p < 2.35);
