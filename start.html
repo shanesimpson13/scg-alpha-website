@@ -752,6 +752,11 @@
   @media (max-width: 980px) {
     .cstate:not([data-c="0"]) { left: 50%; right: auto; transform: translate(-50%, -50%); }
   }
+
+  /* The chart sits below the copy. TP1 is 2x the entry, so the top of the
+     curve is genuinely high, and at full height its label was landing on the
+     subtitle. */
+  .bg { height: 66vh; transform: translate(-50%, -28%); }
 </style>
 </head>
 <body>
@@ -792,17 +797,14 @@
   <div class="scrolly-in">
       <svg class="bg" viewBox="0 0 1200 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <g class="guides">
-          <line class="gl hi"  x1="0" y1="58"  x2="720" y2="58"/>
-          <line class="gl dip" x1="0" y1="352" x2="720" y2="352"/>
-          <line class="gl rec" x1="0" y1="318" x2="720" y2="318"/>
+          <line class="gl hi"  x1="0" y1="304.7" x2="740" y2="304.7"/>
+          <line class="gl dip" x1="0" y1="397.9" x2="740" y2="397.9"/>
+          <line class="gl rec" x1="0" y1="377.5" x2="740" y2="377.5"/>
         </g>
-        <polyline class="px" points="0,404 40,386 80,394 120,350 160,360 200,300
-                                     240,238 280,170 320,96 360,58 400,120 440,196
-                                     480,272 510,340 540,398 565,362 590,318 625,250
-                                     655,180 680,110 700,44"/>
-        <g class="mk hi"><circle cx="360" cy="58" r="6"/><text x="360" y="36">HIGH</text></g>
-        <g class="mk buy"><circle cx="590" cy="318" r="7"/><text x="590" y="352">BUY THE RECLAIM</text></g>
-          <g class="mk tp"><circle cx="645" cy="195" r="7"/><text x="645" y="173">TP1 &middot; 2&times;</text></g>
+        <polyline class="px" points="0,425.8 40,417.7 80,421.7 120,401.7 160,382.7 200,357.4 240,333.5 275,317.2 300,304.7 335,320.4 370,347.0 400,371.6 425,390.2 440,397.9 462,390.2 480,377.5 515,340.2 550,295.5 585,239.0 620,179.9 650,130.2 675,88.0 700,50.7 720,21.4"/>
+        <g class="mk hi"><circle cx="300" cy="304.7" r="6"/><text x="300" y="283">HIGH $135K</text></g>
+        <g class="mk buy"><circle cx="480" cy="377.5" r="7"/><text x="480" y="411">BUY $113.4K</text></g>
+          <g class="mk tp"><circle cx="675" cy="88" r="7"/><text x="675" y="66">TP1 &middot; 2&times; &middot; $226.8K</text></g>
       </svg>
     <div class="fit">
     <div class="steps">
@@ -926,14 +928,6 @@
             </div></div>
           </div>
 
-          <div class="cstate" data-c="4">
-            <div class="rail"><div class="rp">
-                <div class="rpk">WHAT IT COSTS</div>
-                <div class="srow"><span>Per swap</span><b>0.5%</b></div>
-                <div class="srow"><span>Monthly</span><b>$0</b></div>
-                <div class="rpn">Charged on the swap itself. Nothing else.</div>
-              </div></div>
-          </div>
 
           <span class="cursor"><i></i></span>
         </div>
@@ -997,7 +991,7 @@
   if (!scrolly || !stx.length || !states.length || !card) return;
 
   var N = stx.length;
-  var BOUND = [1.5, 2.5, 3.5, 4.5];   /* where one panel gives way to the next */
+  var BOUND = [1.5, 2.5, 3.5, 4.5];   /* the fee step carries no panel at all */
   var RAMP = 0.10;
   function ease(t) { return t * t * (3 - 2 * t); }
 
@@ -1024,7 +1018,7 @@
     }
     return best / pxLen;
   }
-  var AT_HI = atPoint(360, 58), AT_BUY = atPoint(590, 318), AT_TP = atPoint(645, 195);
+  var AT_HI = atPoint(300, 304.7), AT_BUY = atPoint(480, 377.5), AT_TP = atPoint(675, 88);
 
   var pressed = {};
   function press(key) {
@@ -1071,7 +1065,7 @@
        the trigger panel. The ramp is short enough to read as a cut. */
     for (var k = 0; k < states.length; k++) {
       var lo = k === 0 ? -99 : BOUND[k - 1];
-      var hi = k === states.length - 1 ? 99 : BOUND[k];
+      var hi = BOUND[k] !== undefined ? BOUND[k] : 99;   /* the fee step has no panel */
       var so = Math.min((p - lo) / RAMP, (hi - p) / RAMP, 1);
       so = so < 0 ? 0 : ease(so);
       states[k].style.opacity = so;
@@ -1085,10 +1079,13 @@
        the step that talks about them rather than on the fee. */
     var frac = Math.min(1, p / 4.35);
     if (px) px.style.strokeDashoffset = (pxLen * (1 - frac)).toFixed(1);
-    if (guides) guides.style.opacity = frac > AT_HI - 0.06 ? 1 : 0;
-    if (mkHi)  mkHi.style.opacity  = frac > AT_HI ? 1 : 0;
-    if (mkBuy) mkBuy.style.opacity = frac > AT_BUY ? 1 : 0;
-    if (mkTp)  mkTp.style.opacity  = frac > AT_TP ? 1 : 0;
+    /* Markers follow the story, not the geometry. The buy is what says a trade
+       happened, so it holds off until the step that describes it -- the entry
+       rules get the screen to themselves while the price is still falling. */
+    if (guides) guides.style.opacity = p > 1.6 ? 1 : 0;
+    if (mkHi)  mkHi.style.opacity  = p > 1.7  ? 1 : 0;
+    if (mkBuy) mkBuy.style.opacity = p > 3.55 ? 1 : 0;
+    if (mkTp)  mkTp.style.opacity  = p > 3.95 ? 1 : 0;
 
     var row = document.querySelector('.cstate[data-c="0"] tbody tr.hit');
     if (row) row.classList.toggle('picked', p > 0.9);
