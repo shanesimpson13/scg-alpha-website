@@ -771,6 +771,32 @@
   .stratline b { font-size: 14px; letter-spacing: .04em; }
   .stratline .gi { color: var(--dimmer); }
   .stratline .mut { color: var(--dimmer); }
+
+  /* The last step is the call to action: centred, and lit, because it is the
+     one thing on the page you are meant to press. */
+  .cstate.cta { left: 50%; right: auto; transform: translate(-50%, -50%); }
+  .btn.glow {
+    font-size: 17px; padding: 20px 46px;
+    box-shadow: 0 0 0 6px rgba(18,146,75,.10),
+                0 0 34px -4px rgba(18,146,75,.55),
+                0 14px 40px -12px rgba(18,146,75,.85);
+    animation: pulse 3.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 6px rgba(18,146,75,.10),
+                           0 0 34px -4px rgba(18,146,75,.55),
+                           0 14px 40px -12px rgba(18,146,75,.85); }
+    50%      { box-shadow: 0 0 0 12px rgba(18,146,75,.06),
+                           0 0 46px -2px rgba(18,146,75,.7),
+                           0 16px 46px -12px rgba(18,146,75,.95); }
+  }
+  @media (prefers-reduced-motion: reduce) { .btn.glow { animation: none; } }
+
+  .honestfoot {
+    width: min(1000px, 100% - 40px); margin: 0 auto 48px;
+    font-size: 11.5px; line-height: 1.7; color: var(--dimmer);
+  }
+  .honestfoot b { color: var(--dim); }
 </style>
 </head>
 <body>
@@ -780,7 +806,7 @@
     <a href="/" class="brand" title="EdgeLvl"><svg class="wordmark" viewBox="97.350 166.297 180.303 39.203" fill="currentColor" role="img" aria-label="EDGE"><g transform="translate(93.427734,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g><g transform="translate(140.461163,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 35.28125 -39.203125 L 35.28125 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 0 Z M 35.28125 -7.84375 L 35.28125 -31.359375 L 43.125 -31.359375 L 43.125 -7.84375 Z M 35.28125 -7.84375 "/></g><g transform="translate(187.494592,205.499987)"><path d="M 11.765625 0 L 11.765625 -7.84375 L 35.28125 -7.84375 L 35.28125 -15.6875 L 19.59375 -15.6875 L 19.59375 -23.515625 L 43.125 -23.515625 L 43.125 0 Z M 3.921875 -7.84375 L 3.921875 -31.359375 L 11.765625 -31.359375 L 11.765625 -7.84375 Z M 11.765625 -31.359375 L 11.765625 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 Z M 11.765625 -31.359375 "/></g><g transform="translate(234.528021,205.499987)"><path d="M 3.921875 0 L 3.921875 -39.203125 L 43.125 -39.203125 L 43.125 -31.359375 L 11.765625 -31.359375 L 11.765625 -23.515625 L 35.28125 -23.515625 L 35.28125 -15.6875 L 11.765625 -15.6875 L 11.765625 -7.84375 L 43.125 -7.84375 L 43.125 0 Z M 3.921875 0 "/></g></svg></a>
     <span class="sp"></span>
     <a class="navlink" href="#how">How it works</a>
-    <a class="btn ghost" style="padding:8px 16px;font-size:12.5px" href="/">Sign in</a>
+    <a class="btn ghost" style="padding:8px 16px;font-size:12.5px" href="/">Enter app</a>
   </div>
 </nav>
 
@@ -792,7 +818,7 @@
       <h1>You pick the coin.<br>It runs the trade.</h1>
       <p class="lede">Everything after the greenlight happens without you.</p>
       <div class="acts">
-        <a class="btn" href="/">Sign in</a>
+        <a class="btn" href="/">Enter app</a>
         <a class="btn ghost" href="#how">See how it works</a>
       </div>
       <div class="cue"><span>&darr;</span></div>
@@ -943,6 +969,10 @@
           </div>
 
 
+          <div class="cstate cta" data-c="4">
+            <a class="btn glow" href="/">Enter app</a>
+          </div>
+
           <span class="cursor"><i></i></span>
         </div>
     </div>
@@ -953,31 +983,19 @@
 <!-- ── demo ─────────────────────────────────────────────────────────── -->
 
 <!-- ── price ────────────────────────────────────────────────────────── -->
-<section id="price">
-  <div class="wrap">
-    <div class="rise">
-      <h2>Pick coins. Not entries.</h2>
-      <p class="lede">Sign in and the board, your rules and the greenlight are
-        already there.</p>
-      <div class="acts"><a class="btn" href="/">Sign in</a></div>
 
-      <div class="honest">
-        <b>What this is not.</b> It is not a signal service and it does not
-        predict anything. You choose every coin it touches, and it can lose money
-        &mdash; most trades that go wrong are cut at your stop, and the ones that
-        work have to pay for them. It removes hesitation, not risk.
-        The panels above are an illustration, not a live trade.
-      </div>
-    </div>
-  </div>
-</section>
+<p class="honestfoot"><b>What this is not.</b> It is not a signal service and it
+  does not predict anything. You choose every coin it touches, and it can lose
+  money &mdash; most trades that go wrong are cut at your stop, and the ones that
+  work have to pay for them. It removes hesitation, not risk. The chart and
+  panels above are an illustration, not a live trade.</p>
 
 <footer>
   <div class="wrap">
     <a href="/terms.html">Terms</a>
     <a href="/privacy.html">Privacy</a>
     <span class="sp" style="flex:1"></span>
-    <a href="/">Sign in</a>
+    <a href="/">Enter app</a>
   </div>
 </footer>
 
@@ -1018,6 +1036,7 @@
   var mkBuy = document.querySelector('.bg .mk.buy');
   var mkTp  = document.querySelector('.bg .mk.tp');
   var guides = document.querySelector('.bg .guides');
+  var chart  = document.querySelector('.bg');
 
   /* Where each marker sits along the line, as a fraction of its length. Derived
      from the path rather than guessed, so reshaping the curve cannot leave a
@@ -1111,6 +1130,10 @@
     var frac = drawn(p);
     if (px) px.style.strokeDashoffset = (pxLen * (1 - frac)).toFixed(1);
     if (guides) guides.style.opacity = frac > AT_HI - 0.05 ? 1 : 0;
+    /* The closing step is the button. The chart has said everything it has to
+       say by then, so it clears rather than sitting under the call to action.
+       (This fade was written once and lost in a later edit of this block.) */
+    if (chart) chart.style.opacity = p > 4.45 ? Math.max(0, 1 - (p - 4.45) / 0.35) : 1;
     if (mkHi)  mkHi.style.opacity  = frac >= AT_HI  ? 1 : 0;
     if (mkBuy) mkBuy.style.opacity = frac >= AT_BUY ? 1 : 0;
     if (mkTp)  mkTp.style.opacity  = frac >= AT_TP  ? 1 : 0;
