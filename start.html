@@ -626,6 +626,97 @@
   .cstate[data-c="3"] .cact { justify-content: flex-start; }
   .bg .gl { transition: opacity .5s ease; }
   .bg .mk { transition: opacity .45s ease; }
+
+  /* ── panels at the size the app draws them ──────────────────────────
+     No outer frame. Every step shows the panel the product shows, sized to its
+     own content: one box sized for the board left a screenful of white beside
+     two lines of status. And the later panels sit to one side, so the price
+     line behind them is actually visible rather than covered by a slab. */
+  .card, .cardwrap {
+    position: relative; height: 470px; width: 100%;
+    background: none !important; border: 0 !important; box-shadow: none !important;
+  }
+  .stage { position: relative; z-index: 1; width: min(1180px, 100% - 40px); }
+
+  .cstate {
+    position: absolute; top: 50%; padding: 0 !important;
+    display: block; opacity: 0; will-change: opacity, transform;
+  }
+  /* the board is the whole width; it is on screen before the line has drawn */
+  .cstate[data-c="0"] { left: 50%; width: min(940px, 100%); transform: translate(-50%, -50%); }
+  /* everything after it hugs the left, leaving the dip and the reclaim in clear air */
+  .cstate:not([data-c="0"]) { left: 0; transform: translateY(-50%); }
+
+  .rail { width: 400px; display: flex; flex-direction: column; gap: 11px; }
+  .rp { background: var(--panel); border: 1px solid var(--line); border-radius: 13px;
+        padding: 15px 16px; box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 18px 44px -28px rgba(0,0,0,.35); }
+  .rpk { font-size: 11.5px; letter-spacing: .13em; color: var(--dimmer); margin-bottom: 11px; }
+  .rpl { font-size: 15px; line-height: 1.85; }
+  .rpl b { font-weight: 700; }
+  .rpn { font-size: 12.5px; color: var(--dimmer); line-height: 1.65; margin-top: 11px; }
+  .rpn.ctr { text-align: center; margin-top: 2px; }
+  .rphead { display: flex; align-items: center; gap: 9px; font-size: 15px;
+            padding-bottom: 11px; border-bottom: 1px solid var(--hair); margin-bottom: 12px; }
+  .srow { display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+          padding: 10px 0; border-bottom: 1px solid var(--hair); font-size: 14.5px; }
+  .srow:last-of-type { border-bottom: 0; }
+  .srow span { color: var(--dim); }
+  .srow b { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .amt { background: var(--panel); border: 1px solid var(--line); border-radius: 13px;
+         overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 18px 44px -28px rgba(0,0,0,.35); }
+  .amtt { display: flex; justify-content: space-between; padding: 12px 15px 0; font-size: 13.5px; }
+  .amtt .mut, .amth .mut { color: var(--dimmer); }
+  .amth { display: flex; align-items: baseline; gap: 11px; padding: 5px 15px 11px; }
+  .amth .mut:first-child { font-size: 11.5px; letter-spacing: .1em; }
+  .amth b { font-size: 21px; flex: 1; }
+  .amtr { display: flex; border-top: 1px solid var(--hair); }
+  .amtr button { flex: 1; background: none; border: 0; border-right: 1px solid var(--hair);
+                 font-family: inherit; font-size: 14px; color: var(--dim); padding: 12px 0; }
+  .amtr button:last-child { border-right: 0; flex: 0 0 50px; }
+  .amtr button.on { background: var(--field); color: var(--fg); font-weight: 700; }
+  .conv { font-size: 12.5px; color: var(--dimmer); padding-left: 2px; }
+  .strat { display: flex; align-items: center; gap: 10px; background: var(--panel);
+           border: 1px solid var(--line); border-radius: 13px; padding: 13px 15px; font-size: 15px; }
+  .strat .chev { margin-left: auto; color: var(--dimmer); }
+  .setwrap { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 700px; }
+  .mdot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); flex: none; }
+  .mdot.amber { background: var(--amber); }
+
+  .cgl { width: 100%; background: var(--green); color: #fff; border: 0; border-radius: 13px;
+         padding: 17px; font-family: var(--sans); font-size: 16px; font-weight: 700;
+         display: flex; align-items: center; justify-content: center; gap: 11px;
+         box-shadow: 0 10px 26px -12px rgba(18,146,75,.9);
+         transition: transform .14s ease, filter .14s ease; }
+  .cgl i { width: 10px; height: 10px; border-radius: 50%; background: #fff; display: block; }
+  .cgl.pressed { transform: scale(.975); filter: brightness(.93); }
+
+  /* the line is doing real work now, so it is no longer a whisper */
+  .bg .px { opacity: .42; }
+
+  @media (max-width: 980px) {
+    .cstate:not([data-c="0"]) { left: 50%; transform: translate(-50%, -50%); }
+    .rail { width: min(400px, 100%); }
+    .setwrap { width: min(700px, 100%); grid-template-columns: 1fr; }
+    .card, .cardwrap { height: 560px; }
+  }
+
+  /* The rail is 567px of real panels; the frame is sized to hold it, and the
+     panels are tightened just enough that it clears a short laptop viewport. */
+  .card, .cardwrap { height: 548px; }
+  .rail { gap: 9px; }
+  .rail .rp { padding: 13px 15px; }
+  .rail .rpl { line-height: 1.7; }
+  .rail .rpn { margin-top: 9px; }
+  .cgl { padding: 15px; }
+  .amth { padding: 4px 15px 10px; }
+  .amtr button { padding: 11px 0; }
+
+  @media (max-height: 820px) {
+    .scrolly-in { padding-top: 44px; gap: 16px; }
+    .steps { height: 116px; }
+    .card, .cardwrap { height: 520px; }
+  }
 </style>
 </head>
 <body>
@@ -752,67 +843,61 @@
           </div>
 
           <div class="cstate" data-c="1">
-            <div class="ck">Kite</div>
-            <div class="ctwo">
-              <div>
-                <div class="cbig">$113.4K <em class="up">+14%</em></div>
-                <div class="cwhen">3m old &middot; migrated</div>
+            <div class="rail">
+              <div class="rp">
+                <div class="rpk">WHAT WOULD TRIGGER A BUY</div>
+                <div class="rpl">from <b>$135.0K</b></div>
+                <div class="rpl">a dip below <b>$108.0K</b></div>
+                <div class="rpl">then a reclaim above <b>$113.4K</b></div>
+                <div class="rpn">Projected from the current market cap. Once you
+                  greenlight, the bot measures from the high it sees.</div>
               </div>
-              <div class="cgrid">
-                <div><span>LIQ</span><b>$41.2K</b></div>
-                <div><span>5M VOL</span><b>$58.9K</b></div>
-                <div><span>B/S</span><b>1.34</b></div>
-                <div><span>HOLDERS</span><b>1,284</b></div>
+              <div class="amt">
+                <div class="amtt"><span><b>13%</b> of balance</span><span class="mut">0.7651 SOL</span></div>
+                <div class="amth"><span class="mut">AMOUNT</span><b>0.1</b><span class="mut">SOL</span></div>
+                <div class="amtr"><button>0.01</button><button class="on">0.1</button><button>0.5</button><button>1</button><button>&#9998;</button></div>
               </div>
+              <div class="conv">1 SOL &asymp; 828 POOPINS</div>
+              <div class="strat"><span>&#9881;</span><b>SCALP</b><span class="chev">&#9662;</span></div>
+              <button class="cgl"><i></i>GREENLIGHT</button>
+              <div class="rpn ctr">Your bot picks this up within 5 seconds, waits for a
+                dip and a reclaim, then buys. Watch it here.</div>
             </div>
           </div>
 
           <div class="cstate" data-c="2">
-            <div class="ck">What would trigger a buy</div>
-            <div class="ctwo">
-              <div class="clines">
-                <div><span>from</span><b>$113.4K</b></div>
-                <div><span>a dip below</span><b>$90.7K</b></div>
-                <div><span>then a reclaim above</span><b>$95.2K</b></div>
-              </div>
-              <div class="cact">
-                <button class="cgl"><i></i>GREENLIGHT</button>
-                <div class="cnote">Picked up within 5 seconds, then it watches every second.</div>
-              </div>
-            </div>
+            <div class="rail"><div class="rp">
+                <div class="rphead"><span class="mdot amber"></span><b>Waiting for a dip and a reclaim</b></div>
+                <div class="rpk">WAITING FOR A DIP &middot; 20S OF WARMUP LEFT</div>
+                <div class="rpl">needs to trade at or below <b>$108.0K</b></div>
+                <div class="rpl">high since you greenlit <b>$135.0K</b></div>
+                <div class="rpn">No dip yet, so nothing can trigger. It will sit here for
+                  hours rather than buy a top.</div>
+              </div></div>
           </div>
 
           <div class="cstate" data-c="3">
-            <div class="ck"><span class="mdot amber"></span>Waiting for a dip</div>
-            <div class="ctwo">
-              <div class="clines">
-                <div><span>needs to trade at or below</span><b>$90.7K</b></div>
-                <div><span>high since you greenlit</span><b>$113.4K</b></div>
-              </div>
-              <div class="cact"><div class="cnote">No dip yet, so nothing can trigger. It will sit here for hours rather than buy a top.</div></div>
+            <div class="setwrap">
+              <div class="rp"><div class="rpk">ENTRY</div>
+                <div class="srow"><span>Dip required</span><b>20%</b></div>
+                <div class="srow"><span>Reclaim off the low</span><b>5%</b></div>
+                <div class="srow"><span>B/S floor</span><b>0.95</b></div>
+                <div class="srow"><span>Stay below the high by</span><b>10%</b></div></div>
+              <div class="rp"><div class="rpk">EXIT</div>
+                <div class="srow"><span>Take profit 1</span><b>2&times;</b></div>
+                <div class="srow"><span>Sold at TP1</span><b>50%</b></div>
+                <div class="srow"><span>Take profit 2</span><b>4&times;</b></div>
+                <div class="srow"><span>Stop</span><b>&minus;50%</b></div></div>
             </div>
           </div>
 
           <div class="cstate" data-c="4">
-            <div class="ck">Your rules</div>
-            <div class="ctwo">
-              <div class="clines">
-                <div><span>Dip required</span><b>20%</b></div>
-                <div><span>Reclaim off the low</span><b>5%</b></div>
-              </div>
-              <div class="clines">
-                <div><span>Take profit</span><b>2&times; &middot; 4&times;</b></div>
-                <div><span>Stop</span><b>&minus;50%</b></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="cstate" data-c="5">
-            <div class="ck">What it costs</div>
-            <div class="ctwo">
-              <div><div class="cbig">0.5%</div><div class="cwhen">per swap</div></div>
-              <div><div class="cbig">$0</div><div class="cwhen">monthly</div></div>
-            </div>
+            <div class="rail"><div class="rp">
+                <div class="rpk">WHAT IT COSTS</div>
+                <div class="srow"><span>Per swap</span><b>0.5%</b></div>
+                <div class="srow"><span>Monthly</span><b>$0</b></div>
+                <div class="rpn">Charged on the swap itself. Nothing else.</div>
+              </div></div>
           </div>
 
           <span class="cursor"><i></i></span>
@@ -876,6 +961,8 @@
   if (!scrolly || !stx.length || !states.length || !card) return;
 
   var N = stx.length;
+  var RANGE = [[-0.5, 1.45], [1.55, 2.45], [2.55, 3.45], [3.55, 4.45], [4.55, 5.5]];
+  var FADE = 0.5;
   function ease(t) { return t * t * (3 - 2 * t); }
 
   /* The line draws itself as the story is told. Its length is measured once so
@@ -917,12 +1004,22 @@
       var o = d >= 0.55 ? 0 : ease(1 - d / 0.55);
       stx[i].style.opacity = o;
       stx[i].style.transform = 'translateY(' + ((i - p) * 70).toFixed(1) + 'px)';
-      var st = states[i];
-      if (st) {
-        st.style.opacity = o;
-        st.style.transform = 'translateY(' + ((i - p) * 16).toFixed(1) + 'px)';
-        st.style.visibility = o > 0.02 ? 'visible' : 'hidden';
+    }
+
+    /* Five panels across six steps: the board holds both the look and the pick,
+       because picking a coin happens on the board, not on a different screen. */
+    for (var k = 0; k < states.length; k++) {
+      var r = RANGE[k], so = 0;
+      if (p > r[0] - FADE && p < r[1] + FADE) {
+        so = p < r[0] ? (p - (r[0] - FADE)) / FADE
+           : p > r[1] ? ((r[1] + FADE) - p) / FADE : 1;
+        so = ease(so < 0 ? 0 : so > 1 ? 1 : so);
       }
+      var mid = (r[0] + r[1]) / 2;
+      states[k].style.opacity = so;
+      states[k].style.transform = (k === 0 ? 'translate(-50%,-50%)' : 'translateY(-50%)') +
+        ' translateY(' + ((mid - p) * 14).toFixed(1) + 'px)';
+      states[k].style.visibility = so > 0.02 ? 'visible' : 'hidden';
     }
 
     /* draw fraction tracks the step line, so the high lands on the greenlight
@@ -936,12 +1033,12 @@
     var row = document.querySelector('.cstate[data-c="0"] tbody tr.hit');
     if (row) row.classList.toggle('picked', p > 0.9);
     var gl = document.querySelector('.cgl');
-    if (gl) gl.classList.toggle('pressed', p > 1.98 && p < 2.3);
+    if (gl) gl.classList.toggle('pressed', p > 1.98 && p < 2.32);
 
     /* The pointer picks the row, goes away while the coin opens, comes back
        for the greenlight, then leaves for good -- rather than hovering over
        the card at the coordinates of a row that is no longer on screen. */
-    var target = p < 1.25 ? row : (p > 1.75 && p < 2.6 ? gl : null);
+    var target = p < 1.35 ? row : (p > 1.7 && p < 2.6 ? gl : null);
     var pt = target && point(target);
     if (pt && cursor) {
       cursor.style.transform = 'translate(' + pt.x.toFixed(1) + 'px,' + pt.y.toFixed(1) + 'px)';
