@@ -756,7 +756,10 @@
   /* The chart sits below the copy. TP1 is 2x the entry, so the top of the
      curve is genuinely high, and at full height its label was landing on the
      subtitle. */
-  .bg { height: 66vh; transform: translate(-50%, -28%); }
+  /* Raised back up. The limit is TP1's label, which is near the top of the
+     curve because TP1 is twice the entry -- any higher and it lands on the
+     subtitle. */
+  .bg { height: 74vh; transform: translate(-50%, -34%); }
 
   /* The rules belong to a named strategy, the way they do in the app -- which
      is the point of the step: you write these, and you can have as many as you
