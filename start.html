@@ -1143,7 +1143,14 @@
       var so = Math.min((p - lo) / RAMP, (hi - p) / RAMP, 1);
       so = so < 0 ? 0 : ease(so);
       states[k].style.opacity = so;
-      states[k].style.transform = (k === 0 ? 'translate(-50%,-50%)' : 'translateY(-50%)');
+      /* The board is centred both ways, the panels hang off the right edge and
+         only need centring vertically, and the call to action is centred
+         horizontally from a fixed top. Setting translateY on all three wiped
+         the button's own translateX and pushed it 263px right of the headline. */
+      states[k].style.transform =
+        k === 0 ? 'translate(-50%,-50%)'
+        : states[k].classList.contains('cta') ? 'translateX(-50%)'
+        : 'translateY(-50%)';
       states[k].style.visibility = so > 0.02 ? 'visible' : 'hidden';
     }
 
