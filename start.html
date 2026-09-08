@@ -468,147 +468,98 @@
   .glbtn2 { transition: transform .13s ease, filter .13s ease; }
   .glbtn2.pressed { transform: scale(.975); filter: brightness(.93); }
 
-  @media (max-width: 720px) {
-    .setwrap { grid-template-columns: 1fr; }
-    }
-  @media (prefers-reduced-motion: reduce) {
-    .cursor, .cursor i { transition: none; }
-    .cursor.press::after { animation: none; }
+  /* ── the card ────────────────────────────────────────────────────────
+     A purpose-built mock, not the terminal shrunk down. The reference site
+     reads clean because its scene is a handful of elements at large type --
+     ours was a 1120px data-dense screen squeezed into 1038x502, which put the
+     stat labels at 5.8px. Few rows, big type, one fixed frame, and the states
+     cross-fade inside it. */
+  .stage { position: relative; width: min(560px, 100% - 40px); }
+  .card {
+    position: relative; height: 340px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,.04), 0 30px 70px -34px rgba(0,0,0,.4);
+  }
+  .cstate {
+    position: absolute; inset: 0; padding: 26px 28px;
+    display: flex; flex-direction: column; opacity: 0;
+    will-change: opacity, transform;
   }
 
-  /* ── the app screen ──────────────────────────────────────────────────
-     One screen, and scrolling moves a camera over it. Zooming to the thing
-     being described beats stacking panels: nothing overlaps, nothing is
-     half-faded on top of something else, and the reader is looking at the
-     actual control being talked about. */
-  .screen {
-    position: relative; width: min(1040px, 100% - 40px);
-    height: min(560px, 56vh); overflow: hidden;
-    border-radius: 18px; background: var(--bg);
-    border: 1px solid var(--line);
-    box-shadow: 0 2px 4px rgba(0,0,0,.05), 0 30px 70px -34px rgba(0,0,0,.42);
+  .ck {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--dimmer); margin-bottom: 20px;
   }
-  .world {
-    position: absolute; left: 0; top: 0; transform-origin: 0 0;
-    opacity: 0; visibility: hidden; will-change: transform, opacity;
+
+  .mrow {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 10px; border-radius: 10px;
+    transition: background .3s ease;
   }
-  .world[data-w="board"] { width: 980px; }
-  .world[data-w="coin"]  { width: 1120px; }
-  .world[data-w="set"]   { width: 900px; }
-  .world[data-w="fee"]   { width: 620px; }
-  .world .surface { margin: 0; }
+  .mrow.picked { background: color-mix(in srgb, var(--green) 12%, transparent); }
+  .mdot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); flex: none; }
+  .mdot.amber { background: var(--amber); }
+  .msym { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  .msym em { display: block; font-style: normal; font-size: 11.5px;
+             font-weight: 400; color: var(--dimmer); margin-top: 2px; }
+  .mval { margin-left: auto; text-align: right; font-size: 16px; font-weight: 600;
+          font-variant-numeric: tabular-nums; }
+  .mval em { display: block; font-style: normal; font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .mval em.up { color: var(--green); }
+  .mval em.dn { color: var(--red); }
 
-  /* ── coin page ── */
-  .cp { padding: 22px 26px 20px; }
-  .cptop { display: flex; align-items: flex-start; justify-content: space-between; }
-  .cpname { display: flex; gap: 14px; align-items: flex-start; }
-  .cpav { width: 46px; height: 46px; border-radius: 12px; flex: none;
-          background: linear-gradient(140deg, #5b6cff, #9b5bff); }
-  .cpname b { font-size: 27px; letter-spacing: -.02em; }
-  .cpname .mut { color: var(--dimmer); font-size: 17px; margin-left: 6px; }
-  .cpaddr { margin-top: 8px; font-size: 12px; color: var(--dimmer);
-            display: flex; align-items: center; gap: 8px; }
-  .tag { border: 1px solid var(--line); border-radius: 7px; padding: 3px 9px; }
-  .cpmc { text-align: right; }
-  .cpmc span { display: block; font-size: 11px; letter-spacing: .16em;
-               color: var(--dimmer); margin-bottom: 4px; }
-  .cpmc b { font-size: 30px; letter-spacing: -.02em; }
+  .cbig { font-family: var(--sans); font-size: 42px; font-weight: 800;
+          letter-spacing: -.04em; line-height: 1; }
+  .cbig em { font-style: normal; font-size: 19px; font-weight: 700; margin-left: 10px; }
+  .cbig em.up { color: var(--green); }
+  .msp { width: 100%; height: 74px; margin: 18px 0 auto; display: block;
+         fill: none; stroke: var(--green); stroke-width: 2.4; }
+  .cfoot { display: flex; justify-content: space-between; font-size: 12.5px;
+           color: var(--dimmer); border-top: 1px solid var(--hair); padding-top: 14px; }
+  .cfoot b { color: var(--fg); font-weight: 600; }
 
-  .cpbody { display: grid; grid-template-columns: minmax(0,1fr) 372px; gap: 18px; margin-top: 18px; }
-  .cpchart { background: #0b0b0d; border-radius: 12px; padding: 10px; }
-  .ch { width: 100%; height: 258px; display: block; }
-  .ch .grid line { stroke: rgba(255,255,255,.07); }
-  .ch .u line, .ch .u rect { stroke: #26c281; fill: #26c281; }
-  .ch .d line, .ch .d rect { stroke: #e05563; fill: #e05563; }
-  .ch line { stroke-width: 1.4; }
-  .ch .lvl { stroke: #26c281; stroke-dasharray: 4 4; opacity: .55; }
-
-  .cprail { display: flex; flex-direction: column; gap: 11px; }
-  .rp { border: 1px solid var(--line); border-radius: 12px; padding: 14px 15px; }
-  .rp.state { display: none; }
-  .rpk { font-size: 11px; letter-spacing: .13em; color: var(--dimmer); margin-bottom: 10px; }
-  .rpl { font-size: 14px; line-height: 1.75; }
-  .rpn { font-size: 12px; color: var(--dimmer); line-height: 1.6; margin-top: 10px; }
-  .rpn.ctr { text-align: center; }
-  .rphead { display: flex; align-items: center; gap: 8px; font-size: 14px;
-            padding-bottom: 10px; border-bottom: 1px solid var(--hair); margin-bottom: 11px; }
-
-  .amt { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-  .amtt { display: flex; justify-content: space-between; padding: 11px 13px 0; font-size: 12.5px; }
-  .amth { display: flex; align-items: baseline; gap: 10px; padding: 6px 13px 10px; }
-  .amth .mut { font-size: 11px; letter-spacing: .1em; color: var(--dimmer); }
-  .amtv { font-size: 19px; flex: 1; }
-  .amtr { display: flex; border-top: 1px solid var(--hair); }
-  .amtr button { flex: 1; background: none; border: 0; border-right: 1px solid var(--hair);
-                 font-family: inherit; font-size: 13.5px; color: var(--dim); padding: 11px 0;
-                 transition: background .2s ease, color .2s ease; }
-  .amtr button:last-child { border-right: 0; flex: 0 0 46px; }
-  .amtr button.on { background: var(--field); color: var(--fg); font-weight: 700; }
-  .conv { font-size: 12px; color: var(--dimmer); }
-  .strat { display: flex; align-items: center; gap: 9px; border: 1px solid var(--line);
-           border-radius: 12px; padding: 11px 13px; font-size: 14px; }
-  .strat .chev { margin-left: auto; color: var(--dimmer); }
-  .glbtn3 {
-    width: 100%; background: var(--green); color: #fff; border: 0; border-radius: 12px;
-    padding: 15px; font-family: inherit; font-size: 15px; font-weight: 700;
-    letter-spacing: .05em; display: flex; align-items: center; justify-content: center; gap: 10px;
-    transition: transform .13s ease, filter .13s ease;
+  .clines > div {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+    padding: 11px 0; border-bottom: 1px solid var(--hair); font-size: 15px;
   }
-  .glbtn3 .gdot { width: 9px; height: 9px; border-radius: 50%; background: #fff; }
-  .glbtn3.pressed { transform: scale(.98); filter: brightness(.92); }
+  .clines > div:last-child { border-bottom: 0; }
+  .clines span { color: var(--dim); }
+  .clines b { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-  .cpstats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0;
-             border: 1px solid var(--line); border-radius: 12px; margin-top: 16px; overflow: hidden; }
-  .cpstats > div { padding: 10px 13px; border-right: 1px solid var(--hair);
-                   border-bottom: 1px solid var(--hair); }
-  .cpstats > div:nth-child(6n) { border-right: 0; }
-  .cpstats > div:nth-child(n+7) { border-bottom: 0; }
-  .cpstats span { display: block; font-size: 10px; letter-spacing: .11em; color: var(--dimmer); }
-  .cpstats b { font-size: 15px; }
-  .cpstats .warn { color: var(--amber); }
-  .cpstats .up { color: var(--green); font-style: normal; }
-  .cpstats .dn { color: var(--red); font-style: normal; }
-
-  .world[data-w="set"] .setwrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .world[data-w="set"] .setrow .d { display: none; }
-  .world[data-w="set"] .setrow:nth-child(n+6) { display: none; }
-
-  .world tbody tr { transition: background .3s ease; }
-  .world tbody tr.picked { background: color-mix(in srgb, var(--green) 13%, transparent); }
-
-  .spot {
-    position: absolute; left: 0; top: 0; z-index: 8; opacity: 0;
-    border-radius: 14px; pointer-events: none;
-    transform-origin: 0 0; will-change: transform, width, height, opacity;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--green) 55%, transparent),
-                0 0 0 9999px color-mix(in srgb, var(--bg) 78%, transparent);
-    transition: opacity .35s ease;
+  .cgl {
+    margin-top: auto; width: 100%; background: var(--green); color: #fff; border: 0;
+    border-radius: 999px; padding: 16px; font-family: var(--sans);
+    font-size: 15px; font-weight: 700; letter-spacing: .02em;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 10px 26px -12px rgba(18,146,75,.9);
+    transition: transform .14s ease, filter .14s ease;
   }
+  .cgl i { width: 9px; height: 9px; border-radius: 50%; background: #fff; display: block; }
+  .cgl.pressed { transform: scale(.975); filter: brightness(.93); }
+  .cnote { margin-top: auto; font-size: 12.5px; color: var(--dimmer); }
+
   .cursor {
-    position: absolute; width: 20px; height: 20px; z-index: 9; opacity: 0;
-    left: 0; top: 0; pointer-events: none; will-change: transform, opacity;
-    transition: opacity .3s ease;
+    position: absolute; width: 19px; height: 19px; z-index: 4; opacity: 0;
+    left: 0; top: 0; pointer-events: none;
+    transition: transform .6s cubic-bezier(.4,0,.2,1), opacity .3s ease;
   }
   .cursor i {
     position: absolute; inset: 0; display: block;
     background: no-repeat center/contain
       url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 2l14 8.5-6 1.3L11 19z" fill="white" stroke="black" stroke-width="1.5" stroke-linejoin="round"/></svg>');
-    filter: drop-shadow(0 2px 6px rgba(0,0,0,.4));
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
     transition: transform .13s ease;
   }
   .cursor.press i { transform: scale(.72) translate(2px,2px); }
   .cursor.press::after {
-    content: ''; position: absolute; left: -13px; top: -13px; width: 46px; height: 46px;
+    content: ''; position: absolute; left: -12px; top: -12px; width: 43px; height: 43px;
     border-radius: 50%; border: 2px solid var(--green); animation: ring .6s ease-out;
   }
   @keyframes ring { 0% { transform: scale(.2); opacity: .9; } 100% { transform: scale(1); opacity: 0; } }
 
-  @media (max-width: 720px) {
-    .screen { height: 46vh; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .world { transition: none; } .cursor.press::after { animation: none; }
-  }
+  @media (max-width: 640px) { .card { height: 360px; } .cstate { padding: 22px; } }
+  @media (prefers-reduced-motion: reduce) { .cursor { transition: none; } }
 </style>
 </head>
 <body>
@@ -645,158 +596,73 @@
      needs a paragraph to explain it. -->
 
 <!-- ── how ──────────────────────────────────────────────────────────── -->
-<section class="scrolly" id="how" style="--n:8">
+<section class="scrolly" id="how" style="--n:6">
   <div class="scrolly-in">
     <div class="steps">
       <div class="stx" data-i="0"><h2>Only what&rsquo;s moving.</h2><p>Filtered on volume, liquidity and flow.</p></div>
       <div class="stx" data-i="1"><h2>You pick the coin.</h2><p>The one call the system won&rsquo;t make for you.</p></div>
-      <div class="stx" data-i="2"><h2>Size it.</h2><p>How much of the wallet this one trade is allowed to be.</p></div>
-      <div class="stx" data-i="3"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
-      <div class="stx" data-i="4"><h2>It waits for the dip.</h2><p>Hours if it has to. Nothing triggers above your level.</p></div>
-      <div class="stx" data-i="5"><h2>It buys the reclaim.</h2><p>Not the knife. Five percent back off the low.</p></div>
-      <div class="stx" data-i="6"><h2>Your rules, not ours.</h2><p>Unlimited settings. Every coin runs your way.</p></div>
-      <div class="stx" data-i="7"><h2>One flat fee.</h2><p>0.5% per swap. No subscription.</p></div>
+      <div class="stx" data-i="2"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
+      <div class="stx" data-i="3"><h2>It waits for the dip.</h2><p>Hours if it has to, then it buys the reclaim.</p></div>
+      <div class="stx" data-i="4"><h2>Your rules, not ours.</h2><p>Unlimited settings. Every coin runs your way.</p></div>
+      <div class="stx" data-i="5"><h2>One flat fee.</h2><p>0.5% per swap. No subscription.</p></div>
     </div>
-
-    <!-- One app screen. Scrolling moves a camera over it -- to the row you pick,
-         to the size, to the greenlight -- instead of stacking panels on top of
-         each other. Only one world is ever mounted. -->
-    <div class="screen" aria-hidden="true">
-      <div class="world" data-w="board"><div class="surface">
-        <div class="bhead">
-          <span class="t">Trending · 5m</span>
-          <span class="chips">
-            <span class="chip">min 5m vol&nbsp; <b>25000</b></span>
-            <span class="chip">min MC&nbsp; <b>50000</b></span>
-            <span class="chip">min vol/MC&nbsp; <b>10%</b></span>
-          </span>
-        </div>
-        <table>
-          <thead><tr>
-            <th>Token</th><th>MC</th><th>Liq</th><th>5m vol</th>
-            <th>Vol / MC</th><th>B/S</th><th>5m</th>
-          </tr></thead>
-          <tbody id="board"></tbody>
-        </table>
-      </div></div>
-      <div class="world" data-w="coin"><div class="cp">
-          <div class="cptop">
-            <div class="cpname"><span class="cpav"></span>
-              <div><b>SPRL</b> <span class="mut">Spiral Stake</span> <span class="mut">14m</span>
-                <div class="cpaddr">0xb2&hellip;b5b6 <span class="tag">GMGN</span> <span class="tag">X</span> <span class="tag">Telegram</span></div>
-              </div>
-            </div>
-            <div class="cpmc"><span>MARKET CAP</span><b>$382.8K</b></div>
+    <div class="stage" aria-hidden="true">
+<div class="card">
+          <div class="cstate on" data-c="0">
+            <div class="ck">Trending &middot; 5m</div>
+            <div class="mrow hit"><span class="mdot"></span><span class="msym">KITE<em>3m · Kite</em></span><span class="mval">$113.4K<em class="up">+14%</em></span></div>
+            <div class="mrow"><span class="mdot"></span><span class="msym">LUMEN<em>4m · Lumen</em></span><span class="mval">$412K<em class="up">+30%</em></span></div>
+            <div class="mrow"><span class="mdot"></span><span class="msym">ORBIT<em>11m · Orbit</em></span><span class="mval">$286K<em class="up">+9%</em></span></div>
+            <div class="mrow"><span class="mdot"></span><span class="msym">EMBER<em>26m · Ember</em></span><span class="mval">$97K<em class="dn">−7%</em></span></div>
           </div>
 
-          <div class="cpbody">
-            <div class="cpchart"><svg class="ch" viewBox="0 0 600 240" preserveAspectRatio="none" aria-hidden="true">
-              <g class="grid"><line x1="0" y1="48" x2="600" y2="48"/><line x1="0" y1="96" x2="600" y2="96"/>
-                 <line x1="0" y1="144" x2="600" y2="144"/><line x1="0" y1="192" x2="600" y2="192"/></g>
-              <g class="u"><line x1="20" y1="150" x2="20" y2="196"/><rect x="17" y="158" width="6" height="32"/></g><g class="u"><line x1="38" y1="140" x2="38" y2="180"/><rect x="35" y="150" width="6" height="26"/></g><g class="d"><line x1="56" y1="132" x2="56" y2="172"/><rect x="53" y="150" width="6" height="16"/></g><g class="u"><line x1="74" y1="120" x2="74" y2="168"/><rect x="71" y="128" width="6" height="36"/></g><g class="u"><line x1="92" y1="112" x2="92" y2="150"/><rect x="89" y="120" width="6" height="12"/></g><g class="u"><line x1="110" y1="96" x2="110" y2="140"/><rect x="107" y="104" width="6" height="18"/></g><g class="d"><line x1="128" y1="88" x2="128" y2="132"/><rect x="125" y="106" width="6" height="12"/></g><g class="u"><line x1="146" y1="78" x2="146" y2="126"/><rect x="143" y="86" width="6" height="30"/></g><g class="u"><line x1="164" y1="64" x2="164" y2="110"/><rect x="161" y="72" width="6" height="16"/></g><g class="d"><line x1="182" y1="58" x2="182" y2="100"/><rect x="179" y="74" width="6" height="18"/></g><g class="u"><line x1="200" y1="70" x2="200" y2="116"/><rect x="197" y="80" width="6" height="12"/></g><g class="u"><line x1="218" y1="52" x2="218" y2="96"/><rect x="215" y="60" width="6" height="22"/></g><g class="u"><line x1="236" y1="40" x2="236" y2="84"/><rect x="233" y="50" width="6" height="12"/></g><g class="d"><line x1="254" y1="34" x2="254" y2="78"/><rect x="251" y="52" width="6" height="16"/></g><g class="d"><line x1="272" y1="56" x2="272" y2="104"/><rect x="269" y="68" width="6" height="20"/></g><g class="d"><line x1="290" y1="74" x2="290" y2="120"/><rect x="287" y="88" width="6" height="16"/></g><g class="d"><line x1="308" y1="90" x2="308" y2="136"/><rect x="305" y="104" width="6" height="16"/></g><g class="u"><line x1="326" y1="104" x2="326" y2="150"/><rect x="323" y="112" width="6" height="8"/></g><g class="d"><line x1="344" y1="96" x2="344" y2="142"/><rect x="341" y="114" width="6" height="16"/></g><g class="d"><line x1="362" y1="116" x2="362" y2="160"/><rect x="359" y="130" width="6" height="14"/></g><g class="u"><line x1="380" y1="130" x2="380" y2="172"/><rect x="377" y="132" width="6" height="12"/></g><g class="u"><line x1="398" y1="118" x2="398" y2="158"/><rect x="395" y="120" width="6" height="14"/></g><g class="u"><line x1="416" y1="104" x2="416" y2="146"/><rect x="413" y="108" width="6" height="14"/></g><g class="d"><line x1="434" y1="92" x2="434" y2="134"/><rect x="431" y="110" width="6" height="14"/></g><g class="d"><line x1="452" y1="108" x2="452" y2="152"/><rect x="449" y="126" width="6" height="14"/></g><g class="u"><line x1="470" y1="124" x2="470" y2="166"/><rect x="467" y="128" width="6" height="14"/></g><g class="u"><line x1="488" y1="110" x2="488" y2="154"/><rect x="485" y="116" width="6" height="14"/></g><g class="u"><line x1="506" y1="98" x2="506" y2="140"/><rect x="503" y="102" width="6" height="16"/></g><g class="u"><line x1="524" y1="84" x2="524" y2="128"/><rect x="521" y="90" width="6" height="14"/></g><g class="u"><line x1="542" y1="72" x2="542" y2="116"/><rect x="539" y="78" width="6" height="14"/></g><g class="u"><line x1="560" y1="60" x2="560" y2="104"/><rect x="557" y="66" width="6" height="14"/></g><g class="u"><line x1="578" y1="50" x2="578" y2="96"/><rect x="575" y="56" width="6" height="12"/></g>
-              <line class="lvl" x1="0" y1="88" x2="600" y2="88"/>
-            </svg></div>
+          <div class="cstate" data-c="1">
+            <div class="ck">Kite</div>
+            <div class="cbig">$113.4K <em class="up">+14%</em></div>
+            <svg class="msp" viewBox="0 0 320 64" preserveAspectRatio="none"><polyline points="0,46 24,38 48,42 72,28 96,33 120,20 144,26 168,14 192,30 216,44 240,52 264,40 288,22 320,10"/></svg>
+            <div class="cfoot"><span>LIQ <b>$41.2K</b></span><span>5M VOL <b>$58.9K</b></span><span>B/S <b>1.34</b></span></div>
+          </div>
 
-            <div class="cprail">
-              <div class="rp" id="rp-trigger">
-                <div class="rpk">WHAT WOULD TRIGGER A BUY</div>
-                <div class="rpl">from <b>$382.8K</b></div>
-                <div class="rpl">a dip below <b>$306.2K</b></div>
-                <div class="rpl">then a reclaim above <b>$321.6K</b></div>
-                <div class="rpn">Projected from the current market cap. Once you
-                  greenlight, the bot measures from the high it sees.</div>
-              </div>
+          <div class="cstate" data-c="2">
+            <div class="ck">What would trigger a buy</div>
+            <div class="clines">
+              <div><span>from</span><b>$113.4K</b></div>
+              <div><span>a dip below</span><b>$90.7K</b></div>
+              <div><span>then a reclaim above</span><b>$95.2K</b></div>
+            </div>
+            <button class="cgl"><i></i>GREENLIGHT</button>
+          </div>
 
-              <div class="rp state" id="rp-state">
-                <div class="rphead"><span class="dot amber"></span><b class="stname">Waiting for a dip and a reclaim</b></div>
-                <div class="rpk stk">WAITING FOR A DIP &middot; 20S OF WARMUP LEFT</div>
-                <div class="rpl stl1">needs to trade at or below <b>$306.2K</b></div>
-                <div class="rpl stl2">high since you greenlit <b>$382.8K</b></div>
-                <div class="rpn stn">No dip yet, so nothing can trigger.</div>
-              </div>
+          <div class="cstate" data-c="3">
+            <div class="ck"><span class="mdot amber"></span>Waiting for a dip</div>
+            <div class="clines">
+              <div><span>needs to trade at or below</span><b>$90.7K</b></div>
+              <div><span>high since you greenlit</span><b>$113.4K</b></div>
+            </div>
+            <div class="cnote">No dip yet, so nothing can trigger.</div>
+          </div>
 
-              <div class="amt" id="rp-amt">
-                <div class="amtt"><span><b class="pctb">13%</b> of balance</span><span class="mut">0.7768 SOL</span></div>
-                <div class="amth"><span class="mut">AMOUNT</span><b class="amtv">0.10</b><span class="mut">SOL</span></div>
-                <div class="amtr">
-                  <button>0.01</button><button class="on">0.1</button><button>0.5</button><button>1</button><button>&#9998;</button>
-                </div>
-              </div>
-              <div class="conv">1 SOL &asymp; 2.7K SPRL</div>
-
-              <div class="strat"><span>&#9881;</span><b>SCALP</b><span class="chev">&#9662;</span></div>
-              <button class="glbtn3" id="rp-gl"><span class="gdot"></span>GREENLIGHT</button>
-              <div class="rpn ctr">Picked up within 5 seconds. Then it watches every second.</div>
+          <div class="cstate" data-c="4">
+            <div class="ck">Your rules</div>
+            <div class="clines">
+              <div><span>Dip required</span><b>20%</b></div>
+              <div><span>Reclaim off the low</span><b>5%</b></div>
+              <div><span>Take profit</span><b>2&times; &middot; 4&times;</b></div>
+              <div><span>Stop</span><b>&minus;50%</b></div>
             </div>
           </div>
 
-          <div class="cpstats">
-            <div><span>5M VOLUME</span><b class="warn">$62.2K</b></div>
-            <div><span>LIQUIDITY</span><b>$56.8K</b></div>
-            <div><span>BUYS / SELLS</span><b><i class="up">172</i> / <i class="dn">159</i></b></div>
-            <div><span>B/S</span><b class="dn">0.91</b></div>
-            <div><span>HOLDERS</span><b>279</b></div>
-            <div><span>SMART / KOL</span><b>13 / 0</b></div>
-            <div><span>ATH MC</span><b>$595.2K</b></div>
-            <div><span>VOL / MC</span><b class="warn">16%</b></div>
-            <div><span>TOP 10</span><b>61.7%</b></div>
-            <div><span>BUNDLER</span><b>0%</b></div>
-            <div><span>BOT DEGEN</span><b>31.8%</b></div>
-            <div><span>PHISHING</span><b>7.5%</b></div>
+          <div class="cstate" data-c="5">
+            <div class="ck">What it costs</div>
+            <div class="clines">
+              <div><span>Per swap</span><b>0.5%</b></div>
+              <div><span>Monthly</span><b>$0</b></div>
+            </div>
+            <div class="cnote">Charged on the swap itself. Nothing else.</div>
           </div>
-        </div></div>
-      <div class="world" data-w="set"><div class="setwrap"><div class="surface setgroup">
-          <div class="gk">Entry</div>
-          <div class="setrow"><div class="l"><div class="n">Dip required</div>
-            <div class="d">How far it must fall from the high before looking to buy.</div></div>
-            <div class="val"><input class="vin" value="20" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
-          <div class="setrow"><div class="l"><div class="n">Reclaim</div>
-            <div class="d">Rise off the low that triggers the buy.</div></div>
-            <div class="val"><input class="vin" value="5" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
-          <div class="setrow"><div class="l"><div class="n">B/S floor</div>
-            <div class="d">Under 1 means more selling than buying. The buy waits.</div></div>
-            <div class="val"><input class="vin" value="0.95" inputmode="decimal" aria-label="value" spellcheck="false"></div></div>
-          <div class="setrow"><div class="l"><div class="n">Stay below the high by</div>
-            <div class="d">Refuses an entry too close to the top.</div></div>
-            <div class="val"><input class="vin" value="10" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
-          <div class="setrow"><div class="l"><div class="n">Deepest entry</div>
-            <div class="d">How far below the high a buy may land.</div></div>
-            <div class="val"><input class="vin" value="70" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
-          <div class="setrow"><div class="l"><div class="n">Watch before buying</div>
-            <div class="d">Seconds of tape before a buy is allowed.</div></div>
-            <div class="val"><input class="vin" value="30" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">s</span></div></div>
-        </div><div class="surface setgroup">
-          <div class="gk">Exit</div>
-          <div class="setrow"><div class="l"><div class="n">Take profit 1</div>
-            <div class="d">Sells half the position.</div></div>
-            <div class="val"><input class="vin" value="2" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">x</span></div></div>
-          <div class="setrow"><div class="l"><div class="n">Sold at TP1</div>
-            <div class="d">The rest rides to TP2.</div></div>
-            <div class="val"><input class="vin" value="50" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
-          <div class="setrow"><div class="l"><div class="n">Take profit 2</div>
-            <div class="d">Fully out here.</div></div>
-            <div class="val"><input class="vin" value="4" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">x</span></div></div>
-          <div class="setrow"><div class="l"><div class="n">Stop type</div>
-            <div class="d">Trailing follows the high. Fixed measures from entry.</div></div>
-            <div class="seg"><span>Trailing</span><span class="on">Fixed</span></div></div>
-          <div class="setrow"><div class="l"><div class="n">Stop</div>
-            <div class="d">How far it may fall below your entry before selling out.</div></div>
-            <div class="val"><input class="vin" value="50" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
-          <div class="setrow"><div class="l"><div class="n">Break even after TP1</div>
-            <div class="d">The stop on the rest moves up to your entry, so the
-              trade can't turn into a loss.</div></div>
-            <div class="seg"><span class="on">On</span><span>Off</span></div></div>
-        </div></div></div>
-      <div class="world" data-w="fee">
-        <div class="surface state">
-          <div class="sthead"><span class="dot green"></span>What it costs</div>
-          <div class="stbody"><div class="k">Per swap</div><b>0.5%</b><br>
-            <span class="muted">no subscription, no monthly</span>
-            <div class="fine">Charged on the swap itself. Nothing else.</div></div>
+
+          <span class="cursor"><i></i></span>
         </div>
-      </div>
-      <span class="spot"></span>
-      <span class="cursor"><i></i></span>
     </div>
   </div>
 </section>
@@ -833,92 +699,7 @@
 </footer>
 
 <script>
-/* ── the board, alive ────────────────────────────────────────────────────
-   Rebuilt rather than screenshotted so it stays sharp at any size and can
-   move. The numbers drift the way the real board's do — small, frequent, and
-   never enough to look like a slot machine. */
-const COINS = [
-  { n: 'FORTUNE',   s: 'The Gospel of For…', a: '19m', e: '🍀', mc: 2.40e6, liq: 142.7e3, vol: 1.01e6, vm: 42, bs: 1.04, ch:  31 },
-  { n: 'buni',      s: 'buni',               a: '1h',  e: '🐰', mc: 602.4e3, liq: 71.2e3, vol: 201.8e3, vm: 34, bs: 0.97, ch: -25 },
-  { n: 'Poopins',   s: 'Mary Poopins',       a: '4h',  e: '☂️', mc: 133.9e3, liq: 29.1e3, vol:  61.7e3, vm: 46, bs: 1.12, ch:  12 },
-  { n: 'so..higher',s: 'solana looking go…', a: '17m', e: '🚀', mc:  67.0e3, liq: 20.2e3, vol:  58.9e3, vm: 88, bs: 1.02, ch:  11 },
-  { n: 'GATO',      s: 'GTA6CAT',            a: '12m', e: '🐈', mc: 513.2e3, liq: 59.7e3, vol:  54.2e3, vm: 11, bs: 0.88, ch: -14 },
-];
-const money = v => v >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M'
-               : v >= 1e3 ? '$' + (v / 1e3).toFixed(1) + 'K' : '$' + v.toFixed(0);
-const pct = v => `<span class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '+' : ''}${v.toFixed(0)}%</span>`;
-
-function paintBoard() {
-  document.getElementById('board').innerHTML = COINS.map(c => `
-    <tr>
-      <td><div class="tok">
-        <span class="av">${c.e}</span>
-        <span><span class="nm">${c.n}</span><br><span class="sub">${c.a} · ${c.s}</span></span>
-      </div></td>
-      <td>${money(c.mc)}</td>
-      <td>${money(c.liq)}</td>
-      <td class="vol ${c.vol > 2e5 ? 'up' : 'warm'}">${money(c.vol)}</td>
-      <td class="${c.vm >= 40 ? 'up' : ''}">${c.vm.toFixed(0)}<span style="font-size:9px">%</span></td>
-      <td class="${c.bs >= 1 ? 'up' : 'down'}">${c.bs.toFixed(2)}</td>
-      <td>${pct(c.ch)}</td>
-    </tr>`).join('');
-}
-paintBoard();
-
-/* One small move, once, when you first reach the board.
-
-   It used to tick every 1.6 seconds with a green tint on whatever changed,
-   which read as a slot machine rather than a market. A single nudge across
-   every column says the same thing — these are live numbers — without asking
-   anyone to sit and watch them flicker. */
-let boardMoved = false;
-const onScreen = (el, slack = 0.12) => {
-  const b = el.getBoundingClientRect();
-  return b.top < innerHeight * (1 - slack) && b.bottom > innerHeight * slack;
-};
-const boardEl = document.querySelector('#board').closest('.surface');
-
-/* One move, once, when you have actually got the board in front of you — and
-   played out over about a second rather than swapped in a single frame.
-
-   Two things were wrong before. It fired as soon as the board's top edge
-   grazed the bottom of the screen, so the move was over before it was in
-   view; and it was an instant repaint, which at this size is indistinguishable
-   from a number that was always that. Tweening the digits is what makes a
-   small change legible as a change, without a flash of colour to announce it. */
-const jog  = (v, least, spread) =>
-  v * (1 + (Math.random() < 0.5 ? -1 : 1) * (least + Math.random() * spread));
-const step = (least, spread) =>
-  (Math.random() < 0.5 ? -1 : 1) * (least + Math.random() * spread);
-const FIELDS = ['mc', 'liq', 'vol', 'vm', 'bs', 'ch'];
-
-function boardWatch() {
-  if (boardMoved) return;
-  const b = boardEl.getBoundingClientRect();
-  if (!(b.top < innerHeight * 0.62 && b.bottom > 0)) return;
-  boardMoved = true;
-
-  const from = COINS.map(c => Object.fromEntries(FIELDS.map(f => [f, c[f]])));
-  const to = from.map(v => ({
-    mc:  jog(v.mc,  0.006, 0.010),        // clears the last printed digit
-    liq: jog(v.liq, 0.008, 0.012),
-    vol: jog(v.vol, 0.012, 0.020),
-    vm:  Math.max(1, v.vm + step(1, 1)),
-    bs:  Math.max(0.6, Math.min(1.6, v.bs + step(0.01, 0.03))),
-    ch:  v.ch + step(0.8, 1.4),
-  }));
-
-  const t0 = Date.now(), DUR = 900;
-  const run = setInterval(() => {
-    const k = Math.min(1, (Date.now() - t0) / DUR);
-    const e = 1 - Math.pow(1 - k, 3);     // ease out, so it settles
-    COINS.forEach((c, i) => {
-      for (const f of FIELDS) c[f] = from[i][f] + (to[i][f] - from[i][f]) * e;
-    });
-    paintBoard();
-    if (k >= 1) clearInterval(run);
-  }, 33);
-}
+/* The board is drawn in the card mock now. */
 
 /* ── reveal on scroll ─────────────────────────────────────────────────────
    On the same scroll tick as everything else. This was an IntersectionObserver,
@@ -1001,107 +782,40 @@ const sweep = setInterval(() => {
 
 /* The greenlight now lives inside the demo screen, driven by scroll. */
 
+/* The scroll story runs in its own script block below. */
+</script>
+
+<script>
 /* ── scroll story ──
-   Scroll position drives a camera over one app screen. Between two shots of the
-   same screen the camera interpolates -- it pans and zooms -- so the move from
-   the size box to the greenlight is continuous rather than one panel fading
-   over another. Only when the screen itself changes (board to coin page, coin
-   page to settings) is there a cut, and that is a navigation the reader just
-   watched happen. */
+   Titles slide through their step and the card cross-fades between states.
+   One fixed frame, so nothing resizes, nothing overlaps and nothing is layered
+   on top of anything else. */
 (function () {
   var scrolly = document.getElementById('how');
   var stx     = [].slice.call(document.querySelectorAll('.stx'));
-  var screenEl= document.querySelector('.screen');
+  var states  = [].slice.call(document.querySelectorAll('.cstate'));
+  var card    = document.querySelector('.card');
   var cursor  = document.querySelector('.cursor');
-  if (!scrolly || !stx.length || !screenEl) return;
+  if (!scrolly || !stx.length || !states.length || !card) return;
 
-  var worlds = {};
-  [].slice.call(screenEl.querySelectorAll('.world')).forEach(function (w) {
-    worlds[w.getAttribute('data-w')] = w;
-  });
-
-  /* world, what to frame, how close, and what the pointer is doing */
-  var SHOT = [
-    { w: 'board', t: null                                                              },
-    { w: 'coin',  t: null                                                              },
-    { w: 'coin',  t: '#rp-amt',   fw: .58, spot: 1, cur: '.amtr button:nth-child(2)', click: 2.0 },
-    { w: 'coin',  t: '#rp-gl',    fw: .52, spot: 1, cur: '#rp-gl',                    click: 3.0 },
-    { w: 'coin',  t: '#rp-state', fw: .58, spot: 1                                     },
-    { w: 'coin',  t: '#rp-state', fw: .58, spot: 1                                     },
-    { w: 'set',   t: null                                                              },
-    { w: 'fee',   t: null                                                              }
-  ];
-  var N = SHOT.length;
-  var box = {};                       /* target geometry, measured unscaled */
-
-  var trigEl = document.querySelector('#rp-trigger');
-  var stateEl = document.querySelector('#rp-state');
-  function rail(showState) {
-    if (trigEl)  trigEl.style.display  = showState ? 'none'  : 'block';
-    if (stateEl) stateEl.style.display = showState ? 'block' : 'none';
-  }
-
-  function grab(sels) {
-    SHOT.forEach(function (sh) {
-      [sh.t, sh.cur].forEach(function (sel) {
-        if (!sel || sels.indexOf(sel) === -1) return;
-        var root = worlds[sh.w];
-        var el = root && root.querySelector(sel);
-        if (!el) return;
-        var wb = root.getBoundingClientRect(), b = el.getBoundingClientRect();
-        if (!b.width || !b.height) return;      /* hidden: not a real box */
-        box[sel] = { x: b.left - wb.left, y: b.top - wb.top, w: b.width, h: b.height };
-      });
-    });
-  }
-
-  /* The rail shows either the trigger preview or the live status, never both,
-     and they are different heights. So each is measured in the state it is
-     actually seen in -- measuring one while it is display:none returns zeros
-     and the camera then frames nothing. */
-  function measure() {
-    for (var k in worlds) {
-      worlds[k].style.transform = 'none';
-      worlds[k].style.visibility = 'visible';
-    }
-    rail(false);
-    grab(['#rp-amt', '#rp-gl', '.amtr button:nth-child(2)', 'tbody tr:nth-child(3)']);
-    rail(true);
-    grab(['#rp-state']);
-    rail(false);
-    for (var k2 in worlds) {
-      worlds[k2].__w = worlds[k2].offsetWidth;
-      worlds[k2].__h = worlds[k2].offsetHeight;
-      worlds[k2].style.visibility = '';
-    }
-  }
-
-  /* Where the camera sits for one shot. A close shot is specified as how much
-     of the screen the control should fill, not as a multiple of the fit-scale --
-     that produced a control sitting small in the middle of a lot of dead space
-     while its neighbours were sliced through the middle of a sentence. */
-  function shotAt(i) {
-    var sh = SHOT[i], W = worlds[sh.w];
-    var fit = Math.min(screenEl.clientWidth / W.__w, screenEl.clientHeight / W.__h) * 0.94;
-    if (!sh.t || !box[sh.t]) return { cx: W.__w / 2, cy: W.__h / 2, s: fit, w: sh.w, spot: 0 };
-    var b = box[sh.t];
-    var sc = Math.min(screenEl.clientWidth * (sh.fw || .58) / b.w,
-                      screenEl.clientHeight * 0.56 / b.h);
-    if (sc < fit) sc = fit;
-    return { cx: b.x + b.w / 2, cy: b.y + b.h / 2, s: sc, w: sh.w, spot: sh.spot ? 1 : 0, box: b };
-  }
-
-  function lerp(a, b, t) { return a + (b - a) * t; }
+  var N = stx.length;
   function ease(t) { return t * t * (3 - 2 * t); }
 
   var pressed = {};
-  function doPress(key) {
+  function press(key) {
     if (pressed[key]) return;
     pressed[key] = true;
     cursor.classList.remove('press');
     void cursor.offsetWidth;
     cursor.classList.add('press');
-    setTimeout(function () { cursor.classList.remove('press'); }, 600);
+    setTimeout(function () { cursor.classList.remove('press'); }, 620);
+  }
+
+  function point(el) {
+    if (!el) return null;
+    var c = card.getBoundingClientRect(), b = el.getBoundingClientRect();
+    if (!b.width) return null;
+    return { x: b.left - c.left + b.width * 0.30, y: b.top - c.top + b.height * 0.55 };
   }
 
   function paint() {
@@ -1116,88 +830,33 @@ const sweep = setInterval(() => {
       var d = Math.abs(p - i);
       var o = d >= 0.55 ? 0 : ease(1 - d / 0.55);
       stx[i].style.opacity = o;
-      stx[i].style.transform = 'translateY(' + ((i - p) * 74).toFixed(1) + 'px)';
-    }
-
-    var i0 = Math.floor(p), i1 = Math.min(i0 + 1, N - 1), f = ease(p - i0);
-    var a = shotAt(i0), b = shotAt(i1);
-    var same = a.w === b.w;
-    var cam = same
-      ? { cx: lerp(a.cx, b.cx, f), cy: lerp(a.cy, b.cy, f), s: lerp(a.s, b.s, f) }
-      : (f < 0.5 ? a : b);
-    var spotOn = same ? lerp(a.spot, b.spot, f) : (f < 0.5 ? a.spot : b.spot);
-    var spotBox = (f < 0.5 ? (a.box || b.box) : (b.box || a.box));
-    var live = same ? a.w : (f < 0.5 ? a.w : b.w);
-
-    for (var k in worlds) {
-      var on = k === live;
-      var W = worlds[k];
-      W.style.visibility = on ? 'visible' : 'hidden';
-      /* Across a screen change the outgoing one dips out and the incoming one
-         comes up, but they are never both readable at once. */
-      W.style.opacity = on ? (same ? 1 : Math.min(1, Math.abs(f - 0.5) * 2 + 0.35)) : 0;
-      if (on) {
-        var tx = screenEl.clientWidth / 2 - cam.cx * cam.s;
-        var ty = screenEl.clientHeight / 2 - cam.cy * cam.s;
-        W.style.transform = 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + cam.s.toFixed(4) + ')';
-        W.__tx = tx; W.__ty = ty; W.__s = cam.s;
+      stx[i].style.transform = 'translateY(' + ((i - p) * 70).toFixed(1) + 'px)';
+      var st = states[i];
+      if (st) {
+        st.style.opacity = o;
+        st.style.transform = 'translateY(' + ((i - p) * 16).toFixed(1) + 'px)';
+        st.style.visibility = o > 0.02 ? 'visible' : 'hidden';
       }
     }
 
-    /* Dim everything the shot is not about. Without it a close crop just looks
-       like a broken screenshot; with it, it reads as the page pointing. */
-    var spot = document.querySelector('.spot');
-    if (spot) {
-      if (spotOn > 0.02 && spotBox && worlds[live]) {
-        var Wp = worlds[live];
-        var sx2 = Wp.__tx + spotBox.x * Wp.__s, sy2 = Wp.__ty + spotBox.y * Wp.__s;
-        spot.style.transform = 'translate(' + sx2.toFixed(1) + 'px,' + sy2.toFixed(1) + 'px)';
-        spot.style.width  = (spotBox.w * Wp.__s).toFixed(1) + 'px';
-        spot.style.height = (spotBox.h * Wp.__s).toFixed(1) + 'px';
-        spot.style.opacity = spotOn;
-      } else {
-        spot.style.opacity = 0;
-      }
-    }
+    var row = document.querySelector('.cstate[data-c="0"] .mrow.hit');
+    if (row) row.classList.toggle('picked', p > 0.9);
+    var gl = document.querySelector('.cgl');
+    if (gl) gl.classList.toggle('pressed', p > 1.98 && p < 2.3);
 
-    /* the rail swaps the trigger panel for the live status once it is armed */
-    var trig = document.querySelector('#rp-trigger'), st = document.querySelector('#rp-state');
-    if (trig && st) {
-      var armed = p >= 3.55;
-      rail(armed);
-      if (armed) {
-        var dipped = p >= 4.55;
-        st.querySelector('.stname').textContent = dipped ? 'Dipped — waiting for the bounce' : 'Waiting for a dip and a reclaim';
-        st.querySelector('.stk').textContent    = dipped ? 'DIPPED · BUYS BETWEEN' : 'WAITING FOR A DIP · 20S OF WARMUP LEFT';
-        st.querySelector('.stl1').innerHTML     = dipped ? '<b>$306.2K</b> and <b>$321.6K</b>' : 'needs to trade at or below <b>$306.2K</b>';
-        st.querySelector('.stl2').innerHTML     = dipped ? 'low <b>$298.4K</b> · high <b>$382.8K</b>' : 'high since you greenlit <b>$382.8K</b>';
-        st.querySelector('.stn').textContent    = dipped ? 'Not buying yet — waiting for a 5% bounce off the low.' : 'No dip yet, so nothing can trigger.';
-      }
-    }
-
-    /* pointer, placed in screen space from the live camera */
-    var shot = SHOT[Math.round(p)];
-    var W2 = worlds[live];
-    if (cursor && shot && shot.cur && box[shot.cur] && Math.abs(p - Math.round(p)) < 0.55 && SHOT[Math.round(p)].w === live) {
-      var cb = box[shot.cur];
-      var sx = W2.__tx + (cb.x + cb.w * 0.34) * W2.__s;
-      var sy = W2.__ty + (cb.y + cb.h * 0.55) * W2.__s;
-      cursor.style.transform = 'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px)';
+    /* The pointer picks the row, goes away while the coin opens, comes back
+       for the greenlight, then leaves for good -- rather than hovering over
+       the card at the coordinates of a row that is no longer on screen. */
+    var target = p < 1.25 ? row : (p > 1.75 && p < 2.6 ? gl : null);
+    var pt = target && point(target);
+    if (pt && cursor) {
+      cursor.style.transform = 'translate(' + pt.x.toFixed(1) + 'px,' + pt.y.toFixed(1) + 'px)';
       cursor.style.opacity = 1;
-      if (shot.click != null) {
-        if (p > shot.click && p < shot.click + 0.22) doPress('k' + shot.click);
-        else if (p < shot.click - 0.06) pressed['k' + shot.click] = false;
-      }
+      if (p > 0.9 && p < 1.12) press('row'); else if (p < 0.86) pressed.row = false;
+      if (p > 1.98 && p < 2.2) press('gl');  else if (p < 1.94) pressed.gl = false;
     } else if (cursor) {
       cursor.style.opacity = 0;
     }
-
-    var row = worlds.board && worlds.board.querySelector('tbody tr:nth-child(3)');
-    if (row) row.classList.toggle('picked', p > 0.9);
-    var gl = document.querySelector('#rp-gl');
-    if (gl) gl.classList.toggle('pressed', p > 2.98 && p < 3.3);
-    var pre = document.querySelector('.amtr button:nth-child(2)');
-    if (pre) pre.classList.toggle('on', true);
   }
 
   var queued = false;
@@ -1206,13 +865,11 @@ const sweep = setInterval(() => {
     queued = true;
     requestAnimationFrame(function () { queued = false; paint(); });
   }
-  function boot() { measure(); paint(); }
   addEventListener('scroll', onScroll, { passive: true });
-  addEventListener('resize', function () { measure(); paint(); });
-  addEventListener('pageshow', boot);
+  addEventListener('resize', paint);
+  addEventListener('pageshow', paint);
   addEventListener('visibilitychange', function () { if (!document.hidden) paint(); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(boot);
-  boot();
+  paint();
 })();
 </script>
 <!-- Whop: records the visit and attributes a purchase back to it. This is
