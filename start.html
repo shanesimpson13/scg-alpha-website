@@ -92,21 +92,6 @@
     justify-content: center; padding: 96px 0 48px; position: relative;
   }
 
-  /* Marquee of the thresholds a coin has to clear. Decorative, so it is hidden
-     from screen readers rather than read out as a list of numbers. */
-  .tape {
-    display: flex; gap: 0; overflow: hidden; margin-bottom: 48px;
-    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-  }
-  .tape ul {
-    display: flex; gap: 32px; margin: 0; padding: 0 16px 0 0; list-style: none;
-    flex: none; animation: slide 42s linear infinite;
-  }
-  .tape li {
-    font-size: 12px; color: var(--dimmer); letter-spacing: .04em; white-space: nowrap;
-  }
-  @keyframes slide { to { transform: translateX(-100%); } }
 
   .acts { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
 
@@ -120,103 +105,210 @@
 
   /* ── scrolly ─────────────────────────────────────────────────────── */
   .scrolly {
-    display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     gap: 48px; align-items: start;
   }
 
   /* The stage pins to the middle of the viewport while the steps scroll past
      it, so one panel does all the explaining instead of eight screenshots. */
+  .steps { order: 1; }
   .stagewrap {
-    position: sticky; top: 0; height: 100svh;
+    order: 2; position: sticky; top: 0; height: 100svh;
     display: flex; align-items: center; justify-content: center;
   }
-  .stage { position: relative; width: 100%; max-width: 420px; min-height: 400px; }
+  .stage { position: relative; width: 100%; max-width: 560px; }
 
-  .scene {
-    position: absolute; inset: 0; display: flex; flex-direction: column;
-    justify-content: center;
-    opacity: 0; transform: translateY(12px); pointer-events: none;
-    transition: opacity .5s ease, transform .5s ease;
+  /* ── the product, rendered as itself ───────────────────────────────
+     The terminal is dark, so the demo is dark inside the light page. Anything
+     else would be a drawing of the product rather than the product. */
+  .app {
+    position: relative; border-radius: 12px; overflow: hidden;
+    background: #0e0e10; color: #f2f2ef;
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 1px 2px rgba(0,0,0,.10), 0 18px 50px rgba(0,0,0,.22);
+    font-size: 11px; line-height: 1.5;
+    --fg: #f2f2ef;
+    --line: rgba(255,255,255,.14); --hair: rgba(255,255,255,.08);
+    --dim: rgba(255,255,255,.62);  --dimmer: rgba(255,255,255,.40);
+    --field: rgba(255,255,255,.045);
+    --g: #2ecc71; --a: #e0a12a; --r: #ff5f52;
   }
-  .scene.on { opacity: 1; transform: none; pointer-events: auto; }
-
-  .card {
-    background: var(--bg); border: 1px solid var(--line); border-radius: 14px;
-    padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 32px rgba(0,0,0,.05);
+  .apptop {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-bottom: 1px solid var(--hair); background: #16161a;
   }
-
-  .step {
-    min-height: 100svh; display: flex; flex-direction: column;
-    justify-content: center; padding: 48px 0;
-  }
-  .step p { color: var(--dim); margin: 0; max-width: 42ch; }
-
-  @media (max-width: 860px) {
-    .scrolly { grid-template-columns: 1fr; gap: 0; }
-    .stagewrap {
-      top: 60px; height: auto; padding: 16px 0 24px; z-index: 10;
-      background: color-mix(in srgb, var(--bg) 92%, transparent);
-      backdrop-filter: blur(10px);
-    }
-    .stage { min-height: 340px; max-width: none; }
-    .step { min-height: 78svh; }
+  .tdots { display: flex; gap: 5px; }
+  .tdots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.16); }
+  .apptitle { font-weight: 600; letter-spacing: .02em; }
+  .appchain {
+    margin-left: auto; font-size: 10px; color: var(--dimmer);
+    border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px;
   }
 
-  /* ── panel internals ─────────────────────────────────────────────── */
-  .rowhead {
-    display: flex; align-items: center; justify-content: space-between;
-    font-size: 10px; letter-spacing: .13em; text-transform: uppercase;
-    color: var(--dimmer); padding: 0 8px 8px; border-bottom: 1px solid var(--hair);
-  }
-  .brow {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 9px 8px; border-radius: 8px; font-size: 12.5px;
-    transition: background .3s ease;
-  }
-  .brow.hit { background: color-mix(in srgb, var(--green) 9%, transparent); }
-  .brow .tk { font-weight: 600; }
-  .brow .mc { color: var(--dim); font-variant-numeric: tabular-nums; }
+  .view { display: none; }
+  .app[data-scene="board"] .view[data-view="board"] { display: block; }
+  .app:not([data-scene="board"]) .view[data-view="coin"] { display: block; }
 
-  .chead { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
-  .chead .tk { font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
-  .chead .mc { color: var(--dim); font-variant-numeric: tabular-nums; }
-  .csub { font-size: 11.5px; color: var(--dimmer); margin-bottom: 16px; }
-
-  .kv {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 16px; padding: 9px 0; font-size: 12.5px; border-top: 1px solid var(--hair);
+  .filters {
+    display: flex; gap: 12px; align-items: center; padding: 9px 12px;
+    border-bottom: 1px solid var(--hair); font-size: 10px; color: var(--dimmer);
+    white-space: nowrap; overflow: hidden;
   }
-  .kv:first-of-type { border-top: 0; }
-  .kv .k { color: var(--dim); }
-  .kv .v { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+  .filters span { flex: none; }
+  .filters .on { color: var(--fg); font-weight: 600; }
+  .filters b { color: var(--dim); font-weight: 600; }
 
-  .status {
-    display: flex; align-items: center; gap: 8px; font-size: 11px;
-    letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px;
+  .btab { width: 100%; border-collapse: collapse; }
+  .btab th {
+    text-align: right; font-weight: 500; font-size: 9.5px; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--dimmer); padding: 8px 12px 7px;
+    border-bottom: 1px solid var(--hair); white-space: nowrap;
   }
-  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-  .dot.wait { background: var(--dimmer); }
-  .dot.live { background: var(--amber); animation: pulse 1.6s ease-in-out infinite; }
-  .dot.go   { background: var(--green); animation: pulse 1.6s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  .btab th:first-child, .btab td:first-child { text-align: left; }
+  .btab td {
+    text-align: right; padding: 8px 12px; border-bottom: 1px solid var(--hair);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .btab tr:last-child td { border-bottom: 0; }
+  /* Six columns will not fit a phone. Liquidity and 5m volume are the two the
+     eye uses last, so they are the two that go. */
+  @media (max-width: 560px) {
+    .btab th:nth-child(3), .btab td:nth-child(3),
+    .btab th:nth-child(4), .btab td:nth-child(4) { display: none; }
+  }
+  .btab tr.hit td { background: rgba(46,204,113,.10); }
+  .tok { display: flex; align-items: center; gap: 8px; }
+  .lg {
+    width: 22px; height: 22px; border-radius: 6px; flex: none;
+    background: linear-gradient(135deg, rgba(46,204,113,.55), rgba(255,255,255,.14));
+  }
+  .lg.big { width: 30px; height: 30px; border-radius: 8px; }
+  .nm { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .nm .s { font-weight: 600; font-size: 12px; }
+  .nm .n { font-size: 9.5px; color: var(--dimmer); }
+  .age { color: var(--g); }
+  .vol.warm { font-weight: 600; color: var(--a); }
+  .vol.hot  { font-weight: 700; color: var(--g); }
+  .volr.good { color: var(--g); }
+  .volr.bad  { color: var(--r); }
+
+  /* ── coin page ── */
+  .dhead { padding: 12px; border-bottom: 1px solid var(--hair); }
+  .dh1 { display: flex; align-items: center; gap: 10px; }
+  .dhead h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .dhead h3 em { font-style: normal; color: var(--dim); font-weight: 500; font-size: 13px; }
+  .dsub { font-size: 9.5px; color: var(--dimmer); margin-top: 2px; }
+
+  .dgrid { display: grid; grid-template-columns: minmax(0,1fr) 176px; }
+  /* On a phone the rail cannot sit beside the chart and still hold a readable
+     amount box, so it goes underneath. */
+  @media (max-width: 560px) {
+    .dgrid { grid-template-columns: 1fr; }
+    .dmain { border-right: 0; border-bottom: 1px solid var(--hair); }
+  }
+  .dmain { padding: 12px; border-right: 1px solid var(--hair); }
+  .spark { width: 100%; height: 74px; display: block; }
+  .spark .pl { fill: none; stroke: var(--g); stroke-width: 1.6; }
+  .spark .lvl { stroke: rgba(255,255,255,.20); stroke-width: 1; stroke-dasharray: 3 3; }
+  .spark .mk { fill: var(--g); opacity: 0; transition: opacity .4s ease; }
+  .app[data-scene="dipped"] .spark .mk,
+  .app[data-scene="out"] .spark .mk { opacity: 1; }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+    gap: 8px 10px; margin-top: 10px;
+  }
+  .stat .k, .stat .v { white-space: nowrap; }
+  .stat .k { font-size: 9px; color: var(--dimmer); text-transform: uppercase; letter-spacing: .06em; }
+  .stat .v { font-size: 12px; font-weight: 600; margin-top: 2px; }
+
+  .drail { padding: 12px; display: flex; flex-direction: column; gap: 9px; }
+
+  .dband {
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px;
+    font-size: 10.5px; display: none;
+  }
+  .app[data-scene="waiting"] .dband, .app[data-scene="dipped"] .dband,
+  .app[data-scene="out"] .dband, .app[data-scene="fee"] .dband { display: block; }
+  .dband span { display: none; }
+  .dband .bk {
+    font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--dimmer); margin-bottom: 4px;
+  }
+  .dband .st { line-height: 1.5; }
+  .dband .sub { color: var(--dimmer); font-size: 9.5px; margin-top: 4px; }
+  .dband b { font-weight: 600; }
+  .dband .up { font-style: normal; color: var(--g); font-weight: 600; }
+  .app[data-scene="waiting"] .dband [data-band="wait"],
+  .app[data-scene="dipped"]  .dband [data-band="dip"],
+  .app[data-scene="out"]     .dband [data-band="pos"],
+  .app[data-scene="fee"]     .dband [data-band="out"] { display: block; }
+
+  .amtbox { border: 1px solid var(--line); border-radius: 8px; background: var(--field); overflow: hidden; }
+  .amtpct {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    padding: 7px 9px 0; font-size: 9px; color: var(--dimmer); white-space: nowrap;
+  }
+  .amtpct b { color: var(--dim); font-size: 10px; }
+  .amthead { display: flex; align-items: center; gap: 7px; padding: 5px 9px 6px; }
+  .amthead .lbl { font-size: 8.5px; color: var(--dimmer); letter-spacing: .06em; text-transform: uppercase; }
+  .amtval { flex: 1; font-size: 12.5px; font-weight: 700; }
+  .amtrow { display: flex; border-top: 1px solid var(--hair); }
+  .amtrow button {
+    flex: 1; background: none; border: 0; border-right: 1px solid var(--hair);
+    color: var(--dim); font-family: inherit; font-size: 10px; padding: 6px 2px;
+  }
+  .amtrow button:last-child { border-right: 0; }
+  .amtrow button.on { background: rgba(255,255,255,.07); color: #f2f2ef; font-weight: 600; }
+
+  .stratbtn {
+    display: flex; align-items: center; gap: 6px; width: 100%;
+    background: none; border: 1px solid var(--line); border-radius: 8px;
+    color: var(--dim); font-family: inherit; font-size: 10.5px; padding: 7px 9px;
+  }
+  .stratbtn .sname { font-weight: 600; color: #f2f2ef; }
+  .stratbtn .chev { margin-left: auto; color: var(--dimmer); }
 
   .glbtn {
-    width: 100%; margin-top: 16px; background: var(--green); color: #fff;
-    border: 0; border-radius: 9px; padding: 13px; font-family: inherit;
-    font-size: 13px; font-weight: 600; letter-spacing: .08em; cursor: default;
+    width: 100%; background: var(--g); color: #0e0e10; border: 0; padding: 11px;
+    font-family: inherit; font-size: 11.5px; font-weight: 700; border-radius: 8px;
+    letter-spacing: .04em; transition: transform .12s ease, filter .12s ease;
   }
-  .glbtn.done { background: var(--field); color: var(--dim); }
+  .glbtn.armed { display: none; background: rgba(255,255,255,.07); color: var(--dimmer); }
+  .app[data-scene="waiting"] .glbtn.go, .app[data-scene="dipped"] .glbtn.go,
+  .app[data-scene="out"] .glbtn.go, .app[data-scene="fee"] .glbtn.go { display: none; }
+  .app[data-scene="waiting"] .glbtn.armed, .app[data-scene="dipped"] .glbtn.armed,
+  .app[data-scene="out"] .glbtn.armed, .app[data-scene="fee"] .glbtn.armed { display: block; }
+  .app[data-scene="greenlight"] .glbtn.go { transform: scale(.97); filter: brightness(1.15); }
 
-  .note { font-size: 11.5px; color: var(--dimmer); margin-top: 12px; line-height: 1.5; }
+  .glnote { font-size: 9px; color: var(--dimmer); text-align: center; line-height: 1.5; }
 
-  .pos { font-variant-numeric: tabular-nums; }
-  .up { color: var(--green); font-weight: 600; }
-
-  .bar {
-    height: 5px; border-radius: 3px; background: var(--field);
-    margin: 14px 0 8px; position: relative; overflow: hidden;
+  /* ── the cursor ──
+     It moves for the two things you actually do, then leaves. The page argues
+     that everything after the greenlight happens without you, so the pointer
+     should not still be there implying otherwise. */
+  .cursor {
+    position: absolute; width: 15px; height: 15px; pointer-events: none;
+    left: var(--cx, 50%); top: var(--cy, 50%); opacity: 0;
+    transition: left .7s cubic-bezier(.4,0,.2,1), top .7s cubic-bezier(.4,0,.2,1),
+                opacity .4s ease;
+    background: no-repeat center/contain
+      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 2l14 8.5-6 1.3L11 19z" fill="white" stroke="black" stroke-width="1.4" stroke-linejoin="round"/></svg>');
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
   }
-  .bar i { position: absolute; inset: 0 auto 0 0; background: var(--green); border-radius: 3px; }
+  .app[data-scene="board"]      .cursor { --cx: 26%; --cy: 63%; opacity: 1; }
+  .app[data-scene="pick"]       .cursor { --cx: 26%; --cy: 63%; opacity: 1; }
+  .app[data-scene="greenlight"] .cursor { --cx: 84%; --cy: 79%; opacity: 1; }
+
+  .app[data-scene="greenlight"] .cursor::after {
+    content: ''; position: absolute; left: -9px; top: -9px; width: 30px; height: 30px;
+    border: 1.5px solid var(--g); border-radius: 50%;
+    animation: ring 1.4s ease-out infinite;
+  }
+  @keyframes ring {
+    0%   { transform: scale(.4); opacity: .9; }
+    100% { transform: scale(1.1); opacity: 0; }
+  }
 
   /* ── finale ──────────────────────────────────────────────────────── */
   .rule { height: 1px; background: var(--hair); }
@@ -263,17 +355,6 @@
 </nav>
 
 <section class="hero">
-  <div class="tape" aria-hidden="true">
-    <ul>
-      <li>$LUMEN</li><li>$ORBIT</li><li>$KITE</li><li>$EMBER</li><li>$SPARK</li>
-      <li>$VANE</li><li>$ROOK</li><li>$TIDE</li><li>$CINDER</li><li>$HALO</li>
-    </ul>
-    <ul>
-      <li>$LUMEN</li><li>$ORBIT</li><li>$KITE</li><li>$EMBER</li><li>$SPARK</li>
-      <li>$VANE</li><li>$ROOK</li><li>$TIDE</li><li>$CINDER</li><li>$HALO</li>
-    </ul>
-  </div>
-
   <div class="wrap">
     <p class="eyebrow">Semi-autonomous trading on Solana</p>
     <h1>You pick the coin.<br>It runs the trade.</h1>
@@ -291,79 +372,134 @@
 
     <div class="stagewrap">
       <div class="stage" id="stage" aria-hidden="true">
-
-        <div class="scene" data-scene="board">
-          <div class="card">
-            <div class="rowhead"><span>Trending &middot; 5m</span><span>MC</span></div>
-            <div class="brow"><span class="tk">$LUMEN</span><span class="mc">$412K</span></div>
-            <div class="brow"><span class="tk">$ORBIT</span><span class="mc">$286K</span></div>
-            <div class="brow hit"><span class="tk">$KITE</span><span class="mc">$113K</span></div>
-            <div class="brow"><span class="tk">$EMBER</span><span class="mc">$97K</span></div>
-            <div class="brow"><span class="tk">$SPARK</span><span class="mc">$68K</span></div>
+        <div class="app">
+          <div class="apptop">
+            <span class="tdots"><i></i><i></i><i></i></span>
+            <span class="apptitle">EdgeLvl</span>
+            <span class="appchain">Solana</span>
           </div>
-        </div>
 
-        <div class="scene" data-scene="pick">
-          <div class="card">
-            <div class="chead"><span class="tk">$KITE</span><span class="mc">$113.4K</span></div>
-            <div class="csub">Liquidity $41.2K &middot; 5m vol $58.9K &middot; B/S 1.34</div>
-            <div class="kv"><span class="k">Holders</span><span class="v">1,284</span></div>
-            <div class="kv"><span class="k">Bundlers</span><span class="v">12%</span></div>
-            <div class="kv"><span class="k">Top 10</span><span class="v">18%</span></div>
+          <div class="view" data-view="board">
+            <div class="filters">
+              <span class="on">Trending &middot; 5m</span>
+              <span>min 5m vol <b>25,000</b></span>
+              <span>min MC <b>50,000</b></span>
+              <span>vol / MC <b>10%</b></span>
+            </div>
+            <table class="btab">
+              <thead><tr>
+                <th>Token</th><th>MC</th><th>Liq</th><th>5m Vol</th><th>B/S</th>
+              </tr></thead>
+              <tbody>
+              <tr>
+                <td><div class="tok"><span class="lg"></span><div class="nm">
+                  <span class="s">LUMEN</span><span class="n"><span class="age">4m</span> · Lumen</span>
+                </div></div></td>
+                <td>$412K</td><td>$96K</td>
+                <td class="vol hot">$184K</td>
+                <td class="volr good">1.62</td>
+              </tr>
+              <tr>
+                <td><div class="tok"><span class="lg"></span><div class="nm">
+                  <span class="s">ORBIT</span><span class="n"><span class="age">11m</span> · Orbit Protocol</span>
+                </div></div></td>
+                <td>$286K</td><td>$71K</td>
+                <td class="vol warm">$88K</td>
+                <td class="volr good">1.18</td>
+              </tr>
+              <tr class="hit">
+                <td><div class="tok"><span class="lg"></span><div class="nm">
+                  <span class="s">KITE</span><span class="n"><span class="age">3m</span> · Kite</span>
+                </div></div></td>
+                <td>$113.4K</td><td>$41.2K</td>
+                <td class="vol hot">$58.9K</td>
+                <td class="volr good">1.34</td>
+              </tr>
+              <tr>
+                <td><div class="tok"><span class="lg"></span><div class="nm">
+                  <span class="s">EMBER</span><span class="n"><span class="age">26m</span> · Ember</span>
+                </div></div></td>
+                <td>$97K</td><td>$33K</td>
+                <td class="vol warm">$21K</td>
+                <td class="volr bad">0.91</td>
+              </tr>
+              <tr>
+                <td><div class="tok"><span class="lg"></span><div class="nm">
+                  <span class="s">SPARK</span><span class="n"><span class="age">1h</span> · Spark</span>
+                </div></div></td>
+                <td>$68K</td><td>$29K</td>
+                <td class="vol warm">$14K</td>
+                <td class="volr bad">0.87</td>
+              </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
 
-        <div class="scene" data-scene="rules">
-          <div class="card">
-            <div class="csub" style="margin-bottom:12px">Your rules</div>
-            <div class="kv"><span class="k">Dip required</span><span class="v">20%</span></div>
-            <div class="kv"><span class="k">Reclaim off the low</span><span class="v">5%</span></div>
-            <div class="kv"><span class="k">Take profit</span><span class="v">2&times; &middot; 4&times;</span></div>
-            <div class="kv"><span class="k">Stop</span><span class="v">&minus;50%</span></div>
+          <div class="view" data-view="coin">
+            <div class="dhead">
+              <div class="dh1"><span class="lg big"></span>
+                <div><h3>KITE <em id="cmc">$113.4K</em></h3>
+                     <div class="dsub">3m &middot; Kite &middot; Liq $41.2K</div></div>
+              </div>
+            </div>
+            <div class="dgrid">
+              <div class="dmain">
+                <svg class="spark" viewBox="0 0 300 96" preserveAspectRatio="none" aria-hidden="true">
+                  <line class="lvl" x1="0" y1="62" x2="300" y2="62"></line>
+                  <polyline class="pl" points="0,54 18,46 36,50 54,38 72,42 90,30 108,36 126,26
+                                               144,44 162,58 180,70 198,78 216,74 234,62 252,50
+                                               270,34 288,20 300,14"></polyline>
+                  <circle class="mk" cx="198" cy="78" r="3.5"></circle>
+                </svg>
+                <div class="stats">
+                  <div class="stat"><div class="k">Holders</div><div class="v">1,284</div></div>
+                  <div class="stat"><div class="k">Top 10</div><div class="v">18%</div></div>
+                  <div class="stat"><div class="k">Bundler</div><div class="v">12%</div></div>
+                  <div class="stat"><div class="k">Dev</div><div class="v">0%</div></div>
+                </div>
+              </div>
+
+              <aside class="drail">
+                <div class="dband">
+                  <span class="bk" data-band="wait">Waiting for a dip</span>
+                  <span class="st" data-band="wait">needs to trade at or below <b>$90.7K</b></span>
+                  <span class="sub" data-band="wait">high since you greenlit $113.4K</span>
+
+                  <span class="bk" data-band="dip">Dipped &middot; buys between</span>
+                  <span class="st" data-band="dip"><b>$92.5K</b> and <b>$105.7K</b></span>
+                  <span class="sub" data-band="dip">low $88.1K &middot; waiting for 5% off the low</span>
+
+                  <span class="bk" data-band="pos">In position</span>
+                  <span class="st" data-band="pos">entered <b>$94.9K</b> &middot; now <b>$101.5K</b> <em class="up">+7%</em></span>
+                  <span class="sub" data-band="pos">TP $189.8K &rarr; $379.6K &middot; stop $47.5K</span>
+
+                  <span class="bk" data-band="out">Closed</span>
+                  <span class="st" data-band="out">half at <b>2&times;</b>, rest at <b>4&times;</b></span>
+                  <span class="sub" data-band="out">fee 0.5% &middot; stop moved to break even at TP1</span>
+                </div>
+
+                <div class="amtbox">
+                  <div class="amtpct"><span>Size</span><b>2.6%</b></div>
+                  <div class="amthead"><span class="lbl">Amount</span>
+                    <span class="amtval">0.02</span><span class="lbl">SOL</span></div>
+                  <div class="amtrow">
+                    <button>0.01</button><button class="on">0.02</button>
+                    <button>0.05</button><button>0.1</button>
+                  </div>
+                </div>
+
+                <button class="stratbtn"><span class="gi">&#9881;</span>
+                  <span class="sname">Default</span><span class="chev">&#9662;</span></button>
+
+                <button class="glbtn go">&#128994; GREENLIGHT</button>
+                <button class="glbtn armed">ARMED &middot; WATCHING</button>
+                <div class="glnote">Picked up within 5 seconds, then it watches every second.</div>
+              </aside>
+            </div>
           </div>
+
+          <span class="cursor"></span>
         </div>
-
-        <div class="scene" data-scene="greenlight">
-          <div class="card">
-            <div class="chead"><span class="tk">$KITE</span><span class="mc">$113.4K</span></div>
-            <div class="csub">What would trigger a buy</div>
-            <div class="kv"><span class="k">from</span><span class="v">$113.4K</span></div>
-            <div class="kv"><span class="k">a dip below</span><span class="v">$90.7K</span></div>
-            <div class="kv"><span class="k">then a reclaim above</span><span class="v">$95.2K</span></div>
-            <button class="glbtn" type="button" tabindex="-1">GREENLIGHT</button>
-          </div>
-        </div>
-
-
-        <div class="scene" data-scene="dipped">
-          <div class="card">
-            <div class="status"><span class="dot live"></span> Dipped &mdash; waiting for the bounce</div>
-            <div class="chead"><span class="tk">$KITE</span><span class="mc">$89.6K</span></div>
-            <div class="kv"><span class="k">low</span><span class="v">$88.1K</span></div>
-            <div class="kv"><span class="k">buys between</span><span class="v">$92.5K &ndash; $105.7K</span></div>
-            <div class="bar"><i style="width:38%"></i></div>
-          </div>
-        </div>
-
-
-        <div class="scene" data-scene="exit">
-          <div class="card">
-            <div class="status"><span class="dot go"></span> Half out at 2&times;</div>
-            <div class="chead"><span class="tk">$KITE</span><span class="mc pos">$189.8K</span></div>
-            <div class="kv"><span class="k">sold</span><span class="v">50% &middot; at 2&times;</span></div>
-            <div class="kv"><span class="k">rest rides to</span><span class="v">$379.6K</span></div>
-            <div class="kv"><span class="k">stop moved to</span><span class="v" style="color:var(--green)">break even</span></div>
-          </div>
-        </div>
-
-        <div class="scene" data-scene="fee">
-          <div class="card">
-            <div class="csub">What it costs</div>
-            <div class="kv"><span class="k">Per swap</span><span class="v">0.5%</span></div>
-            <div class="kv"><span class="k">Monthly</span><span class="v">$0</span></div>
-          </div>
-        </div>
-
       </div>
     </div>
 
@@ -378,22 +514,22 @@
         <p>The one call the system won&rsquo;t make for you.</p>
       </section>
 
-      <section class="step" data-scene="rules">
-        <h2>Rules, set once.</h2>
-        <p>Dip, reclaim, targets, stop. The same on every coin.</p>
-      </section>
-
       <section class="step" data-scene="greenlight">
         <h2>Then greenlight it.</h2>
-        <p>It shows the exact levels before you commit.</p>
+        <p>One tap. That is the last thing you do.</p>
+      </section>
+
+      <section class="step" data-scene="waiting">
+        <h2>It waits for the dip.</h2>
+        <p>Hours if it has to. Nothing triggers above your level.</p>
       </section>
 
       <section class="step" data-scene="dipped">
-        <h2>It waits, then buys the reclaim.</h2>
-        <p>Hours if it has to. Never the falling knife.</p>
+        <h2>It buys the reclaim.</h2>
+        <p>Not the knife. Five percent back off the low.</p>
       </section>
 
-      <section class="step" data-scene="exit">
+      <section class="step" data-scene="out">
         <h2>It takes profit without you.</h2>
         <p>Half at 2&times;, the rest at 4&times;, stop to break even.</p>
       </section>
@@ -435,19 +571,17 @@
   'use strict';
 
   var stage  = document.getElementById('stage');
-  var scenes = stage ? stage.querySelectorAll('.scene') : [];
+  var app    = stage ? stage.querySelector('.app') : null;
   var steps  = document.querySelectorAll('.step');
   var nav    = document.getElementById('nav');
   var shown  = null;
 
-  if (!scenes.length || !steps.length) return;
+  if (!app || !steps.length) return;
 
   function show(name) {
     if (name === shown) return;
     shown = name;
-    for (var i = 0; i < scenes.length; i++) {
-      scenes[i].classList.toggle('on', scenes[i].getAttribute('data-scene') === name);
-    }
+    app.setAttribute('data-scene', name);
   }
 
   /* Whichever step sits closest to the middle of the viewport owns the stage.
