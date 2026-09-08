@@ -9,20 +9,19 @@
   /* The terminal's own palette, unchanged. Someone who pays here and logs in
      tomorrow should not feel like they bought a different product. */
   :root {
-    color-scheme: dark;
-    --bg: #0a0a0c;
-    --panel: #131317;
-    --fg: #f4f4f1;
-    --line: rgba(255, 255, 255, 0.13);
-    --hair: rgba(255, 255, 255, 0.07);
-    --dim: rgba(255, 255, 255, 0.62);
-    --dimmer: rgba(255, 255, 255, 0.40);
-    --field: rgba(255, 255, 255, 0.045);
-    --hover: rgba(255, 255, 255, 0.06);
-    /* Lifted off the paper greens: the terminal's dark values. */
-    --green: #2ecc71;
-    --amber: #e0a12a;
-    --red: #ff5f52;
+    color-scheme: light;
+    --bg: #fbfbfa;
+    --panel: #ffffff;
+    --fg: #14140f;
+    --line: rgba(0, 0, 0, 0.11);
+    --hair: rgba(0, 0, 0, 0.06);
+    --dim: rgba(0, 0, 0, 0.58);
+    --dimmer: rgba(0, 0, 0, 0.38);
+    --field: rgba(0, 0, 0, 0.03);
+    --hover: rgba(0, 0, 0, 0.028);
+    --green: #12924b;
+    --amber: #a86a00;
+    --red: #c0362c;
     --sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
             Roboto, Helvetica, Arial, sans-serif;
     --mono: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco,
@@ -312,14 +311,17 @@
      One tall section, one pinned frame. The copy and the panel both live in
      that frame and cross-fade against scroll position, so moving between
      steps is a dissolve rather than a cut. */
-  .scrolly { position: relative; height: calc(var(--n) * 100vh); }
+  /* A little past the last step, so the final panel is fully shown while the
+     frame is still pinned rather than being released mid-read. */
+  .scrolly { position: relative; height: calc((var(--n) + 0.35) * 100vh); }
   .scrolly-in {
-    position: sticky; top: 0; height: 100vh;
+    position: sticky; top: 0; height: 100vh; box-sizing: border-box;
+    padding-top: 56px;              /* clears the fixed nav */
     display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 30px;
+    justify-content: center; gap: 24px;
   }
 
-  .steps { position: relative; width: min(720px, 100% - 40px); height: 148px; }
+  .steps { position: relative; width: min(720px, 100% - 40px); height: 130px; }
   .stx {
     position: absolute; inset: 0; text-align: center;
     opacity: 0; will-change: opacity, transform;
@@ -330,17 +332,6 @@
   }
   .stx p { color: var(--dim); margin: 0 auto; max-width: 46ch; font-size: 15px; }
 
-  .stage-wrap { position: relative; width: min(1000px, 100% - 40px); }
-  .scene-stage { position: relative; }
-  .scenes { position: relative; min-height: 330px; }
-  .scene {
-    position: absolute; inset: 0; display: flex; align-items: center;
-    justify-content: center; opacity: 0; will-change: opacity, transform;
-  }
-  /* The board is a table and earns the full width. Every other panel is a few
-     lines of status, and stretched that wide it reads as an empty box. */
-  .scene > .surface { width: 100%; max-width: 660px; margin: 0 auto; }
-  .scene[data-i="0"] > .surface { max-width: none; }
 
   /* The pointer does the two things you actually do, then leaves -- the page
      says the rest happens without you, so it should not linger. */
@@ -357,8 +348,7 @@
   @media (max-width: 720px) {
     .scrolly-in { gap: 22px; }
     .steps { height: 172px; }
-    .scenes { min-height: 300px; }
-  }
+    }
   @media (prefers-reduced-motion: reduce) {
     .cursor { transition: none; }
   }
@@ -382,9 +372,9 @@
   body::before {
     content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background:
-      radial-gradient(80vw 60vh at 50% -10%,  rgba(46,204,113,.11), transparent 62%),
-      radial-gradient(60vw 46vh at 88% 12%,   rgba(46,204,113,.055), transparent 60%),
-      radial-gradient(70vw 60vh at 6% 34%,    rgba(120,180,255,.045), transparent 62%);
+      radial-gradient(78vw 58vh at 50% -12%, rgba(18,146,75,.10), transparent 62%),
+      radial-gradient(58vw 44vh at 88% 10%,  rgba(18,146,75,.05), transparent 60%),
+      radial-gradient(66vw 56vh at 6% 32%,   rgba(40,90,200,.035), transparent 62%);
   }
 
   h1, h2, h3, .stx h2, .btn, .amount .n {
@@ -408,21 +398,21 @@
   .hero .eyebrow {
     display: inline-block; border: 1px solid var(--line); border-radius: 999px;
     padding: 7px 16px; margin-bottom: 26px; color: var(--dim);
-    background: rgba(255,255,255,.03); backdrop-filter: blur(6px);
+    background: rgba(255,255,255,.6); backdrop-filter: blur(6px);
   }
 
   .btn {
     border-radius: 999px; padding: 18px 38px; font-size: 15.5px; font-weight: 700;
     letter-spacing: -.01em;
-    box-shadow: 0 10px 34px -10px rgba(46,204,113,.7);
+    box-shadow: 0 10px 30px -12px rgba(18,146,75,.75);
     transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
   }
-  .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 40px -10px rgba(46,204,113,.85); }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 36px -12px rgba(18,146,75,.9); }
   .btn.ghost {
-    background: rgba(255,255,255,.04); border: 1px solid var(--line);
+    background: rgba(255,255,255,.7); border: 1px solid var(--line);
     color: var(--fg); box-shadow: none; backdrop-filter: blur(6px);
   }
-  .btn.ghost:hover { background: rgba(255,255,255,.08); box-shadow: none; }
+  .btn.ghost:hover { background: #fff; box-shadow: none; }
 
   .stx h2 { font-size: clamp(30px, 4.4vw, 50px); line-height: 1.03; letter-spacing: -.04em; }
   .stx p  { font-size: 16px; }
@@ -430,9 +420,89 @@
   /* Panels want a little more radius and lift on a dark ground. */
   .surface {
     border-radius: 16px; background: var(--panel);
-    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 26px 60px -30px rgba(0,0,0,.9);
+    box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 24px 60px -34px rgba(0,0,0,.45);
   }
   .honest { border-radius: 14px; }
+
+  /* ── one scene, mutating ─────────────────────────────────────────────
+     The reference site keeps a single mock on screen for the whole story and
+     changes what is inside it -- same 293 nodes at every scroll position. That
+     is why it flows. Cross-fading whole cards cannot help reading as a
+     slideshow, so the board stays put and only the panel beneath it changes. */
+  .stage { position: relative; width: min(980px, 100% - 40px); }
+  .frame { position: relative; }
+
+  .boardslot { position: relative; z-index: 1; }
+  .boardslot .surface { margin: 0; }
+  /* The live board breathes; this one has to share a frame with the panel
+     under it, so the rows come in. */
+  .boardslot td { padding: 9px 14px; }
+  .boardslot th { padding: 9px 14px; }
+  .boardslot .av { width: 22px; height: 22px; font-size: 12px; }
+  .boardslot .nm { font-size: 12.5px; }
+  .boardslot .sub { font-size: 9.5px; }
+
+  .detail { position: relative; min-height: 300px; margin-top: 16px; }
+  .blk {
+    position: absolute; inset: 0; opacity: 0;
+    display: flex; align-items: flex-start; justify-content: center;
+    will-change: opacity, transform;
+  }
+  .blk > .surface { width: 100%; max-width: 660px; margin: 0; }
+  .blk[data-b="5"] > .setwrap { width: 100%; }
+
+  /* Settings, compact enough to live in the same frame as the board. */
+  .setwrap { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .setwrap .surface { margin: 0; }
+  .setwrap .setrow { padding: 8px 12px; }
+  .setwrap .setrow .d { display: none; }
+  .setwrap .setrow .n { font-size: 12px; }
+  .setwrap .gk { padding: 9px 12px; }
+  .setwrap .vin { font-size: 12px; width: 46px; }
+  .setwrap .setrow:nth-child(n+6) { display: none; }
+
+  /* ── the pointer ──
+     It does the two things you actually do -- pick a row, press greenlight --
+     and presses them, because a pointer that only hovers never shows the act
+     the page is describing. */
+  .cursor {
+    position: absolute; left: 0; top: 0; width: 18px; height: 18px; z-index: 6;
+    opacity: 0; pointer-events: none;
+    transition: left .7s cubic-bezier(.4,0,.2,1), top .7s cubic-bezier(.4,0,.2,1),
+                opacity .3s ease;
+  }
+  .cursor i {
+    position: absolute; inset: 0; display: block;
+    background: no-repeat center/contain
+      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 2l14 8.5-6 1.3L11 19z" fill="white" stroke="black" stroke-width="1.5" stroke-linejoin="round"/></svg>');
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
+    transition: transform .13s ease;
+  }
+  .cursor.press i { transform: scale(.74) translate(2px, 2px); }
+  .cursor.press::after {
+    content: ''; position: absolute; left: -11px; top: -11px;
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid var(--green); animation: ring .55s ease-out;
+  }
+  @keyframes ring {
+    0%   { transform: scale(.25); opacity: .85; }
+    100% { transform: scale(1);   opacity: 0; }
+  }
+
+  /* what the click lands on */
+  .boardslot tbody tr { transition: background .25s ease; }
+  .boardslot tbody tr.picked { background: color-mix(in srgb, var(--green) 12%, transparent); }
+  .glbtn2 { transition: transform .13s ease, filter .13s ease; }
+  .glbtn2.pressed { transform: scale(.975); filter: brightness(.93); }
+
+  @media (max-width: 720px) {
+    .setwrap { grid-template-columns: 1fr; }
+    .detail { min-height: 250px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cursor, .cursor i { transition: none; }
+    .cursor.press::after { animation: none; }
+  }
 </style>
 </head>
 <body>
@@ -469,20 +539,25 @@
      needs a paragraph to explain it. -->
 
 <!-- ── how ──────────────────────────────────────────────────────────── -->
-<section class="scrolly" id="how" style="--n:6">
+<section class="scrolly" id="how" style="--n:8">
   <div class="scrolly-in">
     <div class="steps">
       <div class="stx" data-i="0"><h2>Only what&rsquo;s moving.</h2><p>Filtered on volume, liquidity and flow.</p></div>
-      <div class="stx" data-i="1"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
-      <div class="stx" data-i="2"><h2>It waits for the dip.</h2><p>Hours if it has to. Nothing triggers above your level.</p></div>
-      <div class="stx" data-i="3"><h2>It buys the reclaim.</h2><p>Not the knife. Five percent back off the low.</p></div>
-      <div class="stx" data-i="4"><h2>It takes profit without you.</h2><p>Half at 2&times;, the rest at 4&times;, stop to break even.</p></div>
-      <div class="stx" data-i="5"><h2>One flat fee.</h2><p>0.5% per swap. No subscription.</p></div>
+      <div class="stx" data-i="1"><h2>You pick the coin.</h2><p>The one call the system won&rsquo;t make for you.</p></div>
+      <div class="stx" data-i="2"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
+      <div class="stx" data-i="3"><h2>It waits for the dip.</h2><p>Hours if it has to. Nothing triggers above your level.</p></div>
+      <div class="stx" data-i="4"><h2>It buys the reclaim.</h2><p>Not the knife. Five percent back off the low.</p></div>
+      <div class="stx" data-i="5"><h2>It takes profit without you.</h2><p>Half at 2&times;, the rest at 4&times;, stop to break even.</p></div>
+      <div class="stx" data-i="6"><h2>Your rules, not ours.</h2><p>Unlimited settings. Every coin runs your way.</p></div>
+      <div class="stx" data-i="7"><h2>One flat fee.</h2><p>0.5% per swap. No subscription.</p></div>
     </div>
-    <div class="stage-wrap">
-      <div class="scene-stage" aria-hidden="true">
-        <div class="scenes">
-          <div class="scene" data-i="0"><div class="surface">
+
+    <!-- One scene for the whole story. The board never leaves; the panel under
+         it is what changes. Swapping whole cards is what made this read as a
+         slideshow. -->
+    <div class="stage">
+      <div class="frame" aria-hidden="true">
+        <div class="boardslot"><div class="surface">
         <div class="bhead">
           <span class="t">Trending · 5m</span>
           <span class="chips">
@@ -499,7 +574,8 @@
           <tbody id="board"></tbody>
         </table>
       </div></div>
-          <div class="scene" data-i="1"><div class="surface">
+        <div class="detail">
+          <div class="blk" data-b="1"><div class="surface">
           <div class="trig">
             <div class="k">What would trigger a buy</div>
             from <b>$3.26M</b><br>
@@ -517,7 +593,7 @@
             <div class="glnote" id="glnote">Picked up within 5 seconds. Then it watches every second.</div>
           </div>
         </div></div>
-          <div class="scene" data-i="2"><div class="surface state">
+          <div class="blk" data-b="2"><div class="surface state">
             <div class="sthead"><span class="dot amber"></span>Waiting for a dip and a reclaim</div>
             <div class="stbody">
               <div class="k">Waiting for a dip · 20s of warmup left</div>
@@ -526,7 +602,7 @@
               <div class="fine">No dip yet, so nothing can trigger.</div>
             </div>
           </div></div>
-          <div class="scene" data-i="3"><div class="surface state">
+          <div class="blk" data-b="3"><div class="surface state">
             <div class="sthead"><span class="dot amber"></span>Dipped — waiting for the bounce</div>
             <div class="stbody">
               <div class="k">Dipped · buys between</div>
@@ -535,7 +611,7 @@
               <div class="fine warmtx">Not buying yet — waiting for a 5% bounce off the low.</div>
             </div>
           </div></div>
-          <div class="scene" data-i="4"><div class="surface state">
+          <div class="blk" data-b="4"><div class="surface state">
             <div class="sthead"><span class="dot green"></span>In position</div>
             <div class="stbody">
               <div class="k">In position · targets set</div>
@@ -544,17 +620,58 @@
               <div class="fine">Half out at 2x, the rest at 4x. Nothing left to decide.</div>
             </div>
           </div></div>
-          <div class="scene" data-i="5"><div class="surface state">
-            <div class="sthead"><span class="dot green"></span>What it costs</div>
-            <div class="stbody">
-              <div class="k">Per swap</div>
-              <b>0.5%</b><br>
-              <span class="muted">no subscription, no monthly</span>
-              <div class="fine">Charged on the swap itself. Nothing else.</div>
-            </div>
-          </div></div>
+          <div class="blk" data-b="5"><div class="setwrap"><div class="surface setgroup">
+          <div class="gk">Entry</div>
+          <div class="setrow"><div class="l"><div class="n">Dip required</div>
+            <div class="d">How far it must fall from the high before looking to buy.</div></div>
+            <div class="val"><input class="vin" value="20" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Reclaim</div>
+            <div class="d">Rise off the low that triggers the buy.</div></div>
+            <div class="val"><input class="vin" value="5" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">B/S floor</div>
+            <div class="d">Under 1 means more selling than buying. The buy waits.</div></div>
+            <div class="val"><input class="vin" value="0.95" inputmode="decimal" aria-label="value" spellcheck="false"></div></div>
+          <div class="setrow"><div class="l"><div class="n">Stay below the high by</div>
+            <div class="d">Refuses an entry too close to the top.</div></div>
+            <div class="val"><input class="vin" value="10" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Deepest entry</div>
+            <div class="d">How far below the high a buy may land.</div></div>
+            <div class="val"><input class="vin" value="70" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Watch before buying</div>
+            <div class="d">Seconds of tape before a buy is allowed.</div></div>
+            <div class="val"><input class="vin" value="30" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">s</span></div></div>
+        </div><div class="surface setgroup">
+          <div class="gk">Exit</div>
+          <div class="setrow"><div class="l"><div class="n">Take profit 1</div>
+            <div class="d">Sells half the position.</div></div>
+            <div class="val"><input class="vin" value="2" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">x</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Sold at TP1</div>
+            <div class="d">The rest rides to TP2.</div></div>
+            <div class="val"><input class="vin" value="50" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Take profit 2</div>
+            <div class="d">Fully out here.</div></div>
+            <div class="val"><input class="vin" value="4" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">x</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Stop type</div>
+            <div class="d">Trailing follows the high. Fixed measures from entry.</div></div>
+            <div class="seg"><span>Trailing</span><span class="on">Fixed</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Stop</div>
+            <div class="d">How far it may fall below your entry before selling out.</div></div>
+            <div class="val"><input class="vin" value="50" inputmode="decimal" aria-label="value" spellcheck="false"><span class="u">%</span></div></div>
+          <div class="setrow"><div class="l"><div class="n">Break even after TP1</div>
+            <div class="d">The stop on the rest moves up to your entry, so the
+              trade can't turn into a loss.</div></div>
+            <div class="seg"><span class="on">On</span><span>Off</span></div></div>
+        </div></div></div>
+          <div class="blk" data-b="6"><div class="surface state">
+          <div class="sthead"><span class="dot green"></span>What it costs</div>
+          <div class="stbody">
+            <div class="k">Per swap</div><b>0.5%</b><br>
+            <span class="muted">no subscription, no monthly</span>
+            <div class="fine">Charged on the swap itself. Nothing else.</div>
+          </div>
+        </div></div>
         </div>
-        <span class="cursor"></span>
+        <span class="cursor"><i></i></span>
       </div>
     </div>
   </div>
@@ -772,54 +889,93 @@ document.getElementById('fakegl').onclick = e => {
 };
 
 /* ── scroll story ──
-   Progress through the section maps to a position on a line of steps, and each
-   step's copy and panel fade by distance from it. Reading position rather than
-   observing crossings means the right step is showing at whatever offset the
-   reader lands on -- a mid-page reload, a jump from the address bar -- with no
-   state to fall out of sync. */
+   Progress maps to a position on a line of steps. Copy fades by distance from
+   its step; the panel under the board is chosen by range, so the trigger panel
+   survives both the pick and the greenlight rather than being rebuilt between
+   them. Reading position rather than observing crossings means the right step
+   shows at whatever offset the reader lands on. */
 (function () {
   var scrolly = document.getElementById('how');
   var stx     = [].slice.call(document.querySelectorAll('.stx'));
-  var scenes  = [].slice.call(document.querySelectorAll('.scene'));
+  var blks    = [].slice.call(document.querySelectorAll('.blk'));
+  var frame   = document.querySelector('.frame');
   var cursor  = document.querySelector('.cursor');
-  if (!scrolly || !stx.length || stx.length !== scenes.length) return;
+  if (!scrolly || !stx.length || !frame) return;
 
   var N = stx.length;
-  /* Where the pointer sits for the steps you actually click on. */
-  var SPOTS = { 0: [34, 64], 1: [26, 82] };
+  /* Which panel is up, in step coordinates. The trigger spans two steps
+     because picking the coin and greenlighting it happen on the same panel. */
+  var RANGE = { '1': [0.6, 2.5], '2': [2.6, 3.4], '3': [3.6, 4.4],
+                '4': [4.6, 5.4], '5': [5.6, 6.4], '6': [6.6, 7.6] };
+  var FADE = 0.5;
+
+  function ramp(p, a, b) {
+    if (p <= a - FADE || p >= b + FADE) return 0;
+    if (p < a) return (p - (a - FADE)) / FADE;
+    if (p > b) return ((b + FADE) - p) / FADE;
+    return 1;
+  }
+  function ease(o) { return o * o * (3 - 2 * o); }
+
+  var pressed = {};
+  function clickAt(key) {
+    if (pressed[key]) return;
+    pressed[key] = true;
+    cursor.classList.remove('press');
+    void cursor.offsetWidth;
+    cursor.classList.add('press');
+    setTimeout(function () { cursor.classList.remove('press'); }, 560);
+  }
+
+  function target(p) {
+    if (p < 1.55) return document.querySelector('.boardslot tbody tr:nth-child(3)');
+    if (p < 2.6)  return document.querySelector('.blk[data-b="1"] .glbtn2');
+    return null;
+  }
 
   function paint() {
     var box   = scrolly.getBoundingClientRect();
     var total = scrolly.offsetHeight - window.innerHeight;
     var t     = total > 0 ? (-box.top) / total : 0;
     t = t < 0 ? 0 : t > 1 ? 1 : t;
-    var p = t * (N - 1);
+    /* Reach the last step before the section runs out, so the tail of the
+       scroll is runway rather than the final panel sliding under the nav. */
+    var q = t / 0.9;
+    var p = (q > 1 ? 1 : q) * (N - 1);
 
     for (var i = 0; i < N; i++) {
       var d = Math.abs(p - i);
-      /* Tighter than a straight linear fade: at the midpoint between two steps
-         a 1-d blend leaves both panels half-visible and the frame reads as two
-         overlapping ghosts. Steepening it keeps the dissolve while giving each
-         panel most of its step alone. */
-      var o = d >= 0.55 ? 0 : 1 - (d / 0.55);
-      o = o * o * (3 - 2 * o);
+      var o = d >= 0.55 ? 0 : ease(1 - d / 0.55);
       stx[i].style.opacity = o;
-      stx[i].style.transform = 'translateY(' + ((i - p) * 22).toFixed(2) + 'px)';
-      scenes[i].style.opacity = o;
-      scenes[i].style.transform = 'translateY(' + ((i - p) * 12).toFixed(2) + 'px)';
-      scenes[i].style.visibility = o > 0.01 ? 'visible' : 'hidden';
+      stx[i].style.transform = 'translateY(' + ((i - p) * 20).toFixed(2) + 'px)';
     }
 
+    for (var b = 0; b < blks.length; b++) {
+      var k = blks[b].getAttribute('data-b');
+      var r = RANGE[k] || [0, 0];
+      var bo = ease(ramp(p, r[0], r[1]));
+      blks[b].style.opacity = bo;
+      blks[b].style.transform = 'translateY(' + ((1 - bo) * 10).toFixed(2) + 'px)';
+      blks[b].style.visibility = bo > 0.01 ? 'visible' : 'hidden';
+    }
+
+    var row = document.querySelector('.boardslot tbody tr:nth-child(3)');
+    if (row) row.classList.toggle('picked', p > 0.94);
+    var gl = document.querySelector('.blk[data-b="1"] .glbtn2');
+    if (gl) gl.classList.toggle('pressed', p > 1.96 && p < 2.35);
+
     if (cursor) {
-      var k = Math.round(p);
-      var spot = SPOTS[k];
-      if (spot && Math.abs(p - k) < 0.5) {
-        cursor.style.setProperty('--cx', spot[0] + '%');
-        cursor.style.setProperty('--cy', spot[1] + '%');
-        cursor.style.opacity = 1 - Math.abs(p - k) * 1.6;
+      var el = target(p);
+      if (el && p > 0.25 && p < 2.6) {
+        var f = frame.getBoundingClientRect(), q = el.getBoundingClientRect();
+        cursor.style.left = (q.left - f.left + q.width * 0.30) + 'px';
+        cursor.style.top  = (q.top  - f.top  + q.height * 0.52) + 'px';
+        cursor.style.opacity = 1;
       } else {
         cursor.style.opacity = 0;
       }
+      if (p > 0.94 && p < 1.15) clickAt('row'); else if (p < 0.9) pressed.row = false;
+      if (p > 1.96 && p < 2.16) clickAt('gl');  else if (p < 1.9) pressed.gl  = false;
     }
   }
 
@@ -832,7 +988,6 @@ document.getElementById('fakegl').onclick = e => {
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', onScroll);
   addEventListener('pageshow', paint);
-  /* A hidden tab pauses rAF, so recheck on the way back in. */
   addEventListener('visibilitychange', function () { if (!document.hidden) paint(); });
   paint();
 })();
