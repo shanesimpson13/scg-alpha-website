@@ -576,6 +576,14 @@
   .world tbody tr { transition: background .3s ease; }
   .world tbody tr.picked { background: color-mix(in srgb, var(--green) 13%, transparent); }
 
+  .spot {
+    position: absolute; left: 0; top: 0; z-index: 8; opacity: 0;
+    border-radius: 14px; pointer-events: none;
+    transform-origin: 0 0; will-change: transform, width, height, opacity;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--green) 55%, transparent),
+                0 0 0 9999px color-mix(in srgb, var(--bg) 78%, transparent);
+    transition: opacity .35s ease;
+  }
   .cursor {
     position: absolute; width: 20px; height: 20px; z-index: 9; opacity: 0;
     left: 0; top: 0; pointer-events: none; will-change: transform, opacity;
@@ -787,6 +795,7 @@
             <div class="fine">Charged on the swap itself. Nothing else.</div></div>
         </div>
       </div>
+      <span class="spot"></span>
       <span class="cursor"><i></i></span>
     </div>
   </div>
@@ -1013,14 +1022,14 @@ const sweep = setInterval(() => {
 
   /* world, what to frame, how close, and what the pointer is doing */
   var SHOT = [
-    { w: 'board', t: null,         s: 1,    cur: 'tbody tr:nth-child(3)', click: 0.92 },
-    { w: 'coin',  t: null,         s: 1                                              },
-    { w: 'coin',  t: '#rp-amt',    s: 2.15, cur: '.amtr button:nth-child(2)', click: 2.0 },
-    { w: 'coin',  t: '#rp-gl',     s: 2.15, cur: '#rp-gl',               click: 3.0 },
-    { w: 'coin',  t: '#rp-state',  s: 1.75                                           },
-    { w: 'coin',  t: '#rp-state',  s: 1.75                                           },
-    { w: 'set',   t: null,         s: 1                                              },
-    { w: 'fee',   t: null,         s: 1                                              }
+    { w: 'board', t: null                                                              },
+    { w: 'coin',  t: null                                                              },
+    { w: 'coin',  t: '#rp-amt',   fw: .58, spot: 1, cur: '.amtr button:nth-child(2)', click: 2.0 },
+    { w: 'coin',  t: '#rp-gl',    fw: .52, spot: 1, cur: '#rp-gl',                    click: 3.0 },
+    { w: 'coin',  t: '#rp-state', fw: .58, spot: 1                                     },
+    { w: 'coin',  t: '#rp-state', fw: .58, spot: 1                                     },
+    { w: 'set',   t: null                                                              },
+    { w: 'fee',   t: null                                                              }
   ];
   var N = SHOT.length;
   var box = {};                       /* target geometry, measured unscaled */
@@ -1067,16 +1076,19 @@ const sweep = setInterval(() => {
     }
   }
 
-  /* Where the camera sits for one shot, in world coordinates. */
+  /* Where the camera sits for one shot. A close shot is specified as how much
+     of the screen the control should fill, not as a multiple of the fit-scale --
+     that produced a control sitting small in the middle of a lot of dead space
+     while its neighbours were sliced through the middle of a sentence. */
   function shotAt(i) {
     var sh = SHOT[i], W = worlds[sh.w];
-    if (!sh.t || !box[sh.t]) {
-      var fit = Math.min(screenEl.clientWidth / W.__w, screenEl.clientHeight / W.__h) * 0.94;
-      return { cx: W.__w / 2, cy: W.__h / 2, s: fit, w: sh.w };
-    }
+    var fit = Math.min(screenEl.clientWidth / W.__w, screenEl.clientHeight / W.__h) * 0.94;
+    if (!sh.t || !box[sh.t]) return { cx: W.__w / 2, cy: W.__h / 2, s: fit, w: sh.w, spot: 0 };
     var b = box[sh.t];
-    var fit2 = Math.min(screenEl.clientWidth / W.__w, screenEl.clientHeight / W.__h) * 0.94;
-    return { cx: b.x + b.w / 2, cy: b.y + b.h / 2, s: fit2 * sh.s, w: sh.w };
+    var sc = Math.min(screenEl.clientWidth * (sh.fw || .58) / b.w,
+                      screenEl.clientHeight * 0.56 / b.h);
+    if (sc < fit) sc = fit;
+    return { cx: b.x + b.w / 2, cy: b.y + b.h / 2, s: sc, w: sh.w, spot: sh.spot ? 1 : 0, box: b };
   }
 
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -1113,6 +1125,8 @@ const sweep = setInterval(() => {
     var cam = same
       ? { cx: lerp(a.cx, b.cx, f), cy: lerp(a.cy, b.cy, f), s: lerp(a.s, b.s, f) }
       : (f < 0.5 ? a : b);
+    var spotOn = same ? lerp(a.spot, b.spot, f) : (f < 0.5 ? a.spot : b.spot);
+    var spotBox = (f < 0.5 ? (a.box || b.box) : (b.box || a.box));
     var live = same ? a.w : (f < 0.5 ? a.w : b.w);
 
     for (var k in worlds) {
@@ -1127,6 +1141,22 @@ const sweep = setInterval(() => {
         var ty = screenEl.clientHeight / 2 - cam.cy * cam.s;
         W.style.transform = 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + cam.s.toFixed(4) + ')';
         W.__tx = tx; W.__ty = ty; W.__s = cam.s;
+      }
+    }
+
+    /* Dim everything the shot is not about. Without it a close crop just looks
+       like a broken screenshot; with it, it reads as the page pointing. */
+    var spot = document.querySelector('.spot');
+    if (spot) {
+      if (spotOn > 0.02 && spotBox && worlds[live]) {
+        var Wp = worlds[live];
+        var sx2 = Wp.__tx + spotBox.x * Wp.__s, sy2 = Wp.__ty + spotBox.y * Wp.__s;
+        spot.style.transform = 'translate(' + sx2.toFixed(1) + 'px,' + sy2.toFixed(1) + 'px)';
+        spot.style.width  = (spotBox.w * Wp.__s).toFixed(1) + 'px';
+        spot.style.height = (spotBox.h * Wp.__s).toFixed(1) + 'px';
+        spot.style.opacity = spotOn;
+      } else {
+        spot.style.opacity = 0;
       }
     }
 
