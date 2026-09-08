@@ -341,25 +341,13 @@
   .stx p { color: var(--dim); margin: 0 auto; max-width: 46ch; font-size: 15px; }
 
 
-  /* The pointer does the two things you actually do, then leaves -- the page
-     says the rest happens without you, so it should not linger. */
-  .cursor {
-    position: absolute; width: 17px; height: 17px; z-index: 3; opacity: 0;
-    left: var(--cx, 50%); top: var(--cy, 50%); pointer-events: none;
-    transition: left .65s cubic-bezier(.4,0,.2,1), top .65s cubic-bezier(.4,0,.2,1),
-                opacity .35s ease;
-    background: no-repeat center/contain
-      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 2l14 8.5-6 1.3L11 19z" fill="white" stroke="black" stroke-width="1.5" stroke-linejoin="round"/></svg>');
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
-  }
 
   @media (max-width: 720px) {
     .scrolly-in { gap: 22px; }
     .steps { height: 172px; }
     }
   @media (prefers-reduced-motion: reduce) {
-    .cursor { transition: none; }
-  }
+    }
 
   /* ── hero, centred like the reference ── */
   .hero .wrap { text-align: center; }
@@ -444,33 +432,6 @@
   .setwrap .vin { font-size: 12px; width: 46px; }
   .setwrap .setrow:nth-child(n+6) { display: none; }
 
-  /* ── the pointer ──
-     It does the two things you actually do -- pick a row, press greenlight --
-     and presses them, because a pointer that only hovers never shows the act
-     the page is describing. */
-  .cursor {
-    position: absolute; left: 0; top: 0; width: 18px; height: 18px; z-index: 6;
-    opacity: 0; pointer-events: none;
-    transition: left .7s cubic-bezier(.4,0,.2,1), top .7s cubic-bezier(.4,0,.2,1),
-                opacity .3s ease;
-  }
-  .cursor i {
-    position: absolute; inset: 0; display: block;
-    background: no-repeat center/contain
-      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 2l14 8.5-6 1.3L11 19z" fill="white" stroke="black" stroke-width="1.5" stroke-linejoin="round"/></svg>');
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
-    transition: transform .13s ease;
-  }
-  .cursor.press i { transform: scale(.74) translate(2px, 2px); }
-  .cursor.press::after {
-    content: ''; position: absolute; left: -11px; top: -11px;
-    width: 40px; height: 40px; border-radius: 50%;
-    border: 2px solid var(--green); animation: ring .55s ease-out;
-  }
-  @keyframes ring {
-    0%   { transform: scale(.25); opacity: .85; }
-    100% { transform: scale(1);   opacity: 0; }
-  }
 
   /* what the click lands on */
   .glbtn2 { transition: transform .13s ease, filter .13s ease; }
@@ -547,23 +508,6 @@
   .cgl.pressed { transform: scale(.975); filter: brightness(.93); }
   .cnote { margin-top: auto; font-size: 12.5px; color: var(--dimmer); }
 
-  .cursor {
-    position: absolute; width: 19px; height: 19px; z-index: 4; opacity: 0;
-    left: 0; top: 0; pointer-events: none;
-    transition: transform .6s cubic-bezier(.4,0,.2,1), opacity .3s ease;
-  }
-  .cursor i {
-    position: absolute; inset: 0; display: block;
-    background: no-repeat center/contain
-      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 2l14 8.5-6 1.3L11 19z" fill="white" stroke="black" stroke-width="1.5" stroke-linejoin="round"/></svg>');
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
-    transition: transform .13s ease;
-  }
-  .cursor.press i { transform: scale(.72) translate(2px,2px); }
-  .cursor.press::after {
-    content: ''; position: absolute; left: -12px; top: -12px; width: 43px; height: 43px;
-    border-radius: 50%; border: 2px solid var(--green); animation: ring .6s ease-out;
-  }
   @keyframes ring { 0% { transform: scale(.2); opacity: .9; } 100% { transform: scale(1); opacity: 0; } }
 
   @media (max-width: 640px) { .card { height: 360px; } .cstate { padding: 22px; } }
@@ -763,6 +707,37 @@
   /* The wrapper is a flex item, so without a width it shrink-wraps and the
      copy column collapses -- "One flat fee." was breaking over three lines. */
   .fit { width: 100%; }
+
+  /* The line lives in the left of the frame and leaves through the top, so the
+     panels have the right-hand side to themselves instead of sitting on it. */
+  .cstate:not([data-c="0"]) { left: auto; right: 0; transform: translateY(-50%); }
+  .bg { width: min(1560px, 132vw); }
+
+  /* ── the pointer ──
+     One definition. Three had accumulated across rewrites, each with different
+     positioning, and they were fighting each other. It is placed with left/top
+     in the frame's own coordinates rather than a transform, because the frame
+     is scaled to fit the viewport and a transform inside it lands short. */
+  .cursor {
+    position: absolute; left: 0; top: 0; width: 19px; height: 19px;
+    z-index: 6; opacity: 0; pointer-events: none;
+    transition: left .55s cubic-bezier(.4,0,.2,1), top .55s cubic-bezier(.4,0,.2,1),
+                opacity .3s ease;
+  }
+  .cursor i {
+    position: absolute; inset: 0; display: block;
+    background: no-repeat center/contain
+      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 2l14 8.5-6 1.3L11 19z" fill="white" stroke="black" stroke-width="1.5" stroke-linejoin="round"/></svg>');
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,.4));
+    transition: transform .13s ease;
+  }
+  .cursor.press i { transform: scale(.72) translate(2px,2px); }
+  .cursor.press::after {
+    content: ''; position: absolute; left: -12px; top: -12px; width: 43px; height: 43px;
+    border-radius: 50%; border: 2px solid var(--green); animation: ring .6s ease-out;
+  }
+  @keyframes ring { 0% { transform: scale(.2); opacity: .9; } 100% { transform: scale(1); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .cursor { transition: none; } }
 </style>
 </head>
 <body>
@@ -803,24 +778,24 @@
   <div class="scrolly-in">
       <svg class="bg" viewBox="0 0 1200 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <g class="guides">
-          <line class="gl hi"  x1="0" y1="62"  x2="1200" y2="62"/>
-          <line class="gl dip" x1="0" y1="352" x2="1200" y2="352"/>
-          <line class="gl rec" x1="0" y1="318" x2="1200" y2="318"/>
+          <line class="gl hi"  x1="0" y1="58"  x2="720" y2="58"/>
+          <line class="gl dip" x1="0" y1="352" x2="720" y2="352"/>
+          <line class="gl rec" x1="0" y1="318" x2="720" y2="318"/>
         </g>
-        <polyline class="px" points="0,400 60,382 120,394 180,344 240,356 300,296 360,222
-                                     400,140 440,62 490,140 540,220 590,296 640,360 670,398
-                                     690,368 710,318 780,272 860,232 940,186 1020,140
-                                     1110,96 1200,58"/>
-        <g class="mk hi"><circle cx="440" cy="62" r="6"/><text x="440" y="40">HIGH</text></g>
-        <g class="mk buy"><circle cx="710" cy="318" r="7"/><text x="710" y="352">BUY THE RECLAIM</text></g>
+        <polyline class="px" points="0,404 40,386 80,394 120,350 160,360 200,300
+                                     240,238 280,170 320,96 360,58 400,120 440,196
+                                     480,272 510,340 540,398 565,362 590,318 625,250
+                                     655,180 680,110 700,44"/>
+        <g class="mk hi"><circle cx="360" cy="58" r="6"/><text x="360" y="36">HIGH</text></g>
+        <g class="mk buy"><circle cx="590" cy="318" r="7"/><text x="590" y="352">BUY THE RECLAIM</text></g>
       </svg>
     <div class="fit">
     <div class="steps">
       <div class="stx" data-i="0"><h2>Only what&rsquo;s moving.</h2><p>Filtered on volume, liquidity and flow.</p></div>
       <div class="stx" data-i="1"><h2>You pick the coin.</h2><p>The one call the system won&rsquo;t make for you.</p></div>
-      <div class="stx" data-i="2"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
-      <div class="stx" data-i="3"><h2>It waits for the dip.</h2><p>Hours if it has to, then it buys the reclaim.</p></div>
-      <div class="stx" data-i="4"><h2>Your rules, not ours.</h2><p>Unlimited settings. Every coin runs your way.</p></div>
+      <div class="stx" data-i="2"><h2>Your rules, not ours.</h2><p>Dip, reclaim, targets, stop. Set once.</p></div>
+      <div class="stx" data-i="3"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
+      <div class="stx" data-i="4"><h2>It waits, then buys the reclaim.</h2><p>Hours if it has to. Never the falling knife.</p></div>
       <div class="stx" data-i="5"><h2>One flat fee.</h2><p>0.5% per swap. No subscription.</p></div>
     </div>
     <div class="stage" aria-hidden="true">
@@ -890,6 +865,21 @@
           </div>
 
           <div class="cstate" data-c="1">
+            <div class="setwrap">
+              <div class="rp"><div class="rpk">ENTRY</div>
+                <div class="srow"><span>Dip required</span><b>20%</b></div>
+                <div class="srow"><span>Reclaim off the low</span><b>5%</b></div>
+                <div class="srow"><span>B/S floor</span><b>0.95</b></div>
+                <div class="srow"><span>Stay below the high by</span><b>10%</b></div></div>
+              <div class="rp"><div class="rpk">EXIT</div>
+                <div class="srow"><span>Take profit 1</span><b>2&times;</b></div>
+                <div class="srow"><span>Sold at TP1</span><b>50%</b></div>
+                <div class="srow"><span>Take profit 2</span><b>4&times;</b></div>
+                <div class="srow"><span>Stop</span><b>&minus;50%</b></div></div>
+            </div>
+          </div>
+
+          <div class="cstate" data-c="2">
             <div class="rail">
               <div class="rp">
                 <div class="rpk">WHAT WOULD TRIGGER A BUY</div>
@@ -912,7 +902,7 @@
             </div>
           </div>
 
-          <div class="cstate" data-c="2">
+          <div class="cstate" data-c="3">
             <div class="rail"><div class="rp">
                 <div class="rphead"><span class="mdot amber"></span><b>Waiting for a dip and a reclaim</b></div>
                 <div class="rpk">WAITING FOR A DIP &middot; 20S OF WARMUP LEFT</div>
@@ -921,21 +911,6 @@
                 <div class="rpn">No dip yet, so nothing can trigger. It will sit here for
                   hours rather than buy a top.</div>
               </div></div>
-          </div>
-
-          <div class="cstate" data-c="3">
-            <div class="setwrap">
-              <div class="rp"><div class="rpk">ENTRY</div>
-                <div class="srow"><span>Dip required</span><b>20%</b></div>
-                <div class="srow"><span>Reclaim off the low</span><b>5%</b></div>
-                <div class="srow"><span>B/S floor</span><b>0.95</b></div>
-                <div class="srow"><span>Stay below the high by</span><b>10%</b></div></div>
-              <div class="rp"><div class="rpk">EXIT</div>
-                <div class="srow"><span>Take profit 1</span><b>2&times;</b></div>
-                <div class="srow"><span>Sold at TP1</span><b>50%</b></div>
-                <div class="srow"><span>Take profit 2</span><b>4&times;</b></div>
-                <div class="srow"><span>Stop</span><b>&minus;50%</b></div></div>
-            </div>
           </div>
 
           <div class="cstate" data-c="4">
@@ -1022,6 +997,21 @@
   var mkBuy = document.querySelector('.bg .mk.buy');
   var guides = document.querySelector('.bg .guides');
 
+  /* Where each marker sits along the line, as a fraction of its length. Derived
+     from the path rather than guessed, so reshaping the curve cannot leave a
+     marker appearing before the line has drawn to it. */
+  function atPoint(x, y) {
+    if (!px || !pxLen) return 1;
+    var best = 0, bd = Infinity, step = pxLen / 400;
+    for (var l = 0; l <= pxLen; l += step) {
+      var q = px.getPointAtLength(l);
+      var dd = (q.x - x) * (q.x - x) + (q.y - y) * (q.y - y);
+      if (dd < bd) { bd = dd; best = l; }
+    }
+    return best / pxLen;
+  }
+  var AT_HI = atPoint(360, 58), AT_BUY = atPoint(590, 318);
+
   var pressed = {};
   function press(key) {
     if (pressed[key]) return;
@@ -1032,11 +1022,18 @@
     setTimeout(function () { cursor.classList.remove('press'); }, 620);
   }
 
+  /* Both rects are measured on screen, but the pointer is translated inside a
+     frame that may be scaled down to fit the viewport -- so a screen-space
+     offset applied as a local translate lands at only `scaleNow` of the way
+     there, up and left of what it is meant to be clicking. Convert back to the
+     frame's own coordinates. */
   function point(el) {
     if (!el) return null;
     var c = card.getBoundingClientRect(), b = el.getBoundingClientRect();
     if (!b.width) return null;
-    return { x: b.left - c.left + b.width * 0.30, y: b.top - c.top + b.height * 0.55 };
+    var k = scaleNow || 1;
+    return { x: (b.left - c.left + b.width * 0.30) / k,
+             y: (b.top  - c.top  + b.height * 0.55) / k };
   }
 
   function paint() {
@@ -1072,25 +1069,26 @@
        and the buy lands on the reclaim */
     var frac = N > 1 ? p / (N - 1) : 0;
     if (px) px.style.strokeDashoffset = (pxLen * (1 - frac)).toFixed(1);
-    if (guides) guides.style.opacity = frac > 0.30 ? 1 : 0;
-    if (mkHi)  mkHi.style.opacity  = frac > 0.36 ? 1 : 0;
-    if (mkBuy) mkBuy.style.opacity = frac > 0.57 ? 1 : 0;   /* lands on 'buys the reclaim' */
+    if (guides) guides.style.opacity = frac > AT_HI - 0.06 ? 1 : 0;
+    if (mkHi)  mkHi.style.opacity  = frac > AT_HI ? 1 : 0;
+    if (mkBuy) mkBuy.style.opacity = frac > AT_BUY ? 1 : 0;
 
     var row = document.querySelector('.cstate[data-c="0"] tbody tr.hit');
     if (row) row.classList.toggle('picked', p > 0.9);
     var gl = document.querySelector('.cgl');
-    if (gl) gl.classList.toggle('pressed', p > 1.98 && p < 2.32);
+    if (gl) gl.classList.toggle('pressed', p > 2.98 && p < 3.32);
 
     /* The pointer picks the row, goes away while the coin opens, comes back
        for the greenlight, then leaves for good -- rather than hovering over
        the card at the coordinates of a row that is no longer on screen. */
-    var target = p < 1.35 ? row : (p > 1.7 && p < 2.6 ? gl : null);
+    var target = p < 1.35 ? row : (p > 2.7 && p < 3.6 ? gl : null);
     var pt = target && point(target);
     if (pt && cursor) {
-      cursor.style.transform = 'translate(' + pt.x.toFixed(1) + 'px,' + pt.y.toFixed(1) + 'px)';
+      cursor.style.left = pt.x.toFixed(1) + 'px';
+      cursor.style.top  = pt.y.toFixed(1) + 'px';
       cursor.style.opacity = 1;
       if (p > 0.9 && p < 1.12) press('row'); else if (p < 0.86) pressed.row = false;
-      if (p > 1.98 && p < 2.2) press('gl');  else if (p < 1.94) pressed.gl = false;
+      if (p > 2.98 && p < 3.2) press('gl');  else if (p < 2.94) pressed.gl = false;
     } else if (cursor) {
       cursor.style.opacity = 0;
     }
@@ -1101,6 +1099,7 @@
      under the fixed nav -- which is what cut the title off. Scaling about the
      centre pulls both ends back inside. */
   var fit  = document.querySelector('.fit');
+  var scaleNow = 1;
   var frame = document.querySelector('.card') || document.querySelector('.cardwrap');
   function fitViewport() {
     if (!fit || !frame) return;
@@ -1123,8 +1122,8 @@
        common one -- a slightly smaller panel beats a clipped one. */
     var avail = window.innerHeight - 76 - 76;
     var need = fit.offsetHeight;
-    fit.style.transform = (need > avail && need > 0)
-      ? 'scale(' + (avail / need).toFixed(4) + ')' : 'none';
+    scaleNow = (need > avail && need > 0) ? avail / need : 1;
+    fit.style.transform = scaleNow < 1 ? 'scale(' + scaleNow.toFixed(4) + ')' : 'none';
   }
 
   var queued = false;
@@ -1168,6 +1167,7 @@
      under the fixed nav -- which is what cut the title off. Scaling about the
      centre pulls both ends back inside. */
   var fit  = document.querySelector('.fit');
+  var scaleNow = 1;
   var frame = document.querySelector('.card') || document.querySelector('.cardwrap');
   function fitViewport() {
     if (!fit || !frame) return;
@@ -1190,8 +1190,8 @@
        common one -- a slightly smaller panel beats a clipped one. */
     var avail = window.innerHeight - 76 - 76;
     var need = fit.offsetHeight;
-    fit.style.transform = (need > avail && need > 0)
-      ? 'scale(' + (avail / need).toFixed(4) + ')' : 'none';
+    scaleNow = (need > avail && need > 0) ? avail / need : 1;
+    fit.style.transform = scaleNow < 1 ? 'scale(' + scaleNow.toFixed(4) + ')' : 'none';
   }
 
   var queued = false;
