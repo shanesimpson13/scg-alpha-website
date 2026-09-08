@@ -667,7 +667,10 @@
         top of a still-live `bottom: 0` made each state exactly half the frame
         tall -- 274px holding 445px of board -- which is what was cutting the
         table off at the bottom. */
-  .cstate { bottom: auto !important; right: auto !important; height: auto !important; }
+  /* Clearing the old `inset: 0` needs bottom and height, but NOT right --
+     an !important right:auto here silently beat the right-alignment below,
+     which is why the panels kept sitting on the line. */
+  .cstate { bottom: auto !important; height: auto !important; }
 
   /* 2. The board's border came from the card frame I removed, so it now carries
         its own -- the same treatment the rest of the panels have. */
@@ -738,6 +741,17 @@
   }
   @keyframes ring { 0% { transform: scale(.2); opacity: .9; } 100% { transform: scale(1); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .cursor { transition: none; } }
+
+  .bg .mk.tp circle { fill: var(--green); }
+  .bg .mk.tp text { fill: var(--green); }
+
+  /* Final word on where the panels sit: the board centred, everything after it
+     hard against the right, clear of the line drawing on the left. */
+  .cstate[data-c="0"] { left: 50%; right: auto; transform: translate(-50%, -50%); }
+  .cstate:not([data-c="0"]) { left: auto; right: 0; transform: translateY(-50%); }
+  @media (max-width: 980px) {
+    .cstate:not([data-c="0"]) { left: 50%; right: auto; transform: translate(-50%, -50%); }
+  }
 </style>
 </head>
 <body>
@@ -788,14 +802,15 @@
                                      655,180 680,110 700,44"/>
         <g class="mk hi"><circle cx="360" cy="58" r="6"/><text x="360" y="36">HIGH</text></g>
         <g class="mk buy"><circle cx="590" cy="318" r="7"/><text x="590" y="352">BUY THE RECLAIM</text></g>
+          <g class="mk tp"><circle cx="645" cy="195" r="7"/><text x="645" y="173">TP1 &middot; 2&times;</text></g>
       </svg>
     <div class="fit">
     <div class="steps">
       <div class="stx" data-i="0"><h2>Only what&rsquo;s moving.</h2><p>Filtered on volume, liquidity and flow.</p></div>
       <div class="stx" data-i="1"><h2>You pick the coin.</h2><p>The one call the system won&rsquo;t make for you.</p></div>
-      <div class="stx" data-i="2"><h2>Your rules, not ours.</h2><p>Dip, reclaim, targets, stop. Set once.</p></div>
-      <div class="stx" data-i="3"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
-      <div class="stx" data-i="4"><h2>It waits, then buys the reclaim.</h2><p>Hours if it has to. Never the falling knife.</p></div>
+      <div class="stx" data-i="2"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
+      <div class="stx" data-i="3"><h2>It waits for the dip.</h2><p>Dip required, reclaim off the low. Your numbers.</p></div>
+      <div class="stx" data-i="4"><h2>Then it takes profit.</h2><p>Half at 2&times;, the rest at 4&times;, stop to break even.</p></div>
       <div class="stx" data-i="5"><h2>One flat fee.</h2><p>0.5% per swap. No subscription.</p></div>
     </div>
     <div class="stage" aria-hidden="true">
@@ -865,21 +880,6 @@
           </div>
 
           <div class="cstate" data-c="1">
-            <div class="setwrap">
-              <div class="rp"><div class="rpk">ENTRY</div>
-                <div class="srow"><span>Dip required</span><b>20%</b></div>
-                <div class="srow"><span>Reclaim off the low</span><b>5%</b></div>
-                <div class="srow"><span>B/S floor</span><b>0.95</b></div>
-                <div class="srow"><span>Stay below the high by</span><b>10%</b></div></div>
-              <div class="rp"><div class="rpk">EXIT</div>
-                <div class="srow"><span>Take profit 1</span><b>2&times;</b></div>
-                <div class="srow"><span>Sold at TP1</span><b>50%</b></div>
-                <div class="srow"><span>Take profit 2</span><b>4&times;</b></div>
-                <div class="srow"><span>Stop</span><b>&minus;50%</b></div></div>
-            </div>
-          </div>
-
-          <div class="cstate" data-c="2">
             <div class="rail">
               <div class="rp">
                 <div class="rpk">WHAT WOULD TRIGGER A BUY</div>
@@ -902,15 +902,28 @@
             </div>
           </div>
 
+          <div class="cstate" data-c="2">
+            <div class="rail"><div class="rp">
+              <div class="rpk">ENTRY</div>
+              <div class="srow"><span>Dip required</span><b>20%</b></div>
+              <div class="srow"><span>Reclaim off the low</span><b>5%</b></div>
+              <div class="srow"><span>B/S floor</span><b>0.95</b></div>
+              <div class="srow"><span>Stay below the high by</span><b>10%</b></div>
+              <div class="rpn">Nothing can trigger until price falls through your dip
+                and takes back your reclaim.</div>
+            </div></div>
+          </div>
+
           <div class="cstate" data-c="3">
             <div class="rail"><div class="rp">
-                <div class="rphead"><span class="mdot amber"></span><b>Waiting for a dip and a reclaim</b></div>
-                <div class="rpk">WAITING FOR A DIP &middot; 20S OF WARMUP LEFT</div>
-                <div class="rpl">needs to trade at or below <b>$108.0K</b></div>
-                <div class="rpl">high since you greenlit <b>$135.0K</b></div>
-                <div class="rpn">No dip yet, so nothing can trigger. It will sit here for
-                  hours rather than buy a top.</div>
-              </div></div>
+              <div class="rpk">EXIT</div>
+              <div class="srow"><span>Take profit 1</span><b>2&times;</b></div>
+              <div class="srow"><span>Sold at TP1</span><b>50%</b></div>
+              <div class="srow"><span>Take profit 2</span><b>4&times;</b></div>
+              <div class="srow"><span>Stop</span><b>&minus;50%</b></div>
+              <div class="rpn">Half comes off at 2&times; and the stop moves to your entry,
+                so the trade can no longer turn into a loss.</div>
+            </div></div>
           </div>
 
           <div class="cstate" data-c="4">
@@ -995,6 +1008,7 @@
   if (px) { px.style.strokeDasharray = pxLen; px.style.strokeDashoffset = pxLen; }
   var mkHi = document.querySelector('.bg .mk.hi');
   var mkBuy = document.querySelector('.bg .mk.buy');
+  var mkTp  = document.querySelector('.bg .mk.tp');
   var guides = document.querySelector('.bg .guides');
 
   /* Where each marker sits along the line, as a fraction of its length. Derived
@@ -1010,7 +1024,7 @@
     }
     return best / pxLen;
   }
-  var AT_HI = atPoint(360, 58), AT_BUY = atPoint(590, 318);
+  var AT_HI = atPoint(360, 58), AT_BUY = atPoint(590, 318), AT_TP = atPoint(645, 195);
 
   var pressed = {};
   function press(key) {
@@ -1067,28 +1081,36 @@
 
     /* draw fraction tracks the step line, so the high lands on the greenlight
        and the buy lands on the reclaim */
-    var frac = N > 1 ? p / (N - 1) : 0;
+    /* The line finishes before the last step, so the buy and TP1 both land on
+       the step that talks about them rather than on the fee. */
+    var frac = Math.min(1, p / 4.35);
     if (px) px.style.strokeDashoffset = (pxLen * (1 - frac)).toFixed(1);
     if (guides) guides.style.opacity = frac > AT_HI - 0.06 ? 1 : 0;
     if (mkHi)  mkHi.style.opacity  = frac > AT_HI ? 1 : 0;
     if (mkBuy) mkBuy.style.opacity = frac > AT_BUY ? 1 : 0;
+    if (mkTp)  mkTp.style.opacity  = frac > AT_TP ? 1 : 0;
 
     var row = document.querySelector('.cstate[data-c="0"] tbody tr.hit');
     if (row) row.classList.toggle('picked', p > 0.9);
     var gl = document.querySelector('.cgl');
-    if (gl) gl.classList.toggle('pressed', p > 2.98 && p < 3.32);
+    if (gl) gl.classList.toggle('pressed', p > 1.98 && p < 2.32);
 
     /* The pointer picks the row, goes away while the coin opens, comes back
        for the greenlight, then leaves for good -- rather than hovering over
        the card at the coordinates of a row that is no longer on screen. */
-    var target = p < 1.35 ? row : (p > 2.7 && p < 3.6 ? gl : null);
+    var target = p < 1.35 ? row : (p > 1.7 && p < 2.6 ? gl : null);
     var pt = target && point(target);
     if (pt && cursor) {
-      cursor.style.left = pt.x.toFixed(1) + 'px';
-      cursor.style.top  = pt.y.toFixed(1) + 'px';
-      cursor.style.opacity = 1;
+      /* It comes into the page before it picks anything: parked off the bottom
+         left until the reader is into the step, then it glides to the row and
+         presses it. A pointer that simply materialises on the row never reads
+         as a click. */
+      var entering = p < 0.34;
+      cursor.style.left = (entering ? -70 : pt.x).toFixed(1) + 'px';
+      cursor.style.top  = (entering ? (card.offsetHeight + 80) : pt.y).toFixed(1) + 'px';
+      cursor.style.opacity = entering ? 0 : 1;
       if (p > 0.9 && p < 1.12) press('row'); else if (p < 0.86) pressed.row = false;
-      if (p > 2.98 && p < 3.2) press('gl');  else if (p < 2.94) pressed.gl = false;
+      if (p > 1.98 && p < 2.2) press('gl');  else if (p < 1.94) pressed.gl = false;
     } else if (cursor) {
       cursor.style.opacity = 0;
     }
