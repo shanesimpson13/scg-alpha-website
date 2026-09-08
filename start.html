@@ -812,6 +812,12 @@
     font-size: 11.5px; line-height: 1.7; color: var(--dimmer);
   }
   .honestfoot b { color: var(--dim); }
+
+  /* Scaled from the middle as you scroll. The inline transform the driver sets
+     already beats .btn:hover, so no hover override is needed -- and the one I
+     first wrote referenced a custom property that was never set, which would
+     have snapped it to full size under the cursor. */
+  .btn.glow { transform-origin: center center; will-change: transform; }
 </style>
 </head>
 <body>
@@ -867,7 +873,7 @@
       <div class="stx" data-i="1"><h2>You pick the coin.</h2><p>The one call the system won&rsquo;t make for you.</p></div>
       <div class="stx" data-i="2"><h2>Then greenlight it.</h2><p>It shows the exact levels before you commit.</p></div>
       <div class="stx" data-i="3"><h2>It waits for the dip.</h2><p>Rules you write yourself, saved as a strategy you name.</p></div>
-      <div class="stx" data-i="4"><h2>Then it takes profit.</h2><p>Keep as many strategies as you like. One per coin.</p></div>
+      <div class="stx" data-i="4"><h2>Then it takes profit.</h2><p>Keep as many strategies as you like.</p></div>
       <div class="stx" data-i="5"><h2>One flat fee.</h2><p>0.5% per swap. No subscription.</p></div>
     </div>
     <div class="stage" aria-hidden="true">
@@ -1053,6 +1059,7 @@
   var mkTp  = document.querySelector('.bg .mk.tp');
   var guides = document.querySelector('.bg .guides');
   var chart  = document.querySelector('.bg');
+  var ctaBtn = document.querySelector('.btn.glow');
 
   /* Where each marker sits along the line, as a fraction of its length. Derived
      from the path rather than guessed, so reshaping the curve cannot leave a
@@ -1147,6 +1154,15 @@
        button was landing on top of "TP1 · 2× · $226.8K", which reads as two
        things colliding rather than one thing being offered. */
     var closing = p > 4.45 ? Math.min(1, (p - 4.45) / 0.4) : 0;
+
+    /* The button opens up as you come down onto it. Driven by raw scroll rather
+       than the step index, so it keeps growing through the tail of the section
+       instead of stopping the moment the last step is centred. */
+    if (ctaBtn) {
+      var g = (t - 0.78) / 0.16;   /* full size while the headline is still up */
+      g = g < 0 ? 0 : g > 1 ? 1 : g;
+      ctaBtn.style.transform = 'scale(' + (0.54 + 0.46 * ease(g)).toFixed(3) + ')';
+    }
     if (px) px.style.opacity = (0.42 * (1 - closing) + 0.10 * closing).toFixed(3);
     var frac = drawn(p);
     if (px) px.style.strokeDashoffset = (pxLen * (1 - frac)).toFixed(1);
