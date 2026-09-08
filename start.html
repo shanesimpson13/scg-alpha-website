@@ -482,14 +482,14 @@
      ours was a 1120px data-dense screen squeezed into 1038x502, which put the
      stat labels at 5.8px. Few rows, big type, one fixed frame, and the states
      cross-fade inside it. */
-  .stage { position: relative; width: min(560px, 100% - 40px); }
+  .stage { position: relative; z-index: 1; width: min(940px, 100% - 40px); }
   .card {
-    position: relative; height: 340px;
+    position: relative; height: 448px;
     background: var(--panel); border: 1px solid var(--line); border-radius: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,.04), 0 30px 70px -34px rgba(0,0,0,.4);
   }
   .cstate {
-    position: absolute; inset: 0; padding: 26px 28px;
+    position: absolute; inset: 0; padding: 0;
     display: flex; flex-direction: column; opacity: 0;
     will-change: opacity, transform;
   }
@@ -505,7 +505,7 @@
     padding: 11px 10px; border-radius: 10px;
     transition: background .3s ease;
   }
-  .mrow.picked { background: color-mix(in srgb, var(--green) 12%, transparent); }
+  .cstate tbody tr.picked td { background: color-mix(in srgb, var(--green) 13%, transparent); }
   .mdot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); flex: none; }
   .mdot.amber { background: var(--amber); }
   .msym { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
@@ -568,6 +568,64 @@
 
   @media (max-width: 640px) { .card { height: 360px; } .cstate { padding: 22px; } }
   @media (prefers-reduced-motion: reduce) { .cursor { transition: none; } }
+
+  /* The board is the real one, so the card is sized to it rather than the
+     other way round; the lighter states use the width in two columns instead
+     of leaving it empty. */
+  .cstate[data-c="0"] { padding: 0; }
+  .cstate[data-c="0"] table { width: 100%; }
+  .cstate:not([data-c="0"]) { padding: 26px 30px; }
+
+  /* The card is sized to the board, so the lighter states centre in it rather
+     than sitting against the top edge with a drop of empty white beneath. */
+  .cstate:not([data-c="0"]) { justify-content: center; }
+  .ctwo {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
+    align-items: start;
+  }
+  .cwhen { font-size: 12.5px; color: var(--dimmer); margin-top: 8px; }
+  .cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+  .cgrid span { display: block; font-size: 10.5px; letter-spacing: .12em;
+                text-transform: uppercase; color: var(--dimmer); }
+  .cgrid b { font-size: 17px; font-weight: 700; }
+  .cact { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── the price behind the cards ──
+     The story the copy is telling, drawn as it is told: the run up, the dip
+     through the level, and the reclaim that actually triggers the buy. It sits
+     behind the card because it is context, not the subject. */
+  .bg {
+    position: absolute; left: 50%; top: 50%; z-index: 0;
+    width: min(1560px, 136vw); height: 96vh;
+    transform: translate(-50%, -46%); pointer-events: none;
+  }
+  .bg .px {
+    fill: none; stroke: var(--green); stroke-width: 2.8; opacity: .34;
+    stroke-linejoin: round; stroke-linecap: round;
+  }
+  .bg .gl { stroke: var(--fg); stroke-width: 1; stroke-dasharray: 5 6; opacity: 0; }
+  .bg .mk { opacity: 0; }
+  .bg .mk circle { fill: var(--green); }
+  .bg .mk.hi circle { fill: var(--dimmer); }
+  .bg .mk text {
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    letter-spacing: .12em; text-anchor: middle; fill: var(--dim);
+  }
+  .bg .mk.buy text { fill: var(--green); }
+
+  .steps, .stage { position: relative; z-index: 1; }
+
+  @media (max-width: 900px) {
+    .ctwo { grid-template-columns: 1fr; gap: 18px; }
+    .card { height: 520px; }
+    .cstate[data-c="0"] { overflow-x: auto; }
+  }
+
+  /* Waiting has two lines to say; the note sits beside them rather than being
+     pushed to the far corner of an otherwise empty card. */
+  .cstate[data-c="3"] .cact { justify-content: flex-start; }
+  .bg .gl { transition: opacity .5s ease; }
+  .bg .mk { transition: opacity .45s ease; }
 </style>
 </head>
 <body>
@@ -606,6 +664,19 @@
 <!-- ── how ──────────────────────────────────────────────────────────── -->
 <section class="scrolly" id="how" style="--n:6">
   <div class="scrolly-in">
+      <svg class="bg" viewBox="0 0 1200 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <g class="guides">
+          <line class="gl hi"  x1="0" y1="62"  x2="1200" y2="62"/>
+          <line class="gl dip" x1="0" y1="352" x2="1200" y2="352"/>
+          <line class="gl rec" x1="0" y1="318" x2="1200" y2="318"/>
+        </g>
+        <polyline class="px" points="0,400 60,382 120,394 180,344 240,356 300,296 360,222
+                                     400,140 440,62 490,140 540,220 590,296 640,360 670,398
+                                     690,368 710,318 780,272 860,232 940,186 1020,140
+                                     1110,96 1200,58"/>
+        <g class="mk hi"><circle cx="440" cy="62" r="6"/><text x="440" y="40">HIGH</text></g>
+        <g class="mk buy"><circle cx="710" cy="318" r="7"/><text x="710" y="352">BUY THE RECLAIM</text></g>
+      </svg>
     <div class="steps">
       <div class="stx" data-i="0"><h2>Only what&rsquo;s moving.</h2><p>Filtered on volume, liquidity and flow.</p></div>
       <div class="stx" data-i="1"><h2>You pick the coin.</h2><p>The one call the system won&rsquo;t make for you.</p></div>
@@ -616,57 +687,132 @@
     </div>
     <div class="stage" aria-hidden="true">
 <div class="card">
-          <div class="cstate on" data-c="0">
-            <div class="ck">Trending &middot; 5m</div>
-            <div class="mrow hit"><span class="mdot"></span><span class="msym">KITE<em>3m · Kite</em></span><span class="mval">$113.4K<em class="up">+14%</em></span></div>
-            <div class="mrow"><span class="mdot"></span><span class="msym">LUMEN<em>4m · Lumen</em></span><span class="mval">$412K<em class="up">+30%</em></span></div>
-            <div class="mrow"><span class="mdot"></span><span class="msym">ORBIT<em>11m · Orbit</em></span><span class="mval">$286K<em class="up">+9%</em></span></div>
-            <div class="mrow"><span class="mdot"></span><span class="msym">EMBER<em>26m · Ember</em></span><span class="mval">$97K<em class="dn">−7%</em></span></div>
+          <div class="cstate" data-c="0">
+<div class="bhead">
+              <span class="t">Trending &middot; 5m</span>
+              <span class="chips">
+                <span class="chip">min 5m vol&nbsp; <b>25000</b></span>
+                <span class="chip">min MC&nbsp; <b>50000</b></span>
+                <span class="chip">min vol/MC&nbsp; <b>10%</b></span>
+              </span>
+            </div>
+            <table>
+              <thead><tr>
+                <th>Token</th><th>MC</th><th>Liq</th><th>5m vol</th>
+                <th>Vol / MC</th><th>B/S</th><th>5m</th>
+              </tr></thead>
+              <tbody>
+              <tr>
+                <td><div class="tok"><span class="av">🍀</span>
+                  <span><span class="nm">FORTUNE</span><br><span class="sub">19m · The Gospel of For…</span></span></div></td>
+                <td>$2.42M</td><td>$144.4K</td>
+                <td class="vol up">$983.8K</td>
+                <td class="up">44%</td>
+                <td class="up">1.08</td>
+                <td class="up">+30%</td>
+              </tr>
+              <tr>
+                <td><div class="tok"><span class="av">🐰</span>
+                  <span><span class="nm">buni</span><br><span class="sub">1h · buni</span></span></div></td>
+                <td>$606.5K</td><td>$72.0K</td>
+                <td class="vol up">$195.4K</td>
+                <td class="">35%</td>
+                <td class="dn">0.98</td>
+                <td class="dn">−23%</td>
+              </tr>
+              <tr class="hit">
+                <td><div class="tok"><span class="av">☂️</span>
+                  <span><span class="nm">Poopins</span><br><span class="sub">4h · Mary Poopins</span></span></div></td>
+                <td>$135.0K</td><td>$28.7K</td>
+                <td class="vol warm">$60.3K</td>
+                <td class="up">47%</td>
+                <td class="up">1.09</td>
+                <td class="up">+14%</td>
+              </tr>
+              <tr>
+                <td><div class="tok"><span class="av">🚀</span>
+                  <span><span class="nm">so..higher</span><br><span class="sub">17m · solana looking go…</span></span></div></td>
+                <td>$67.6K</td><td>$19.8K</td>
+                <td class="vol warm">$59.9K</td>
+                <td class="up">87%</td>
+                <td class="up">1.00</td>
+                <td class="up">+9%</td>
+              </tr>
+              <tr>
+                <td><div class="tok"><span class="av">🐱</span>
+                  <span><span class="nm">GATO</span><br><span class="sub">12m · GTA6CAT</span></span></div></td>
+                <td>$518.1K</td><td>$60.2K</td>
+                <td class="vol warm">$53.3K</td>
+                <td class="">13%</td>
+                <td class="dn">0.87</td>
+                <td class="dn">−15%</td>
+              </tr>
+              </tbody>
+            </table>
           </div>
 
           <div class="cstate" data-c="1">
             <div class="ck">Kite</div>
-            <div class="cbig">$113.4K <em class="up">+14%</em></div>
-            <svg class="msp" viewBox="0 0 320 64" preserveAspectRatio="none"><polyline points="0,46 24,38 48,42 72,28 96,33 120,20 144,26 168,14 192,30 216,44 240,52 264,40 288,22 320,10"/></svg>
-            <div class="cfoot"><span>LIQ <b>$41.2K</b></span><span>5M VOL <b>$58.9K</b></span><span>B/S <b>1.34</b></span></div>
+            <div class="ctwo">
+              <div>
+                <div class="cbig">$113.4K <em class="up">+14%</em></div>
+                <div class="cwhen">3m old &middot; migrated</div>
+              </div>
+              <div class="cgrid">
+                <div><span>LIQ</span><b>$41.2K</b></div>
+                <div><span>5M VOL</span><b>$58.9K</b></div>
+                <div><span>B/S</span><b>1.34</b></div>
+                <div><span>HOLDERS</span><b>1,284</b></div>
+              </div>
+            </div>
           </div>
 
           <div class="cstate" data-c="2">
             <div class="ck">What would trigger a buy</div>
-            <div class="clines">
-              <div><span>from</span><b>$113.4K</b></div>
-              <div><span>a dip below</span><b>$90.7K</b></div>
-              <div><span>then a reclaim above</span><b>$95.2K</b></div>
+            <div class="ctwo">
+              <div class="clines">
+                <div><span>from</span><b>$113.4K</b></div>
+                <div><span>a dip below</span><b>$90.7K</b></div>
+                <div><span>then a reclaim above</span><b>$95.2K</b></div>
+              </div>
+              <div class="cact">
+                <button class="cgl"><i></i>GREENLIGHT</button>
+                <div class="cnote">Picked up within 5 seconds, then it watches every second.</div>
+              </div>
             </div>
-            <button class="cgl"><i></i>GREENLIGHT</button>
           </div>
 
           <div class="cstate" data-c="3">
             <div class="ck"><span class="mdot amber"></span>Waiting for a dip</div>
-            <div class="clines">
-              <div><span>needs to trade at or below</span><b>$90.7K</b></div>
-              <div><span>high since you greenlit</span><b>$113.4K</b></div>
+            <div class="ctwo">
+              <div class="clines">
+                <div><span>needs to trade at or below</span><b>$90.7K</b></div>
+                <div><span>high since you greenlit</span><b>$113.4K</b></div>
+              </div>
+              <div class="cact"><div class="cnote">No dip yet, so nothing can trigger. It will sit here for hours rather than buy a top.</div></div>
             </div>
-            <div class="cnote">No dip yet, so nothing can trigger.</div>
           </div>
 
           <div class="cstate" data-c="4">
             <div class="ck">Your rules</div>
-            <div class="clines">
-              <div><span>Dip required</span><b>20%</b></div>
-              <div><span>Reclaim off the low</span><b>5%</b></div>
-              <div><span>Take profit</span><b>2&times; &middot; 4&times;</b></div>
-              <div><span>Stop</span><b>&minus;50%</b></div>
+            <div class="ctwo">
+              <div class="clines">
+                <div><span>Dip required</span><b>20%</b></div>
+                <div><span>Reclaim off the low</span><b>5%</b></div>
+              </div>
+              <div class="clines">
+                <div><span>Take profit</span><b>2&times; &middot; 4&times;</b></div>
+                <div><span>Stop</span><b>&minus;50%</b></div>
+              </div>
             </div>
           </div>
 
           <div class="cstate" data-c="5">
             <div class="ck">What it costs</div>
-            <div class="clines">
-              <div><span>Per swap</span><b>0.5%</b></div>
-              <div><span>Monthly</span><b>$0</b></div>
+            <div class="ctwo">
+              <div><div class="cbig">0.5%</div><div class="cwhen">per swap</div></div>
+              <div><div class="cbig">$0</div><div class="cwhen">monthly</div></div>
             </div>
-            <div class="cnote">Charged on the swap itself. Nothing else.</div>
           </div>
 
           <span class="cursor"><i></i></span>
@@ -732,6 +878,15 @@
   var N = stx.length;
   function ease(t) { return t * t * (3 - 2 * t); }
 
+  /* The line draws itself as the story is told. Its length is measured once so
+     the reveal is a dash offset rather than a re-render. */
+  var px = document.querySelector('.bg .px');
+  var pxLen = px ? px.getTotalLength() : 0;
+  if (px) { px.style.strokeDasharray = pxLen; px.style.strokeDashoffset = pxLen; }
+  var mkHi = document.querySelector('.bg .mk.hi');
+  var mkBuy = document.querySelector('.bg .mk.buy');
+  var guides = document.querySelector('.bg .guides');
+
   var pressed = {};
   function press(key) {
     if (pressed[key]) return;
@@ -770,7 +925,15 @@
       }
     }
 
-    var row = document.querySelector('.cstate[data-c="0"] .mrow.hit');
+    /* draw fraction tracks the step line, so the high lands on the greenlight
+       and the buy lands on the reclaim */
+    var frac = N > 1 ? p / (N - 1) : 0;
+    if (px) px.style.strokeDashoffset = (pxLen * (1 - frac)).toFixed(1);
+    if (guides) guides.style.opacity = frac > 0.30 ? 1 : 0;
+    if (mkHi)  mkHi.style.opacity  = frac > 0.36 ? 1 : 0;
+    if (mkBuy) mkBuy.style.opacity = frac > 0.57 ? 1 : 0;   /* lands on 'buys the reclaim' */
+
+    var row = document.querySelector('.cstate[data-c="0"] tbody tr.hit');
     if (row) row.classList.toggle('picked', p > 0.9);
     var gl = document.querySelector('.cgl');
     if (gl) gl.classList.toggle('pressed', p > 1.98 && p < 2.3);
