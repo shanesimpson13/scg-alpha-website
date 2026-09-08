@@ -589,7 +589,6 @@
   /* the board is the whole width; it is on screen before the line has drawn */
   .cstate[data-c="0"] { left: 50%; width: min(940px, 100%); transform: translate(-50%, -50%); }
   /* everything after it hugs the left, leaving the dip and the reclaim in clear air */
-  .cstate:not([data-c="0"]) { left: 0; transform: translateY(-50%); }
 
   .rail { width: 400px; display: flex; flex-direction: column; gap: 11px; }
   .rp { background: var(--panel); border: 1px solid var(--line); border-radius: 13px;
@@ -639,7 +638,6 @@
   .bg .px { opacity: .42; }
 
   @media (max-width: 980px) {
-    .cstate:not([data-c="0"]) { left: 50%; transform: translate(-50%, -50%); }
     .rail { width: min(400px, 100%); }
     .setwrap { width: min(700px, 100%); grid-template-columns: 1fr; }
     .card, .cardwrap { height: 560px; }
@@ -713,7 +711,6 @@
 
   /* The line lives in the left of the frame and leaves through the top, so the
      panels have the right-hand side to themselves instead of sitting on it. */
-  .cstate:not([data-c="0"]) { left: auto; right: 0; transform: translateY(-50%); }
   .bg { width: min(1560px, 132vw); }
 
   /* ── the pointer ──
@@ -748,9 +745,11 @@
   /* Final word on where the panels sit: the board centred, everything after it
      hard against the right, clear of the line drawing on the left. */
   .cstate[data-c="0"] { left: 50%; right: auto; transform: translate(-50%, -50%); }
-  .cstate:not([data-c="0"]) { left: auto; right: 0; transform: translateY(-50%); }
+  /* The CTA is excluded: it is centred, and this rule was quietly winning over
+     its own centring and shoving it to the right edge. */
+  .cstate:not([data-c="0"]):not(.cta) { left: auto; right: 0; transform: translateY(-50%); }
   @media (max-width: 980px) {
-    .cstate:not([data-c="0"]) { left: 50%; right: auto; transform: translate(-50%, -50%); }
+    .cstate:not([data-c="0"]):not(.cta) { left: 50%; right: auto; transform: translate(-50%, -50%); }
   }
 
   /* The chart sits below the copy. TP1 is 2x the entry, so the top of the
@@ -1158,6 +1157,20 @@
     /* The button opens up as you come down onto it. Driven by raw scroll rather
        than the step index, so it keeps growing through the tail of the section
        instead of stopping the moment the last step is centred. */
+    /* The frame is sized for the tallest panel, which leaves most of a screen
+       of nothing under a button. On the closing step it collapses to the height
+       of the button itself, and the block slides down by half of what it gave
+       up so it ends centred rather than stranded at the top. */
+    var ctaState = states[states.length - 1];
+    if (frame && tallestH && ctaState) {
+      var ctaH = ctaState.offsetHeight || tallestH;
+      var h = tallestH - (tallestH - ctaH) * closing;
+      frame.style.height = h.toFixed(0) + 'px';
+      var slide = ((tallestH - h) / 2) * scaleNow;
+      fit.style.transform = 'translateY(' + slide.toFixed(1) + 'px)' +
+                            (scaleNow < 1 ? ' scale(' + scaleNow.toFixed(4) + ')' : '');
+    }
+
     if (ctaBtn) {
       var g = (t - 0.78) / 0.16;   /* full size while the headline is still up */
       g = g < 0 ? 0 : g > 1 ? 1 : g;
@@ -1207,6 +1220,7 @@
      centre pulls both ends back inside. */
   var fit  = document.querySelector('.fit');
   var scaleNow = 1;
+  var tallestH = 0;
   var frame = document.querySelector('.card') || document.querySelector('.cardwrap');
   function fitViewport() {
     if (!fit || !frame) return;
@@ -1230,7 +1244,9 @@
     var avail = window.innerHeight - 76 - 76;
     var need = fit.offsetHeight;
     scaleNow = (need > avail && need > 0) ? avail / need : 1;
-    fit.style.transform = scaleNow < 1 ? 'scale(' + scaleNow.toFixed(4) + ')' : 'none';
+    tallestH = tallest;
+    /* the transform is applied in paint(), which also knows how far the frame
+       has collapsed on the closing step */
   }
 
   var queued = false;
@@ -1275,6 +1291,7 @@
      centre pulls both ends back inside. */
   var fit  = document.querySelector('.fit');
   var scaleNow = 1;
+  var tallestH = 0;
   var frame = document.querySelector('.card') || document.querySelector('.cardwrap');
   function fitViewport() {
     if (!fit || !frame) return;
@@ -1298,7 +1315,9 @@
     var avail = window.innerHeight - 76 - 76;
     var need = fit.offsetHeight;
     scaleNow = (need > avail && need > 0) ? avail / need : 1;
-    fit.style.transform = scaleNow < 1 ? 'scale(' + scaleNow.toFixed(4) + ')' : 'none';
+    tallestH = tallest;
+    /* the transform is applied in paint(), which also knows how far the frame
+       has collapsed on the closing step */
   }
 
   var queued = false;
