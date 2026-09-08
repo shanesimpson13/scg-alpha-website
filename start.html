@@ -774,7 +774,16 @@
 
   /* The last step is the call to action: centred, and lit, because it is the
      one thing on the page you are meant to press. */
-  .cstate.cta { left: 50%; right: auto; transform: translate(-50%, -50%); }
+  /* The closing reads as one block -- headline, line, button. Centred in the
+     stage it sat a screen below the words it belongs to, with nothing around
+     it. */
+  .cstate.cta {
+    left: 50%; right: auto; top: 34px; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 22px;
+  }
+  .cstate.cta .sub {
+    font-size: 13px; color: var(--dimmer); letter-spacing: .02em;
+  }
   .btn.glow {
     font-size: 17px; padding: 20px 46px;
     box-shadow: 0 0 0 6px rgba(18,146,75,.10),
@@ -971,6 +980,7 @@
 
           <div class="cstate cta" data-c="4">
             <a class="btn glow" href="/">Enter app</a>
+            <span class="sub">Your wallet, your keys. Nothing to install.</span>
           </div>
 
           <span class="cursor"><i></i></span>
@@ -1133,7 +1143,9 @@
     /* The closing step is the button. The chart has said everything it has to
        say by then, so it clears rather than sitting under the call to action.
        (This fade was written once and lost in a later edit of this block.) */
-    if (chart) chart.style.opacity = p > 4.45 ? Math.max(0, 1 - (p - 4.45) / 0.35) : 1;
+    /* Not cleared, just pulled back. Gone entirely, the button stood in an
+       empty page; left at full strength it competed with it. */
+    if (chart) chart.style.opacity = p > 4.45 ? Math.max(0.28, 1 - (p - 4.45) / 0.5) : 1;
     if (mkHi)  mkHi.style.opacity  = frac >= AT_HI  ? 1 : 0;
     if (mkBuy) mkBuy.style.opacity = frac >= AT_BUY ? 1 : 0;
     if (mkTp)  mkTp.style.opacity  = frac >= AT_TP  ? 1 : 0;
