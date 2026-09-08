@@ -746,6 +746,23 @@
     .steps { height: 150px; }
     .card, .cardwrap { height: 500px; }
   }
+
+  /* The copy and the panel travel together so the pair can be scaled to
+     whatever height the viewport actually has. */
+  .fit { display: flex; flex-direction: column; align-items: center; gap: 24px;
+         transform-origin: center center; will-change: transform; }
+  .scrolly-in { padding-top: 40px; gap: 0; }
+
+  /* Anchored to the top rather than centred: a centred column shifts as the
+     sticky frame engages, and that shift was pushing the board off the bottom
+     of the screen at the first step. From the top, the geometry is the same at
+     every step -- headline at a fixed offset, panel scaled down from there. */
+  .scrolly-in { justify-content: flex-start; padding-top: 76px; }
+  .fit { transform-origin: top center; }
+
+  /* The wrapper is a flex item, so without a width it shrink-wraps and the
+     copy column collapses -- "One flat fee." was breaking over three lines. */
+  .fit { width: 100%; }
 </style>
 </head>
 <body>
@@ -797,6 +814,7 @@
         <g class="mk hi"><circle cx="440" cy="62" r="6"/><text x="440" y="40">HIGH</text></g>
         <g class="mk buy"><circle cx="710" cy="318" r="7"/><text x="710" y="352">BUY THE RECLAIM</text></g>
       </svg>
+    <div class="fit">
     <div class="steps">
       <div class="stx" data-i="0"><h2>Only what&rsquo;s moving.</h2><p>Filtered on volume, liquidity and flow.</p></div>
       <div class="stx" data-i="1"><h2>You pick the coin.</h2><p>The one call the system won&rsquo;t make for you.</p></div>
@@ -932,6 +950,7 @@
           <span class="cursor"><i></i></span>
         </div>
     </div>
+    </div>
   </div>
 </section>
 
@@ -990,8 +1009,8 @@
   if (!scrolly || !stx.length || !states.length || !card) return;
 
   var N = stx.length;
-  var RANGE = [[-0.5, 1.45], [1.55, 2.45], [2.55, 3.45], [3.55, 4.45], [4.55, 5.5]];
-  var FADE = 0.5;
+  var BOUND = [1.5, 2.5, 3.5, 4.5];   /* where one panel gives way to the next */
+  var RAMP = 0.10;
   function ease(t) { return t * t * (3 - 2 * t); }
 
   /* The line draws itself as the story is told. Its length is measured once so
@@ -1035,19 +1054,17 @@
       stx[i].style.transform = 'translateY(' + ((i - p) * 70).toFixed(1) + 'px)';
     }
 
-    /* Five panels across six steps: the board holds both the look and the pick,
-       because picking a coin happens on the board, not on a different screen. */
+    /* Five panels across six steps. They CUT rather than cross-fade: the board
+       is centred and wide, the rail is left and narrow, so any overlap draws
+       one straight through the other -- the table's rows were showing through
+       the trigger panel. The ramp is short enough to read as a cut. */
     for (var k = 0; k < states.length; k++) {
-      var r = RANGE[k], so = 0;
-      if (p > r[0] - FADE && p < r[1] + FADE) {
-        so = p < r[0] ? (p - (r[0] - FADE)) / FADE
-           : p > r[1] ? ((r[1] + FADE) - p) / FADE : 1;
-        so = ease(so < 0 ? 0 : so > 1 ? 1 : so);
-      }
-      var mid = (r[0] + r[1]) / 2;
+      var lo = k === 0 ? -99 : BOUND[k - 1];
+      var hi = k === states.length - 1 ? 99 : BOUND[k];
+      var so = Math.min((p - lo) / RAMP, (hi - p) / RAMP, 1);
+      so = so < 0 ? 0 : ease(so);
       states[k].style.opacity = so;
-      states[k].style.transform = (k === 0 ? 'translate(-50%,-50%)' : 'translateY(-50%)') +
-        ' translateY(' + ((mid - p) * 14).toFixed(1) + 'px)';
+      states[k].style.transform = (k === 0 ? 'translate(-50%,-50%)' : 'translateY(-50%)');
       states[k].style.visibility = so > 0.02 ? 'visible' : 'hidden';
     }
 
@@ -1079,6 +1096,37 @@
     }
   }
 
+  /* The rail is 544px of real panels; that plus a headline is taller than a
+     laptop viewport, and a centred column that overflows pushes the headline up
+     under the fixed nav -- which is what cut the title off. Scaling about the
+     centre pulls both ends back inside. */
+  var fit  = document.querySelector('.fit');
+  var frame = document.querySelector('.card') || document.querySelector('.cardwrap');
+  function fitViewport() {
+    if (!fit || !frame) return;
+    fit.style.transform = 'none';
+
+    /* The panels are absolutely positioned and centred, so a panel taller than
+       the frame simply hangs out of it -- the frame's own height told me
+       nothing and the board was running off the bottom of the screen. Measure
+       the tallest panel and give the frame exactly that. */
+    var tallest = 0;
+    for (var i = 0; i < states.length; i++) {
+      var h = states[i].offsetHeight;
+      if (h > tallest) tallest = h;
+    }
+    if (tallest) frame.style.height = tallest + 'px';
+
+    /* Headroom for the first step: at the exact scroll where the frame pins,
+       it sits ~72px lower than at every step after it, and that was enough to
+       push the board off the bottom. Budget for the worst case rather than the
+       common one -- a slightly smaller panel beats a clipped one. */
+    var avail = window.innerHeight - 76 - 76;
+    var need = fit.offsetHeight;
+    fit.style.transform = (need > avail && need > 0)
+      ? 'scale(' + (avail / need).toFixed(4) + ')' : 'none';
+  }
+
   var queued = false;
   function onScroll() {
     if (queued) return;
@@ -1086,9 +1134,10 @@
     requestAnimationFrame(function () { queued = false; paint(); });
   }
   addEventListener('scroll', onScroll, { passive: true });
-  addEventListener('resize', paint);
+  addEventListener('resize', function () { fitViewport(); paint(); });
   addEventListener('pageshow', paint);
   addEventListener('visibilitychange', function () { if (!document.hidden) paint(); });
+  fitViewport();
   paint();
 })();
 </script>
@@ -1114,6 +1163,37 @@
       if (!els[i].classList.contains('in') && onScreen(els[i], 0.06)) els[i].classList.add('in');
     }
   }
+  /* The rail is 544px of real panels; that plus a headline is taller than a
+     laptop viewport, and a centred column that overflows pushes the headline up
+     under the fixed nav -- which is what cut the title off. Scaling about the
+     centre pulls both ends back inside. */
+  var fit  = document.querySelector('.fit');
+  var frame = document.querySelector('.card') || document.querySelector('.cardwrap');
+  function fitViewport() {
+    if (!fit || !frame) return;
+    fit.style.transform = 'none';
+
+    /* The panels are absolutely positioned and centred, so a panel taller than
+       the frame simply hangs out of it -- the frame's own height told me
+       nothing and the board was running off the bottom of the screen. Measure
+       the tallest panel and give the frame exactly that. */
+    var tallest = 0;
+    for (var i = 0; i < states.length; i++) {
+      var h = states[i].offsetHeight;
+      if (h > tallest) tallest = h;
+    }
+    if (tallest) frame.style.height = tallest + 'px';
+
+    /* Headroom for the first step: at the exact scroll where the frame pins,
+       it sits ~72px lower than at every step after it, and that was enough to
+       push the board off the bottom. Budget for the worst case rather than the
+       common one -- a slightly smaller panel beats a clipped one. */
+    var avail = window.innerHeight - 76 - 76;
+    var need = fit.offsetHeight;
+    fit.style.transform = (need > avail && need > 0)
+      ? 'scale(' + (avail / need).toFixed(4) + ')' : 'none';
+  }
+
   var queued = false;
   function onScroll() {
     if (queued) return;
