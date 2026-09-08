@@ -717,6 +717,35 @@
     .steps { height: 116px; }
     .card, .cardwrap { height: 520px; }
   }
+
+  /* ── three fixes ─────────────────────────────────────────────────────
+     1. The earlier layout set `inset: 0` on every state. Adding `top: 50%` on
+        top of a still-live `bottom: 0` made each state exactly half the frame
+        tall -- 274px holding 445px of board -- which is what was cutting the
+        table off at the bottom. */
+  .cstate { bottom: auto !important; right: auto !important; height: auto !important; }
+
+  /* 2. The board's border came from the card frame I removed, so it now carries
+        its own -- the same treatment the rest of the panels have. */
+  .cstate[data-c="0"] {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 22px 50px -30px rgba(0,0,0,.38);
+  }
+  .cstate[data-c="0"] .bhead { padding: 15px 18px; border-bottom: 1px solid var(--hair); }
+  .cstate[data-c="0"] tbody tr:last-child td { border-bottom: 0; }
+
+  /* 3. The titles were being squeezed into a 130px box, so a headline that
+        wrapped lost its second line and its subtitle. They get the room their
+        own type size needs. */
+  .steps { height: 168px; }
+  .stx h2 { font-size: clamp(32px, 4.6vw, 52px); line-height: 1.04; letter-spacing: -.042em; }
+  .stx p  { font-size: 16.5px; }
+
+  @media (max-height: 820px) {
+    .steps { height: 150px; }
+    .card, .cardwrap { height: 500px; }
+  }
 </style>
 </head>
 <body>
