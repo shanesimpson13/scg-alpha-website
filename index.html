@@ -1389,7 +1389,7 @@
           <div class="orsend" id="orsend" style="display:none">or send SOL</div>
           <div class="netrow" id="netrow-dep"></div>
           <div class="qrbox"><div id="wqr"></div></div>
-          <p class="wtip">Send SOL on the Solana network to this address.</p>
+          <p class="wtip" id="wtip">Send SOL on the Solana network to this address.</p>
           <div class="waddr" id="waddr" role="button" tabindex="0"
                title="Click to copy">…</div>
           <!-- Only ever used to sign a share card, so it lives on this device
@@ -2656,13 +2656,13 @@ function paintAmtPct(c) {
   if (!(amt > 0) || !(walletTotal > 0)) {
     el.className = 'amtpct';
     el.innerHTML = walletTotal > 0
-      ? `<span>of balance</span><span>${sol4(walletTotal)} SOL</span>` : '';
+      ? `<span>of balance</span><span>${sol4(walletTotal)} ${nativeSym()}</span>` : '';
     return;
   }
   const pct = (amt / walletTotal) * 100;
   el.className = 'amtpct' + (pct > 100 ? ' over' : pct >= 50 ? ' heavy' : '');
   el.innerHTML = `<span><b>${pct.toFixed(pct < 10 ? 1 : 0)}%</b> of balance</span>` +
-                 `<span>${sol4(walletTotal)} SOL</span>`;
+                 `<span>${sol4(walletTotal)} ${nativeSym()}</span>`;
 }
 
 /* Keyed off openMint rather than a coin object captured in a closure. The
@@ -2714,7 +2714,7 @@ function paintAmtNote(c) {
      say to someone who has none to pick from. */
   if (KEY && walletLoaded && walletTotal <= 0) {
     btn.disabled = false;
-    btn.textContent = '💰 ADD SOL TO START';
+    btn.textContent = `💰 ADD ${nativeSym()} TO START`;
     return;
   }
 
@@ -2727,7 +2727,7 @@ function paintAmtNote(c) {
   // swap comes out of the same balance, so the whole of it is never spendable.
   if (KEY && walletTotal > 0 && amt + 0.01 > walletTotal) {
     btn.disabled = true;
-    btn.textContent = 'NOT ENOUGH SOL';
+    btn.textContent = `NOT ENOUGH ${nativeSym()}`;
     return;
   }
   btn.disabled = false;
@@ -3825,7 +3825,6 @@ const RH_MARK = `<svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="tr
 
 /* The wallet is per chain: different address, different currency, different
    money in it. These three are the only places that needs to be spelled out. */
-const CHAIN_UNIT = () => (chain === 'robinhood' ? 'ETH' : 'SOL');
 const CHAIN_MARK = () => (chain === 'robinhood' ? RH_MARK : SOL_MARK);
 const CHAIN_NET  = (id) => (chain === 'robinhood' ? RH_NET(id) : SOL_NET(id));
 /* Cached per chain. One key meant switching to Robinhood painted the Solana
@@ -3892,8 +3891,12 @@ async function refreshChip() {
 function paintBuyCard() {
   const box = document.getElementById('buycard');
   const or = document.getElementById('orsend');
-  const ok = !!(window.EdgeAuth && window.EdgeAuth.canBuyWithCard
-                && window.EdgeAuth.canBuyWithCard());
+  /* MoonPay is quoted in SOL and delivers SOL, so the card route only makes
+     sense on Solana. Offering it under a Robinhood balance would take money
+     for an asset that wallet cannot receive. */
+  const ok = chain !== 'robinhood'
+             && !!(window.EdgeAuth && window.EdgeAuth.canBuyWithCard
+                   && window.EdgeAuth.canBuyWithCard());
   if (box) box.style.display = ok ? '' : 'none';
   if (or) or.style.display = ok ? '' : 'none';
 }
@@ -3965,7 +3968,7 @@ function setBal(bal) {
   walletTotal = (bal.sol || 0) + (bal.wsol || 0);
   walletLoaded = true;
   const el = document.getElementById('wbal');
-  if (el) el.textContent = sol4(walletTotal) + ' ' + CHAIN_UNIT();
+  if (el) el.textContent = sol4(walletTotal) + ' ' + nativeSym();
   paintChip(walletTotal);
   paintAmount();
   // The share depends on the balance, so it has to follow a fill.
@@ -3982,7 +3985,7 @@ function paintAmount() {
   if (lbl) lbl.textContent = pct + '%';
   if (amt) amt.textContent = sol4(walletTotal * pct / 100);
   const u = document.getElementById('wamtunit');
-  if (u) u.textContent = CHAIN_UNIT();
+  if (u) u.textContent = nativeSym();
 }
 
 async function loadWallet() {
@@ -4004,6 +4007,14 @@ async function loadWallet() {
     const dest = document.getElementById('wdest');
     if (dest) dest.placeholder = forChain === 'robinhood'
       ? 'Ethereum wallet address' : 'Solana wallet address';
+    /* The deposit instructions name a currency and a network. Getting either
+       wrong is how someone sends SOL to an 0x address and loses it. */
+    const tip = document.getElementById('wtip');
+    if (tip) tip.textContent = `Send ${nativeSym()} on `
+      + (forChain === 'robinhood' ? 'Robinhood Chain' : 'the Solana network')
+      + ' to this address.';
+    const or = document.getElementById('orsend');
+    if (or) or.textContent = 'or send ' + nativeSym();
     /* Withdrawals are built and signed on Solana only. Offering the button on
        Robinhood would build a Solana transaction for an ETH wallet and fail
        after someone had already typed an address into it. */
@@ -4326,7 +4337,7 @@ document.getElementById('wbuy').onclick = async () => {
     }
   } catch (e) {
     note.textContent = "Card purchases aren't available right now. "
-                     + 'You can still send SOL to the address below.';
+                     + `You can still send ${nativeSym()} to the address below.`;
   } finally {
     btn.disabled = false;
     btn.textContent = was;
@@ -4347,7 +4358,7 @@ function watchForDeposit() {
     if (walletTotal > start) {
       clearInterval(depositWatch); depositWatch = null;
       document.getElementById('wbuynote').textContent =
-        `Funded — ${sol4(walletTotal)} SOL. You can greenlight a coin now.`;
+        `Funded — ${sol4(walletTotal)} ${nativeSym()}. You can greenlight a coin now.`;
     }
   }, 6000);
 }
