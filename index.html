@@ -6134,6 +6134,9 @@ window.EdgeAuth = {
     return s.token || await privy.getAccessToken();
   },
   getToken: () => privy.getAccessToken(),
+  /* The other token of the pair. Privy will not exchange an access token
+     for a wallet signing key, so a withdrawal offers this one as well. */
+  getIdentityToken: () => privy.getIdentityToken().catch(() => null),
   logout: () => privy.auth.logout().catch(() => {}),
   /* Sign a withdrawal. The server builds it and can never sign it; this is
      the only place a signature exists, and it happens inside Privy's iframe
@@ -6276,8 +6279,11 @@ $('wwithdraw').onclick = async () => {
        could never work: these wallets are held server-side and there is no key
        on the device to sign with. */
     window.wsay('wmsg', 'Withdrawing…');
+    let ident = null;
+    try { ident = await window.EdgeAuth.getIdentityToken(); } catch (e) { /* optional */ }
     const sent = await window.api('/api/withdraw', {
-      method: 'POST', body: JSON.stringify(body),
+      method: 'POST',
+      body: JSON.stringify(ident ? { ...body, identity_token: ident } : body),
     });
     $('wmsg').innerHTML = `Sent. <a href="${sent.explorer}" target="_blank" rel="noopener">View it</a>`;
     $('wmsg').className = 'wmsg good';
