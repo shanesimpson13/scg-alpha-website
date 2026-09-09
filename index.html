@@ -1423,7 +1423,7 @@
             </div>
             <input type="range" id="wpct" min="0" max="100" step="1" value="100"
                    aria-label="Percentage to withdraw">
-            <div class="amt-sol"><span id="wamt">—</span> SOL</div>
+            <div class="amt-sol"><span id="wamt">—</span> <span id="wamtunit">SOL</span></div>
           </div>
           <button class="glbtn solbtn" id="wwithdraw">Withdraw</button>
         </div>
@@ -3810,6 +3810,29 @@ const SOL_NET = (id) => `<svg width="17" height="14" viewBox="0 0 397.7 311.7" a
   <path fill="url(#${id})" d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
 </svg>`;
 
+/* Robinhood's mark, in the two sizes the Solana one comes in. The chain the
+   terminal is on decides which is painted; a Solana logo over an ETH balance
+   is a lie about which money you are looking at. */
+const RH_NET = (id) => `<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+  <circle cx="12" cy="12" r="12" fill="#CCFF00"/>
+  <path fill="#0b0f0a" d="M13.1 4.4 7.2 13h3.6l-1.3 6.6 6-8.9h-3.6z"/>
+</svg>`;
+
+const RH_MARK = `<svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true">
+  <circle cx="12" cy="12" r="12" fill="#CCFF00"/>
+  <path fill="#0b0f0a" d="M13.1 4.4 7.2 13h3.6l-1.3 6.6 6-8.9h-3.6z"/>
+</svg>`;
+
+/* The wallet is per chain: different address, different currency, different
+   money in it. These three are the only places that needs to be spelled out. */
+const CHAIN_UNIT = () => (chain === 'robinhood' ? 'ETH' : 'SOL');
+const CHAIN_MARK = () => (chain === 'robinhood' ? RH_MARK : SOL_MARK);
+const CHAIN_NET  = (id) => (chain === 'robinhood' ? RH_NET(id) : SOL_NET(id));
+/* Cached per chain. One key meant switching to Robinhood painted the Solana
+   balance for as long as the request took -- a number that was real, attached
+   to the wrong wallet. */
+const BAL_KEY = () => 'edgelvl_bal_' + chain;
+
 const SOL_MARK = `<svg width="11" height="9" viewBox="0 0 397.7 311.7" aria-hidden="true">
   <linearGradient id="sg" x1="360.9" y1="-37.5" x2="141.2" y2="383.3"
     gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9945FF"/>
@@ -3826,24 +3849,24 @@ const SOL_MARK = `<svg width="11" height="9" viewBox="0 0 397.7 311.7" aria-hidd
    flashing a placeholder while the request is in flight. */
 function paintChip(bal) {
   const chip = document.getElementById('walletchip');
-  if (!KEY) { chip.innerHTML = `${SOL_MARK}<span class="bal">sign in</span>`; return; }
+  if (!KEY) { chip.innerHTML = `${CHAIN_MARK()}<span class="bal">sign in</span>`; return; }
   if (bal !== null && bal !== undefined) {
-    localStorage.setItem('edgelvl_bal', String(bal));
+    localStorage.setItem(BAL_KEY(), String(bal));
   } else {
-    const cached = localStorage.getItem('edgelvl_bal');
+    const cached = localStorage.getItem(BAL_KEY());
     // Never invent a zero. A wallet claiming 0.0000 when the balance is simply
     // unknown is worse than admitting we don't know — it reads as "your money
     // is gone", and someone will believe it.
     bal = cached === null ? null : Number(cached);
   }
-  chip.innerHTML = `${SOL_MARK}<span class="bal">${bal === null ? '—' : sol4(bal)}</span>`;
+  chip.innerHTML = `${CHAIN_MARK()}<span class="bal">${bal === null ? '—' : sol4(bal)}</span>`;
 }
 
 /* Keep the header honest without opening anything. */
 async function refreshChip() {
   if (!KEY) return;
   try {
-    const a = await api('/api/account');
+    const a = await api('/api/account?chain=' + encodeURIComponent(chain));
     /* Always setBal, never paint one half of the balance directly. Balances are
        native now, but a wallet funded before that change can still hold WSOL,
        and painting either half alone once showed a funded wallet as empty. One
@@ -3855,7 +3878,8 @@ async function refreshChip() {
     // than sit there showing a number we can't stand behind.
     if (e.message === 'bad-key' || /token|sign in/i.test(e.message || '')) {
       localStorage.removeItem('edgelvl_key');
-      localStorage.removeItem('edgelvl_bal');
+      ['sol', 'robinhood'].forEach(c =>
+        localStorage.removeItem('edgelvl_bal_' + c));
       KEY = '';
       paintChip(null);
     }
@@ -3941,7 +3965,7 @@ function setBal(bal) {
   walletTotal = (bal.sol || 0) + (bal.wsol || 0);
   walletLoaded = true;
   const el = document.getElementById('wbal');
-  if (el) el.textContent = sol4(walletTotal) + ' SOL';
+  if (el) el.textContent = sol4(walletTotal) + ' ' + CHAIN_UNIT();
   paintChip(walletTotal);
   paintAmount();
   // The share depends on the balance, so it has to follow a fill.
@@ -3957,16 +3981,36 @@ function paintAmount() {
   const amt = document.getElementById('wamt');
   if (lbl) lbl.textContent = pct + '%';
   if (amt) amt.textContent = sol4(walletTotal * pct / 100);
+  const u = document.getElementById('wamtunit');
+  if (u) u.textContent = CHAIN_UNIT();
 }
 
 async function loadWallet() {
   try {
-    const a = await api('/api/account');          // creates it on first call
+    // Per chain — the wallet you deposit to has to be the one that can buy
+    // the coin on screen. Created on first call, so a customer who has never
+    // looked at Robinhood gets a wallet the moment they do.
+    const forChain = chain;
+    const a = await api('/api/account?chain=' + encodeURIComponent(forChain));
+    // The chain can change while this is in flight. Painting a late reply
+    // would put one chain's address under the other chain's name.
+    if (forChain !== chain) return;
     MY_ADDRESS = a.address || '';
     document.getElementById('waddr').textContent = a.address;
     paintQR(a.address);
+    const netName = forChain === 'robinhood' ? 'Robinhood Chain' : 'Solana network';
     document.querySelectorAll('.netrow').forEach((r, i) =>
-      r.innerHTML = SOL_NET('sgn' + i) + '<span>Solana network</span>');
+      r.innerHTML = CHAIN_NET('sgn' + i) + `<span>${netName}</span>`);
+    const dest = document.getElementById('wdest');
+    if (dest) dest.placeholder = forChain === 'robinhood'
+      ? 'Ethereum wallet address' : 'Solana wallet address';
+    /* Withdrawals are built and signed on Solana only. Offering the button on
+       Robinhood would build a Solana transaction for an ETH wallet and fail
+       after someone had already typed an address into it. */
+    const wd = document.getElementById('wwd');
+    const wdtab = document.querySelector('.wtab[data-pane="wwd"]');
+    if (wdtab) wdtab.style.display = forChain === 'robinhood' ? 'none' : '';
+    if (wd && forChain === 'robinhood') wd.style.display = 'none';
     /* One number. Whether a lamport is currently wrapped, reserved for fees or
        sitting as plain SOL is our problem, not something to explain on screen. */
     setBal(a.balances);
@@ -3978,7 +4022,8 @@ async function loadWallet() {
     walletPoll = setInterval(async () => {
       if (document.getElementById('wmodal').style.display !== 'flex') return;
       try {
-        const b = await api('/api/account');
+        if (forChain !== chain) return;
+        const b = await api('/api/account?chain=' + encodeURIComponent(forChain));
         // Deposited SOL is tradeable the moment it lands — nothing to convert.
         // This used to wrap it first, which is what left wallets with no native
         // SOL to pay fees with.
@@ -4178,6 +4223,15 @@ function applyChain(next, { reload = true } = {}) {
   }
   const act = document.getElementById('activity');
   if (act) act.innerHTML = '';
+  /* The header chip belongs to the chain too. Repaint from that chain's cache
+     immediately so the mark and the number change together, then go and get
+     the real figure. */
+  walletTotal = 0; walletLoaded = false;
+  paintChip(null);
+  if (KEY) {
+    refreshChip();
+    if (document.getElementById('wmodal').style.display === 'flex') loadWallet();
+  }
   if (reload) { renderBoard(); refresh(); refreshActivity(); }
 }
 
@@ -4315,7 +4369,7 @@ document.getElementById('wrefresh').onclick = e => { e.preventDefault(); loadWal
 document.getElementById('wsignout').onclick = async e => {
   e.preventDefault();
   localStorage.removeItem('edgelvl_key');
-  localStorage.removeItem('edgelvl_bal');
+  localStorage.removeItem(BAL_KEY());
   KEY = '';
   if (window.EdgeAuth) await window.EdgeAuth.logout();
   location.reload();
