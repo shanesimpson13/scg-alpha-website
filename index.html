@@ -6082,6 +6082,51 @@ const privy = new Privy({
   storage: new LocalStorage(),
 });
 
+/* Privy's core SDK is headless: it does not mount its own wallet frame, it
+   expects the page to host one and to carry messages both ways. Without that
+   there is no proxy and every signature fails with "Embedded wallet proxy not
+   initialized" — which is exactly what withdrawals did.
+
+   Set up on first use rather than on load, so someone who only reads the board
+   never fetches an auth frame. The promise is cached so concurrent callers
+   share one frame, and cleared on failure so a retry can rebuild it. */
+let walletFrame = null;
+function ensureWalletFrame() {
+  if (walletFrame) return walletFrame;
+  walletFrame = (async () => {
+    // getURL only carries a session id once the client has initialised.
+    await privy.initialize();
+    const url = privy.embeddedWallet.getURL();
+    const origin = new URL(url).origin;
+
+    const frame = document.createElement('iframe');
+    frame.setAttribute('allow',
+      'publickey-credentials-get *; publickey-credentials-create *; clipboard-write');
+    frame.style.cssText =
+      'position:fixed;bottom:0;right:0;width:1px;height:1px;border:0;opacity:0.01';
+    frame.src = url;
+    document.body.appendChild(frame);
+
+    privy.setMessagePoster({
+      postMessage: (msg, targetOrigin, transfer) =>
+        frame.contentWindow.postMessage(msg, targetOrigin, transfer ? [transfer] : undefined),
+      reload: () => { frame.src = frame.src; },
+    });
+    /* Only ever from Privy's own origin. This channel reaches the code that
+       holds the key, so anything else on the page must not be able to speak
+       into it. */
+    window.addEventListener('message', (e) => {
+      if (e.origin === origin) privy.embeddedWallet.onMessage(e.data);
+    });
+
+    if (!await privy.embeddedWallet.ping(20000)) {
+      throw new Error('The signing frame did not respond. Reload the page and try again.');
+    }
+    return frame;
+  })().catch((e) => { walletFrame = null; throw e; });
+  return walletFrame;
+}
+
 window.EdgeAuth = {
   sendCode: (email) => privy.auth.email.sendCode(email),
   loginWithCode: async (email, code) => {
@@ -6104,6 +6149,7 @@ window.EdgeAuth = {
      only a withdrawal needs it. */
   signTransaction: async (b64) => {
     const { Transaction } = await import('https://esm.sh/@solana/web3.js@1.95.8');
+    await ensureWalletFrame();
     const { user } = await privy.user.get();
     const account = getUserEmbeddedSolanaWallet(user);
     if (!account) throw new Error('No Solana wallet on this account to sign with.');
