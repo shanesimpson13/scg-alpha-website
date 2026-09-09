@@ -6270,17 +6270,14 @@ $('wwithdraw').onclick = async () => {
     : { destination, amount_sol: Number((walletTotal * pct / 100).toFixed(6)) };
   $('wwithdraw').disabled = true;
   try {
-    window.wsay('wmsg', 'Preparing…');
-    const built = await window.api('/api/withdraw', {
+    /* One call. The signature is still the customer's -- it is their access
+       token on this request that authorises it, and our key cannot move money
+       out of their wallet at all. It used to be signed in the browser, which
+       could never work: these wallets are held server-side and there is no key
+       on the device to sign with. */
+    window.wsay('wmsg', 'Withdrawing…');
+    const sent = await window.api('/api/withdraw', {
       method: 'POST', body: JSON.stringify(body),
-    });
-    // Signed here, by them. Our key cannot produce this transaction at all.
-    window.wsay('wmsg', `Signing ${Number(built.amount_sol).toFixed(4)} SOL…`);
-    const signed = await window.EdgeAuth.signTransaction(built.transaction);
-    window.wsay('wmsg', 'Sending…');
-    const sent = await window.api('/api/withdraw/submit', {
-      method: 'POST',
-      body: JSON.stringify({ transaction: signed.signedTransaction || signed }),
     });
     $('wmsg').innerHTML = `Sent. <a href="${sent.explorer}" target="_blank" rel="noopener">View it</a>`;
     $('wmsg').className = 'wmsg good';
