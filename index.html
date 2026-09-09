@@ -6074,7 +6074,8 @@ start();
    adapter every call dies with "Unable to access storage" at call time rather
    than at construction — so the page looks perfectly healthy while sign-in is
    dead. The version is pinned because 0.7.0 is broken on this CDN. */
-import Privy, { LocalStorage } from 'https://esm.sh/@privy-io/js-sdk-core@0.68.6';
+import Privy, { LocalStorage, getUserEmbeddedSolanaWallet, getEntropyDetailsFromAccount }
+  from 'https://esm.sh/@privy-io/js-sdk-core@0.68.6';
 
 const privy = new Privy({
   appId: 'cmsasu2fa00930dlc04skfjwl',      // public identifier, not a secret
@@ -6089,9 +6090,42 @@ window.EdgeAuth = {
   },
   getToken: () => privy.getAccessToken(),
   logout: () => privy.auth.logout().catch(() => {}),
-  signTransaction: (transaction) => privy.embeddedWallet.signTransaction({
-    transaction, encoding: 'base64', chainType: 'solana',
-  }),
+  /* Sign a withdrawal. The server builds it and can never sign it; this is
+     the only place a signature exists, and it happens inside Privy's iframe
+     where the key material lives.
+
+     This used to call privy.embeddedWallet.signTransaction with a base64
+     string, which is the shape of a DIFFERENT Privy API — the core SDK has no
+     such method, so every withdrawal died at "is not a function". The core
+     SDK hands out a provider per wallet, and the provider wants a real
+     Transaction object rather than bytes.
+
+     web3.js is imported here rather than at the top because it is large and
+     only a withdrawal needs it. */
+  signTransaction: async (b64) => {
+    const { Transaction } = await import('https://esm.sh/@solana/web3.js@1.95.8');
+    const { user } = await privy.user.get();
+    const account = getUserEmbeddedSolanaWallet(user);
+    if (!account) throw new Error('No Solana wallet on this account to sign with.');
+    const { entropyId, entropyIdVerifier } = getEntropyDetailsFromAccount(account);
+    const provider = await privy.embeddedWallet.getSolanaProvider(
+      account, entropyId, entropyIdVerifier);
+
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const { signedTransaction } = await provider.request({
+      method: 'signTransaction',
+      params: { transaction: Transaction.from(bytes) },
+    });
+    /* Back to base64 for the RPC. Chunked because spreading a byte array into
+       fromCharCode blows the stack on anything big, and quietly works until it
+       does not. */
+    const out = signedTransaction.serialize();
+    let bin = '';
+    for (let i = 0; i < out.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, out.subarray(i, i + 0x8000));
+    }
+    return { signedTransaction: btoa(bin) };
+  },
 
   /* Buying SOL with a card, straight into this wallet.
 
