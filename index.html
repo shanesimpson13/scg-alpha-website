@@ -1472,11 +1472,10 @@
         executed whether or not you are at the screen.</p>
       <div class="paystatus" id="paystatus"></div>
       <div class="planwrap" id="planwrap"></div>
-      <div id="paycheckout"></div>
-      <p class="paynote">Card, Apple Pay, Google Pay, Solana or bank — the
-        checkout offers what suits you, and there is no account to create.
-        Payment is handled by Whop; your card never touches us, and nothing in
-        it can reach the wallet the bot trades.</p>
+      <p class="paynote">There is no checkout yet, so nothing here can be
+        bought and the bot is open to everyone in the meantime. When that
+        changes, no payment detail will ever reach the wallet the bot
+        trades.</p>
     </div>
   </div>
 
@@ -1521,7 +1520,7 @@
 
 <script src="/qr.js"></script>
 <script>
-/* The API lives on our own domain. It used to be api.scgalpha.com — a
+/* The API lives on our own domain. It used to live on another — a
    second domain that had to stay alive for the product to work, and that
    read as a third-party call to anyone inspecting the page. */
 const API = 'https://api.edgelvl.app';
@@ -2947,7 +2946,6 @@ async function greenlight(c) {
    of the wallet the bot trades. Nothing here can reach a customer's funds,
    which is the same promise the trading policy makes. */
 let SUB = null;                 // {active, days_left, plan, plans[], identity}
-let whopLoading = null;         // the checkout loader, fetched once
 let subPoll = null;             // watches for the webhook while checkout is open
 
 async function loadSub() {
@@ -2956,32 +2954,13 @@ async function loadSub() {
   return SUB;
 }
 
-/* A third-party script, so it is fetched when someone actually opens the
-   plans — not on every board view by everyone who never will. The loader scans
-   for [data-whop-checkout-*] elements and mounts itself into them. */
-function whopReady() {
-  if (!whopLoading) {
-    whopLoading = new Promise(resolve => {
-      const el = document.createElement('script');
-      el.async = true; el.defer = true;
-      el.src = 'https://js.whop.com/static/checkout/loader.js';
-      el.onload = () => resolve(true);
-      el.onerror = () => resolve(false);
-      document.head.appendChild(el);
-      setTimeout(() => resolve(true), 12000);
-    });
-  }
-  return whopLoading;
-}
 
 function planCard(p) {
   const perMonth = p.usd / (p.days / 30);
   const save = p.id === 'monthly' ? 0 : Math.round((1 - perMonth / 29) * 100);
-  /* One button. Whop's checkout offers card, Apple Pay, Google Pay, Solana and
-     bank inside itself and picks what suits the buyer's country, so splitting
-     the rails out here would be us guessing on its behalf. */
-  const rails = p.plan_id
-    ? [`<button class="pri" data-pay="${p.id}">Choose ${esc(p.id)}</button>`] : [];
+  /* There is no checkout. Nothing sells these yet, so the card shows what a
+     plan would cost and says plainly that it cannot be bought — a button that
+     opens nothing is worse than no button. */
   return `<div class="plan${p.id === 'yearly' ? ' best' : ''}">
     <div class="plan-top">
       <span class="plan-name">${esc(p.id[0].toUpperCase() + p.id.slice(1))}</span>
@@ -2989,15 +2968,13 @@ function planCard(p) {
     </div>
     <div class="plan-price">$${p.usd}</div>
     <div class="plan-per">${p.days} days${p.id !== 'monthly' ? ` · $${perMonth.toFixed(0)}/mo` : ''}</div>
-    <div class="plan-btns">${rails.length ? rails.join('')
-      : '<button disabled>Not available yet</button>'}</div>
+    <div class="plan-btns"><button disabled>Not available yet</button></div>
   </div>`;
 }
 
 async function openPay(reason) {
   const m = document.getElementById('paymodal');
   if (!m) return;
-  document.getElementById('paycheckout').innerHTML = '';
   m.style.display = 'flex';
   const st = document.getElementById('paystatus');
   const wrap = document.getElementById('planwrap');
@@ -3016,60 +2993,15 @@ async function openPay(reason) {
     st.textContent = 'No plan running.';
   }
   wrap.innerHTML = (SUB.plans || []).map(planCard).join('');
-  wrap.querySelectorAll('[data-pay]').forEach(b => {
-    b.onclick = () => payWith(b.dataset.pay, b);
-  });
 }
 
 function closePay() {
   const m = document.getElementById('paymodal');
   if (m) m.style.display = 'none';
-  document.getElementById('paycheckout').innerHTML = '';
   clearInterval(subPoll);
   subPoll = null;
 }
 
-async function payWith(planId, btn) {
-  const plan = (SUB && SUB.plans || []).find(p => p.id === planId);
-  if (!plan || !SUB || !plan.plan_id) return;
-
-  const st = document.getElementById('paystatus');
-  const box = document.getElementById('paycheckout');
-  btn.disabled = true;
-  st.className = 'paystatus';
-  st.textContent = 'Opening checkout…';
-
-  /* The session is minted server-side because it carries WHO it is for. Whop
-     copies that metadata onto the payment and the membership, and it is the
-     only reason the webhook can credit the right account. */
-  let session;
-  try {
-    session = await api('/api/subscription/checkout',
-                        { method: 'POST', body: JSON.stringify({ plan: planId }) });
-  } catch (e) {
-    btn.disabled = false;
-    st.textContent = e.detail || 'Could not open checkout. Nothing was charged.';
-    return;
-  }
-
-  if (!await whopReady()) {
-    btn.disabled = false;
-    st.textContent = 'The checkout could not load. Try again in a moment.';
-    return;
-  }
-
-  st.textContent = '';
-  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  /* The loader mounts itself into this element. Card, Apple Pay, Google Pay,
-     Solana and bank all live inside it, chosen by the buyer's country — and
-     there is no Whop account to create, only an email for the receipt. */
-  box.innerHTML =
-    `<div data-whop-checkout-plan-id="${esc(session.plan_id)}"` +
-    ` data-whop-checkout-session="${esc(session.session_id)}"` +
-    ` data-whop-checkout-theme="${dark ? 'dark' : 'light'}"` +
-    ` data-whop-checkout-return-url="${location.origin}/?paid=1"></div>`;
-  watchForPayment();
-}
 
 /* The webhook is what actually grants the days, and it lands on our server a
    moment after the customer sees "paid" — so watch our own record rather than
