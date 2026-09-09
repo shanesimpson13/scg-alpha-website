@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Withdraw — EdgeLvl</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root { --bg:#fafaf9; --fg:#111; --dim:#666; --line:#e5e5e3; --field:#fff;
+          --green:#16a34a; --red:#dc2626; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0e0e0e; --fg:#f2f2f2; --dim:#8a8a8a; --line:#242424; --field:#161616; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+         display:flex; justify-content:center; padding:6vh 16px; }
+  .card { width:100%; max-width:460px; }
+  h1 { font-size:15px; font-weight:600; margin:0 0 4px; }
+  .lede { color:var(--dim); margin:0 0 26px; }
+  label { display:block; color:var(--dim); margin:18px 0 6px; font-size:11px;
+          letter-spacing:.08em; text-transform:uppercase; }
+  input { width:100%; background:var(--field); border:1px solid var(--line);
+          color:var(--fg); padding:12px 13px; border-radius:7px;
+          font:inherit; }
+  input:focus { outline:none; border-color:var(--green); }
+  button { width:100%; margin-top:18px; padding:13px; border:0; border-radius:7px;
+           background:var(--fg); color:var(--bg); font:inherit; font-weight:600;
+           cursor:pointer; }
+  button:disabled { opacity:.45; cursor:default; }
+  .row { display:flex; justify-content:space-between; gap:12px;
+         padding:11px 0; border-bottom:1px solid var(--line); }
+  .row span:last-child { color:var(--dim); word-break:break-all; text-align:right; }
+  .msg { margin-top:16px; padding:11px 13px; border-radius:7px;
+         background:var(--field); border:1px solid var(--line); word-break:break-word; }
+  .msg.bad { border-color:var(--red); color:var(--red); }
+  .msg.good { border-color:var(--green); color:var(--green); }
+  a { color:inherit; }
+  .back { display:inline-block; margin-top:26px; color:var(--dim); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="card" id="root">Loading…</div>
+
+<script type="module">
+/* A withdrawal page built on Privy's own React SDK.
+
+   The terminal cannot do this itself. These wallets are held on Privy's
+   servers, so nothing on the device can sign, and the server cannot either:
+   our key is an extra signer that policy confines to swaps, and Privy refuses
+   to mint a user signing key from an access token for an app on native auth.
+   Their client SDK is the one thing that can, so this page exists to use it —
+   which is exactly what Privy's own docs recommend when the main app cannot.
+
+   Deliberately standalone: no shared state with the terminal, one job, and
+   nothing here can move money without the account holder signing in first. */
+
+const API = 'https://api.edgelvl.app';
+const APP_ID = 'cmsasu2fa00930dlc04skfjwl';   // public identifier, not a secret
+
+const [React, ReactDOM, Privy, PrivySolana, web3] = await Promise.all([
+  import('https://esm.sh/react@18.3.1'),
+  import('https://esm.sh/react-dom@18.3.1/client'),
+  import('https://esm.sh/@privy-io/react-auth@3.42.0'),
+  import('https://esm.sh/@privy-io/react-auth@3.42.0/solana'),
+  import('https://esm.sh/@solana/web3.js@1.95.8'),
+]);
+
+const h = React.createElement;
+const { useState } = React;
+
+function Msg({ text, kind }) {
+  return text ? h('div', { className: 'msg ' + (kind || '') }, text) : null;
+}
+
+function Panel() {
+  const { ready, authenticated, user, logout } = Privy.usePrivy();
+  const { sendCode, loginWithCode } = Privy.useLoginWithEmail();
+  const { wallets } = PrivySolana.useWallets();
+  const { signTransaction } = PrivySolana.useSignTransaction();
+
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
+  const [dest, setDest] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [kind, setKind] = useState('');
+
+  const say = (t, k) => { setMsg(t); setKind(k || ''); };
+
+  if (!ready) return h('div', null, 'Loading…');
+
+  /* ── signed out ── */
+  if (!authenticated) {
+    return h('div', null,
+      h('h1', null, 'Withdraw'),
+      h('p', { className: 'lede' },
+        'Sign in with the same email you use on the terminal.'),
+      h('label', null, 'Email'),
+      h('input', { value: email, autoComplete: 'email',
+                   placeholder: 'you@example.com',
+                   onChange: e => setEmail(e.target.value) }),
+      sent && h('div', null,
+        h('label', null, 'Code'),
+        h('input', { value: code, inputMode: 'numeric', placeholder: '123456',
+                     onChange: e => setCode(e.target.value) })),
+      h('button', {
+        disabled: busy || !email,
+        onClick: async () => {
+          setBusy(true);
+          try {
+            if (!sent) { await sendCode({ email }); setSent(true); say('Code sent.'); }
+            else { await loginWithCode({ code }); say(null); }
+          } catch (e) { say(e.message || String(e), 'bad'); }
+          setBusy(false);
+        },
+      }, busy ? 'Working…' : (sent ? 'Sign in' : 'Send code')),
+      h(Msg, { text: msg, kind }),
+      h('a', { className: 'back', href: '/' }, '← back to the terminal'));
+  }
+
+  /* ── signed in ── */
+  const wallet = wallets[0];
+  return h('div', null,
+    h('h1', null, 'Withdraw'),
+    h('p', { className: 'lede' },
+      'Everything except the network fee and the account rent.'),
+    h('div', { className: 'row' },
+      h('span', null, 'Account'),
+      h('span', null, (user?.email?.address) || user?.id || '—')),
+    h('div', { className: 'row' },
+      h('span', null, 'Wallet'),
+      h('span', null, wallet ? wallet.address : 'none found')),
+    h('label', null, 'Destination'),
+    h('input', { value: dest, placeholder: 'Solana address', spellCheck: false,
+                 onChange: e => setDest(e.target.value) }),
+    h('button', {
+      disabled: busy || !dest || !wallet,
+      onClick: async () => {
+        setBusy(true);
+        try {
+          /* The server works out what is actually withdrawable and builds the
+             transfer; it just cannot sign it. */
+          say('Preparing…');
+          const token = await Privy.getAccessToken();
+          const r = await fetch(API + '/api/withdraw/build', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token,
+                       'Content-Type': 'application/json' },
+            body: JSON.stringify({ destination: dest.trim() }),
+          });
+          const built = await r.json();
+          if (!r.ok) throw new Error(built.detail || 'could not prepare it');
+
+          say(`Signing ${Number(built.amount_sol).toFixed(4)} SOL…`);
+          const bytes = Uint8Array.from(atob(built.transaction), c => c.charCodeAt(0));
+          const tx = web3.Transaction.from(bytes);
+          const signed = await signTransaction({ transaction: tx, wallet });
+
+          say('Sending…');
+          const raw = (signed.signedTransaction || signed).serialize();
+          let bin = '';
+          for (let i = 0; i < raw.length; i += 0x8000) {
+            bin += String.fromCharCode.apply(null, raw.subarray(i, i + 0x8000));
+          }
+          const s2 = await fetch(API + '/api/withdraw/submit', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token,
+                       'Content-Type': 'application/json' },
+            body: JSON.stringify({ transaction: btoa(bin) }),
+          });
+          const sent2 = await s2.json();
+          if (!s2.ok) throw new Error(sent2.detail || 'the network refused it');
+          setMsg(null);
+          setKind('good');
+          setMsg(`Sent ${Number(built.amount_sol).toFixed(4)} SOL. ${sent2.explorer}`);
+        } catch (e) {
+          say(e.message || String(e), 'bad');
+        }
+        setBusy(false);
+      },
+    }, busy ? 'Working…' : 'Withdraw everything'),
+    h(Msg, { text: msg, kind }),
+    h('a', { className: 'back', href: '#', onClick: e => { e.preventDefault(); logout(); } },
+      'sign out'),
+    ' · ',
+    h('a', { className: 'back', href: '/' }, 'back to the terminal'));
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(Privy.PrivyProvider, {
+    appId: APP_ID,
+    config: { embeddedWallets: { createOnLogin: 'off' },
+              loginMethods: ['email'] },
+  }, h(Panel)));
+</script>
+</body>
+</html>
