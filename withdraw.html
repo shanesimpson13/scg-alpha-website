@@ -61,8 +61,11 @@ const APP_ID = 'cmsasu2fa00930dlc04skfjwl';   // public identifier, not a secret
 const [React, ReactDOM, Privy, PrivySolana, web3] = await Promise.all([
   import('https://esm.sh/react@18.3.1'),
   import('https://esm.sh/react-dom@18.3.1/client'),
-  import('https://esm.sh/@privy-io/react-auth@3.42.0'),
-  import('https://esm.sh/@privy-io/react-auth@3.42.0/solana'),
+  /* ?deps pins Privy's build to the SAME React as ours. Without it esm.sh
+     hands it its own copy, two Reacts share one tree, and every hook dies on
+     "Cannot read properties of null (reading 'useContext')". */
+  import('https://esm.sh/@privy-io/react-auth@3.42.0?deps=react@18.3.1,react-dom@18.3.1'),
+  import('https://esm.sh/@privy-io/react-auth@3.42.0/solana?deps=react@18.3.1,react-dom@18.3.1'),
   import('https://esm.sh/@solana/web3.js@1.95.8'),
 ]);
 
