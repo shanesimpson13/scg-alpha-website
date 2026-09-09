@@ -1,2 +1,10 @@
 .claude/
 .DS_Store
+
+# This project keeps working copies beside the file it is editing, named for
+# whatever was about to change. They are scratch, not source, and a `git add -A`
+# will happily publish them — which is exactly how five of them once shipped.
+*.bak
+*.bak-*
+*.pre-*
+*.new.html
