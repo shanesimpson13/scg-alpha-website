@@ -350,7 +350,8 @@
     input[type=range]::-moz-range-thumb { width: 15px; height: 15px; border: 0;
       border-radius: 50%; cursor: pointer;
       background: linear-gradient(96deg, #9945FF 0%, #14F195 100%); }
-    #wwithdraw { margin-top: auto; }
+    #wwithdraw { margin-top: auto; display: block; text-align: center;
+                 text-decoration: none; box-sizing: border-box; }
     .wfoot { display: flex; justify-content: space-between; margin-top: 18px;
              padding-top: 14px; border-top: 1px solid var(--hair); }
     .wfoot a { font-size: 11px; color: var(--dimmer); text-decoration: none; }
@@ -1410,22 +1411,17 @@
           <div class="wmsg" id="wdepmsg"></div>
         </div>
 
+        <!-- Withdrawing happens on its own page. It cannot happen here: these
+             wallets are held on Privy's servers, so nothing in this page holds
+             a key, and our server cannot sign either — it is an extra signer
+             that policy confines to swaps. Only Privy's own client SDK can
+             produce the signature, and /withdraw is built on it. -->
         <div class="wpane" id="wwd" style="display:none">
           <div class="netrow" id="netrow-wd"></div>
-          <div class="field">
-            <input id="wdest" placeholder="Solana wallet address" spellcheck="false"
-                   autocomplete="off" autocapitalize="off">
-          </div>
-          <div class="field amt">
-            <div class="amt-head">
-              <span class="amt-k">Amount</span>
-              <span class="amt-pct" id="wpctlbl">100%</span>
-            </div>
-            <input type="range" id="wpct" min="0" max="100" step="1" value="100"
-                   aria-label="Percentage to withdraw">
-            <div class="amt-sol"><span id="wamt">—</span> <span id="wamtunit">SOL</span></div>
-          </div>
-          <button class="glbtn solbtn" id="wwithdraw">Withdraw</button>
+          <p class="wtip">Withdrawing is on its own page, so that only you can
+            sign it. Nothing here — and nothing on our side — can move your
+            money out.</p>
+          <a class="glbtn solbtn" id="wwithdraw" href="/withdraw">Go to withdraw</a>
         </div>
 
         <div id="wpos"></div>
@@ -3906,22 +3902,9 @@ function setBal(bal) {
   const el = document.getElementById('wbal');
   if (el) el.textContent = sol4(walletTotal) + ' ' + nativeSym();
   paintChip(walletTotal);
-  paintAmount();
   // The share depends on the balance, so it has to follow a fill.
   const c = findCoin(openMint);
   if (c && view === 'detail') { paintAmtPct(c); paintAmtNote(c); }
-}
-
-/* The slider is a share of the balance, shown in SOL so nobody has to do the
-   percentage in their head before signing. */
-function paintAmount() {
-  const pct = Number(document.getElementById('wpct')?.value ?? 100);
-  const lbl = document.getElementById('wpctlbl');
-  const amt = document.getElementById('wamt');
-  if (lbl) lbl.textContent = pct + '%';
-  if (amt) amt.textContent = sol4(walletTotal * pct / 100);
-  const u = document.getElementById('wamtunit');
-  if (u) u.textContent = nativeSym();
 }
 
 async function loadWallet() {
@@ -3940,9 +3923,6 @@ async function loadWallet() {
     const netName = forChain === 'robinhood' ? 'Robinhood Chain' : 'Solana network';
     document.querySelectorAll('.netrow').forEach((r, i) =>
       r.innerHTML = CHAIN_NET('sgn' + i) + `<span>${netName}</span>`);
-    const dest = document.getElementById('wdest');
-    if (dest) dest.placeholder = forChain === 'robinhood'
-      ? 'Ethereum wallet address' : 'Solana wallet address';
     /* The deposit instructions name a currency and a network. Getting either
        wrong is how someone sends SOL to an 0x address and loses it. */
     const tip = document.getElementById('wtip');
@@ -4303,7 +4283,7 @@ document.getElementById('waddr').onclick = copyAddr;
 document.getElementById('waddr').onkeydown = e => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copyAddr(); }
 };
-document.getElementById('wpct').oninput = paintAmount;
+/* The withdraw slider moved to /withdraw with the rest of it. */
 document.getElementById('wclose').onclick = () => closeWallet();
 document.getElementById('wmodal').onclick = e => {
   if (e.target.id === 'wmodal') closeWallet();     // click the backdrop to dismiss
@@ -6257,39 +6237,6 @@ $('wverify').onclick = async () => {
     window.resumePending();
   } catch (e) { window.wsay('wauthmsg', friendly(e), 'bad'); }
   finally { $('wverify').disabled = false; }
-};
-
-$('wwithdraw').onclick = async () => {
-  const destination = $('wdest').value.trim();
-  if (!destination) return window.wsay('wmsg', 'Where should it go?', 'bad');
-  const pct = Number($('wpct').value);
-  if (pct <= 0) return window.wsay('wmsg', 'Pick an amount.', 'bad');
-  /* At 100% send null and let the server sweep. Computing the figure here
-     would miss the rent the closed wrapped-SOL account refunds and the network
-     fee it has to leave behind, so a "100%" number is always slightly wrong in
-     one direction or the other — and wrong high just fails. */
-  const body = pct >= 100
-    ? { destination }
-    : { destination, amount_sol: Number((walletTotal * pct / 100).toFixed(6)) };
-  $('wwithdraw').disabled = true;
-  try {
-    /* One call. The signature is still the customer's -- it is their access
-       token on this request that authorises it, and our key cannot move money
-       out of their wallet at all. It used to be signed in the browser, which
-       could never work: these wallets are held server-side and there is no key
-       on the device to sign with. */
-    window.wsay('wmsg', 'Withdrawing…');
-    let ident = null;
-    try { ident = await window.EdgeAuth.getIdentityToken(); } catch (e) { /* optional */ }
-    const sent = await window.api('/api/withdraw', {
-      method: 'POST',
-      body: JSON.stringify(ident ? { ...body, identity_token: ident } : body),
-    });
-    $('wmsg').innerHTML = `Sent. <a href="${sent.explorer}" target="_blank" rel="noopener">View it</a>`;
-    $('wmsg').className = 'wmsg good';
-    window.loadWallet();
-  } catch (e) { window.wsay('wmsg', friendly(e), 'bad'); }
-  finally { $('wwithdraw').disabled = false; }
 };
 
 /* Restore a session on load so the chip shows a balance rather than "sign in"
