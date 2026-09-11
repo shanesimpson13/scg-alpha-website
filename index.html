@@ -2192,10 +2192,9 @@ function renderGreenlight(c) {
   if (!btn) return;
   delete btn.dataset.busy;
 
-  /* Chains the bot cannot execute on yet. The coin page still opens and every
-     figure on it is real — the chart, the holders, the bundler read are why you
-     came. Only the one action that would fail is withheld, and it says why
-     rather than being a button that quietly does nothing. */
+  /* A chain the bot cannot execute on yet keeps its coin pages — every figure
+     on them is real — but not the one button that would fail. Nothing is in
+     that state today; it is here for the next chain. */
   if (!tradeable(chain)) {
     btn.dataset.bot = '1';
     btn.disabled = true;
@@ -2203,7 +2202,7 @@ function renderGreenlight(c) {
     btn.onclick = null;
     if (note) {
       note.className = 'glnote';
-      note.textContent = 'Robinhood Chain is research-only for now — the board and '
+      note.textContent = 'This chain is research-only for now — the board and '
                        + 'this page are live, execution is being wired up.';
     }
     return;
@@ -4141,13 +4140,6 @@ function applyChain(next, { reload = true } = {}) {
   board.classList.toggle('watchonly', !tradeable(chain));
   const note = document.getElementById('watchnote');
   if (note) note.remove();
-  if (!tradeable(chain)) {
-    const n = document.createElement('div');
-    n.id = 'watchnote'; n.className = 'watchnote';
-    n.textContent = 'Robinhood Chain is watch-only for now — execution is being '
-                  + 'wired up. The board is live.';
-    board.appendChild(n);
-  }
   const act = document.getElementById('activity');
   if (act) act.innerHTML = '';
   /* The header chip belongs to the chain too. Repaint from that chain's cache
@@ -4162,9 +4154,10 @@ function applyChain(next, { reload = true } = {}) {
   if (reload) { renderBoard(); refresh(); refreshActivity(); }
 }
 
-/* Which chains the bot can actually trade. Robinhood flips to true once its
-   executor lands; until then the board is honest about being watch-only. */
-function tradeable(c) { return c === 'sol'; }
+/* Which chains the bot can actually trade. Kept as a function rather than
+   folded away: the next chain arrives the same way Robinhood did, and this is
+   where it says so. */
+function tradeable(c) { return c === 'sol' || c === 'robinhood'; }
 
 (() => {
   const cur = document.getElementById('chaincur');
