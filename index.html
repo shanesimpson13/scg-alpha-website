@@ -2105,7 +2105,7 @@ function renderDetail() {
                <a href="https://gmgn.ai/${gmgnChain()}/token/${esc(c.mint)}" target="_blank"
                   rel="noopener">Open on GMGN &#8599;</a>
              </div>`
-          : `<iframe src="https://www.gmgn.cc/kline/${gmgnChain()}/${esc(c.mint)}?resolution=1s" title="chart" referrerpolicy="no-referrer"></iframe>`}
+          : `<iframe src="https://www.gmgn.cc/kline/${gmgnChain()}/${esc(c.mint)}?interval=1S&theme=${document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'}" title="chart"></iframe>`}
       </div>
       <div class="tier">
       <div class="stats">
