@@ -248,8 +248,6 @@
     .chainopt:hover { background: var(--hover); color: var(--fg); }
     .chainopt.on { color: var(--fg); }
     .chainopt .tick { margin-left: auto; color: var(--green); font-size: 11px; }
-    .chainopt .sub { display: block; font-size: 9.5px; color: var(--dimmer);
-                     letter-spacing: .04em; margin-top: 2px; }
     @media (max-width: 620px) { .chaincur .cname { display: none; } }
 
     .chaintabs { display: inline-flex; gap: 3px; margin-left: 12px; }
@@ -1241,12 +1239,12 @@
         <div class="chainmenu" id="chainmenu" role="listbox" hidden>
           <button class="chainopt on" data-chain="sol" role="option" aria-selected="true">
             <span class="cmark sol"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.7 16.3a.8.8 0 0 1 .6-.3h14.1c.4 0 .6.5.3.8l-3 3a.8.8 0 0 1-.6.2H2c-.4 0-.6-.4-.3-.7l3-3Z"/><path d="M4.7 4a.8.8 0 0 1 .6-.3h14.1c.4 0 .6.5.3.8l-3 3a.8.8 0 0 1-.6.2H2c-.4 0-.6-.4-.3-.7l3-3Z"/><path d="M19.4 10.1a.8.8 0 0 0-.6-.3H4.7c-.4 0-.6.5-.3.8l3 3a.8.8 0 0 0 .6.2h14.1c.4 0 .6-.4.3-.7l-3-3Z"/></svg></span>
-            <span>Solana<span class="sub">trading live</span></span>
+            <span>Solana</span>
             <span class="tick">✓</span>
           </button>
           <button class="chainopt" data-chain="robinhood" role="option" aria-selected="false">
             <span class="cmark robinhood"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14.6 2.1c.5-.2 1 .2.9.7l-1.2 5.5 3.9-.9c.5-.1.9.4.7.9l-6.5 13.5c-.2.5-1 .4-1-.2l.6-6.6-3.8 1c-.5.1-.9-.4-.7-.9L14.6 2.1Z"/></svg></span>
-            <span>Robinhood<span class="sub">watch only</span></span>
+            <span>Robinhood</span>
             <span class="tick"></span>
           </button>
         </div>
