@@ -34,6 +34,15 @@
          background:var(--field); border:1px solid var(--line); word-break:break-word; }
   .msg.bad { border-color:var(--red); color:var(--red); }
   .msg.good { border-color:var(--green); color:var(--green); }
+  /* amount slider */
+  .amt { margin-top:18px; padding:13px; border:1px solid var(--line);
+         border-radius:7px; background:var(--field); }
+  .amt-head { display:flex; justify-content:space-between; color:var(--dim);
+              font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+  .amt input[type=range] { width:100%; margin:12px 0 8px; accent-color:var(--green); }
+  .amt-sol { font-size:15px; font-weight:600; }
+  .amt-note { font-size:11px; font-weight:400; color:var(--dim);
+              letter-spacing:0; text-transform:none; }
   a { color:inherit; }
   .back { display:inline-block; margin-top:26px; color:var(--dim); font-size:12px; }
 </style>

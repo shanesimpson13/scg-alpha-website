@@ -6,7 +6,7 @@
  * a user signing key from an access token for an app on native auth. Their
  * client SDK is the only thing that can, so this page uses it directly.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { PrivyProvider, usePrivy, useLoginWithEmail, getAccessToken } from '@privy-io/react-auth';
 import { useWallets, useSignTransaction } from '@privy-io/react-auth/solana';
@@ -34,10 +34,29 @@ function Panel() {
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [dest, setDest] = useState('');
+  const [pct, setPct] = useState(100);
+  const [bal, setBal] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [kind, setKind] = useState('');
   const say = (t, k = '') => { setMsg(t); setKind(k); };
+
+  // The balance the slider is a share of. Read once the account is known,
+  // and again after a withdrawal lands.
+  useEffect(() => {
+    if (!authenticated) { setBal(null); return; }
+    let gone = false;
+    (async () => {
+      try {
+        const token = await getAccessToken();
+        const r = await fetch(API + '/api/account?chain=sol',
+                              { headers: { Authorization: 'Bearer ' + token } });
+        const a = await r.json();
+        if (!gone && r.ok) setBal((a.balances?.sol || 0) + (a.balances?.wsol || 0));
+      } catch (e) { /* the slider falls back to percentages alone */ }
+    })();
+    return () => { gone = true; };
+  }, [authenticated, msg === null]);
 
   if (!ready) return <div>Loading…</div>;
 
@@ -72,15 +91,29 @@ function Panel() {
   return (
     <div>
       <h1>Withdraw</h1>
-      <p className="lede">Everything except the network fee and the account rent.</p>
+      <p className="lede">The network fee and the account rent always stay behind.</p>
       <div className="row"><span>Account</span>
         <span>{user?.email?.address || user?.id || '—'}</span></div>
       <div className="row"><span>Wallet</span>
         <span>{wallet ? wallet.address : 'none found'}</span></div>
+      <div className="row"><span>Balance</span>
+        <span>{bal === null ? '—' : bal.toFixed(4) + ' SOL'}</span></div>
       <label>Destination</label>
       <input value={dest} placeholder="Solana address" spellCheck={false}
              onChange={(e) => setDest(e.target.value)} />
-      <button disabled={busy || !dest || !wallet} onClick={async () => {
+      <div className="amt">
+        <div className="amt-head">
+          <span>Amount</span><span>{pct}%</span>
+        </div>
+        <input type="range" min="1" max="100" step="1" value={pct}
+               aria-label="Percentage to withdraw"
+               onChange={(e) => setPct(Number(e.target.value))} />
+        <div className="amt-sol">
+          {bal === null ? '—' : (bal * pct / 100).toFixed(4)} SOL
+          {pct >= 100 && <span className="amt-note"> · everything that can go</span>}
+        </div>
+      </div>
+      <button disabled={busy || !dest || !wallet || (pct < 100 && !bal)} onClick={async () => {
         setBusy(true);
         try {
           say('Preparing…');
@@ -91,7 +124,15 @@ function Panel() {
           // transfer. It simply cannot sign it.
           const r = await fetch(API + '/api/withdraw/build', {
             method: 'POST', headers: auth,
-            body: JSON.stringify({ destination: dest.trim() }),
+            /* At 100% send no amount and let the server sweep. Working the
+               figure out here would miss the rent a closed wrapped-SOL account
+               refunds and the fee it must leave behind, so a "100%" computed
+               from the balance is always slightly wrong — and wrong high just
+               fails. */
+            body: JSON.stringify(pct >= 100
+              ? { destination: dest.trim() }
+              : { destination: dest.trim(),
+                  amount_sol: Number((bal * pct / 100).toFixed(6)) }),
           });
           const built = await r.json();
           if (!r.ok) throw new Error(built.detail || 'could not prepare it');
@@ -120,7 +161,8 @@ function Panel() {
           console.error('withdraw failed:', e);
         }
         setBusy(false);
-      }}>{busy ? 'Working…' : 'Withdraw everything'}</button>
+      }}>{busy ? 'Working…' : (pct >= 100 ? 'Withdraw everything'
+                                          : `Withdraw ${(bal === null ? 0 : bal * pct / 100).toFixed(4)} SOL`)}</button>
       {msg && <div className={'msg ' + kind}>{msg}</div>}
       <a className="back" href="#" onClick={(e) => { e.preventDefault(); logout(); }}>sign out</a>
       {' · '}
