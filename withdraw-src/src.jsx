@@ -112,7 +112,12 @@ function Panel() {
           if (!s2.ok) throw new Error(out.detail || 'the network refused it');
           say(`Sent ${Number(built.amount_sol).toFixed(4)} SOL — ${out.explorer}`, 'good');
         } catch (e) {
-          say(e.message || String(e), 'bad');
+          // Some of these arrive as plain objects rather than Errors, and
+          // String(e) on one of those is a useless "[object Object]".
+          const detail = e?.message || e?.error || e?.code ||
+                         (() => { try { return JSON.stringify(e); } catch { return String(e); } })();
+          say(String(detail).slice(0, 300), 'bad');
+          console.error('withdraw failed:', e);
         }
         setBusy(false);
       }}>{busy ? 'Working…' : 'Withdraw everything'}</button>
@@ -126,7 +131,15 @@ function Panel() {
 
 createRoot(document.getElementById('root')).render(
   <PrivyProvider appId={APP_ID}
-    config={{ loginMethods: ['email'], embeddedWallets: { createOnLogin: 'off' } }}>
+    config={{
+      loginMethods: ['email'],
+      /* showWalletUIs off: Privy otherwise opens a confirmation modal over the
+         page to sign, and here it renders as an empty black overlay with no
+         error — the signature never happens and nothing says why. The account
+         holder has already signed in and pressed Withdraw on this page, which
+         is the confirmation. */
+      embeddedWallets: { createOnLogin: 'off', showWalletUIs: false },
+    }}>
     <Panel />
   </PrivyProvider>
 );
